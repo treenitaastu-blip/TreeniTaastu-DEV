@@ -1,0 +1,834 @@
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { 
+  Users, 
+  TrendingUp, 
+  Activity,
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  UserCheck,
+  Send,
+  Eye,
+  UserPlus,
+  Target
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import SmartProgramDashboard from "@/components/admin/SmartProgramDashboard";
+import EnhancedProgramCreator from "@/components/admin/EnhancedProgramCreator";
+import PTAccessValidator from "@/components/PTAccessValidator";
+
+type UUID = string;
+
+type ProgramStats = {
+  totalPrograms: number;
+  activePrograms: number;
+  totalClients: number;
+  completedSessions: number;
+};
+
+type ClientProgram = {
+  id: UUID | null;
+  title_override: string | null;
+  start_date: string | null;
+  is_active: boolean | null;
+  assigned_to: UUID | null;
+  user_email: string | null;
+  template_title: string | null;
+  template_id: UUID | null;
+  inserted_at: string | null;
+};
+
+type Template = {
+  id: UUID;
+  title: string;
+  goal: string | null;
+  is_active: boolean | null;
+};
+
+export default function PersonalTraining() {
+  const { toast } = useToast();
+  const { trackPageView, trackFeatureUsage, trackButtonClick } = useTrackEvent();
+
+  const [stats, setStats] = useState<ProgramStats>({
+    totalPrograms: 0,
+    activePrograms: 0,
+    totalClients: 0,
+    completedSessions: 0,
+  });
+  const [programs, setPrograms] = useState<ClientProgram[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  
+  // Quick assign modal
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [assignEmail, setAssignEmail] = useState("");
+  const [assignDate, setAssignDate] = useState(new Date().toISOString().slice(0, 10));
+  const [assigning, setAssigning] = useState(false);
+
+  // New template form
+  const [showNewTemplate, setShowNewTemplate] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({ title: "", goal: "" });
+  const [creating, setCreating] = useState(false);
+
+  // Enhanced program creator
+  const [showEnhancedCreator, setShowEnhancedCreator] = useState(false);
+
+  // Track page view
+  useEffect(() => {
+    trackPageView('admin_personal_training', {
+      total_programs: programs.length,
+      total_clients: stats.totalClients,
+      active_programs: stats.activePrograms
+    });
+  }, [programs.length, stats, trackPageView]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Load all client programs with template info
+      const { data: programsData, error: programsError } = await supabase
+        .from("client_programs")
+        .select(`
+          id,
+          title_override,
+          start_date,
+          is_active,
+          assigned_to,
+          template_id,
+          inserted_at,
+          templates:template_id (
+            title,
+            goal
+          )
+        `)
+        .order("inserted_at", { ascending: false });
+
+      if (programsError) {
+        console.error("Programs list error:", programsError);
+        throw programsError;
+      }
+
+      // Get emails for assigned users
+      const userIds = [...new Set(programsData?.map(p => p.assigned_to).filter(Boolean))];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .in("id", userIds);
+
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p.email]) || []);
+
+      const formattedPrograms = (programsData || []).map((program: any) => ({
+        ...program,
+        user_email: profilesMap.get(program.assigned_to) || "Tundmatu kasutaja",
+        template_title: program.templates?.title || "Mall kustutatud",
+      }));
+
+      setPrograms(formattedPrograms);
+
+      // Calculate accurate stats
+      const activePrograms = formattedPrograms.filter(p => p.is_active !== false);
+      const totalPrograms = formattedPrograms.length;
+      
+      // Count unique clients with active programs only
+      const activeClients = new Set(activePrograms.map(p => p.assigned_to)).size;
+
+      // Load completed sessions count for active programs only
+      const activeProgramIds = activePrograms.map(p => p.id);
+      let completedSessions = 0;
+      
+      if (activeProgramIds.length > 0) {
+        const { count: completedCount, error: sessionsError } = await supabase
+          .from("workout_sessions")
+          .select("id", { count: "exact" })
+          .in("client_program_id", activeProgramIds)
+          .not("ended_at", "is", null);
+
+        if (sessionsError) {
+          console.error("Sessions count error:", sessionsError);
+        } else {
+          completedSessions = completedCount || 0;
+        }
+      }
+
+      setStats({
+        totalPrograms,
+        activePrograms: activePrograms.length,
+        totalClients: activeClients,
+        completedSessions,
+      });
+
+      // Load templates
+      const { data: templatesData, error: templatesError } = await supabase
+        .from("workout_templates")
+        .select("id, title, goal, is_active")
+        .eq("is_active", true)
+        .order("title");
+
+      if (templatesError) {
+        console.error("Templates error:", templatesError);
+        throw templatesError;
+      }
+
+      setTemplates(templatesData || []);
+
+    } catch (error: unknown) {
+      console.error("Error loading data:", error);
+      toast({
+        title: "Viga",
+        description: "Andmete laadimine ebaõnnestus",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickAssign = async () => {
+    if (!selectedTemplate || !assignEmail.trim()) return;
+
+    setAssigning(true);
+    try {
+      // Track assignment attempt
+      trackFeatureUsage('program_assignment', 'attempted', {
+        template_id: selectedTemplate.id,
+        target_email: assignEmail
+      });
+
+      const { data: programId, error } = await supabase.rpc("assign_template_to_user_v2", {
+        p_template_id: selectedTemplate.id,
+        p_target_email: assignEmail.trim().toLowerCase(),
+        p_start_date: assignDate,
+      });
+
+      if (error) throw error;
+
+      // Verify the program was created with content
+      if (programId) {
+        const { data: programCheck } = await supabase
+          .from("client_days")
+          .select("id")
+          .eq("client_program_id", programId)
+          .limit(1);
+          
+        if (!programCheck || programCheck.length === 0) {
+          console.warn("Program created but has no days, something went wrong with template copying");
+          throw new Error("Mall kopeerimisel tekkis viga - programm on tühi");
+        }
+      }
+
+      // Track successful assignment
+      trackFeatureUsage('program_assignment', 'completed', {
+        template_id: selectedTemplate.id,
+        target_email: assignEmail,
+        program_id: programId
+      });
+
+      toast({
+        title: "Mall määratud",
+        description: `Mall "${selectedTemplate.title}" on määratud kasutajale ${assignEmail}`,
+      });
+
+      setShowAssignModal(false);
+      setSelectedTemplate(null);
+      setAssignEmail("");
+      loadData();
+    } catch (error: unknown) {
+      // Track assignment failure
+      trackFeatureUsage('program_assignment', 'failed', {
+        template_id: selectedTemplate?.id,
+        target_email: assignEmail,
+        error_message: (error as Error).message
+      });
+
+      toast({
+        title: "Viga",
+        description: (error as Error).message || "Malli määramine ebaõnnestus",
+        variant: "destructive",
+      });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleDeleteProgram = async (programId: string, programName: string) => {
+    if (!confirm(`Kas oled kindel, et soovid programmi "${programName}" kustutada? See kustutab ka kõik seotud andmed (päevad, harjutused, sessioonid).`)) return;
+
+    try {
+      // Track deletion attempt
+      trackFeatureUsage('program_deletion', 'attempted', {
+        program_id: programId
+      });
+
+      const { error } = await supabase.rpc("admin_delete_client_program_cascade", {
+        p_program_id: programId,
+      });
+
+      if (error) throw error;
+
+      // Track successful deletion
+      trackFeatureUsage('program_deletion', 'completed', {
+        program_id: programId
+      });
+
+      toast({
+        title: "Programm kustutatud",
+        description: "Programm ja seotud andmed on edukalt kustutatud",
+      });
+      
+      // Reload data to update the list
+      await loadData();
+    } catch (error: unknown) {
+      console.error("Error deleting program:", error);
+      
+      // Track deletion failure
+      trackFeatureUsage('program_deletion', 'failed', {
+        program_id: programId,
+        error_message: (error as Error).message
+      });
+      
+      toast({
+        title: "Viga",
+        description: (error as Error).message || "Programmi kustutamine ebaõnnestus",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string, templateTitle: string) => {
+    if (!confirm(`Kas oled kindel, et soovid malli "${templateTitle}" kustutada? See kustutab ka kõik sellel mallil põhinevad programmid.`)) return;
+
+    try {
+      // Track template deletion attempt
+      trackFeatureUsage('template_deletion', 'attempted', {
+        template_id: templateId,
+        template_title: templateTitle
+      });
+
+      const { error } = await supabase.rpc("admin_delete_template_cascade", {
+        p_template_id: templateId,
+      });
+
+      if (error) throw error;
+
+      // Track successful template deletion
+      trackFeatureUsage('template_deletion', 'completed', {
+        template_id: templateId,
+        template_title: templateTitle
+      });
+
+      toast({
+        title: "Mall kustutatud",
+        description: "Mall ja seotud programmid on edukalt kustutatud",
+      });
+      loadData();
+    } catch (error: unknown) {
+      // Track template deletion failure
+      trackFeatureUsage('template_deletion', 'failed', {
+        template_id: templateId,
+        template_title: templateTitle,
+        error_message: (error as Error).message
+      });
+
+      toast({
+        title: "Viga",
+        description: (error as Error).message || "Malli kustutamine ebaõnnestus",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateTemplate = async () => {
+    if (!newTemplate.title.trim()) return;
+
+    setCreating(true);
+    try {
+      // Track template creation attempt
+      trackFeatureUsage('template_creation', 'attempted', {
+        template_title: newTemplate.title,
+        template_goal: newTemplate.goal
+      });
+
+      const { data, error } = await supabase
+        .from("workout_templates")
+        .insert({
+          title: newTemplate.title.trim(),
+          goal: newTemplate.goal.trim() || null,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Track successful template creation
+      trackFeatureUsage('template_creation', 'completed', {
+        template_id: data.id,
+        template_title: newTemplate.title,
+        template_goal: newTemplate.goal
+      });
+
+      toast({
+        title: "Mall loodud",
+        description: `Mall "${newTemplate.title}" on edukalt loodud`,
+      });
+
+      setShowNewTemplate(false);
+      setNewTemplate({ title: "", goal: "" });
+      loadData();
+    } catch (error: unknown) {
+      // Track template creation failure
+      trackFeatureUsage('template_creation', 'failed', {
+        template_title: newTemplate.title,
+        template_goal: newTemplate.goal,
+        error_message: (error as Error).message
+      });
+
+      toast({
+        title: "Viga",
+        description: (error as Error).message || "Malli loomine ebaõnnestus",
+        variant: "destructive",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const filteredPrograms = programs.filter(program => {
+    const matchesSearch = !searchQuery || 
+      program.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      program.template_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      program.title_override?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesFilter = filterStatus === "all" || 
+      (filterStatus === "active" && program.is_active !== false) ||
+      (filterStatus === "inactive" && program.is_active === false);
+
+    return matchesSearch && matchesFilter;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 w-64 rounded-lg bg-muted"></div>
+            <div className="grid gap-6 md:grid-cols-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 rounded-2xl bg-muted"></div>
+              ))}
+            </div>
+            <div className="h-96 rounded-2xl bg-muted"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <PTAccessValidator requireAdmin={true}>
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
+        <div className="container mx-auto px-4 py-8">
+          {/* Header - Mobile optimized */}
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Personaaltreeningu Haldus
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
+                  Halda malle, määra programme ja jälgi klientide progressi
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:gap-3">
+                <Dialog open={showNewTemplate} onOpenChange={setShowNewTemplate}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 sm:flex-initial"
+                      onClick={() => trackButtonClick('new_template_modal', 'template_creation', 'admin_dashboard')}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span className="hidden xs:inline">Uus </span>mall
+                    </Button>
+                  </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Loo uus mall</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Malli pealkiri</label>
+                      <input
+                        type="text"
+                        value={newTemplate.title}
+                        onChange={(e) => setNewTemplate(s => ({ ...s, title: e.target.value }))}
+                        placeholder="nt. Algaja jõutreening"
+                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Eesmärk (valikuline)</label>
+                      <input
+                        type="text"
+                        value={newTemplate.goal}
+                        onChange={(e) => setNewTemplate(s => ({ ...s, goal: e.target.value }))}
+                        placeholder="nt. Jõu ja vastupidavuse arendamine"
+                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <Button 
+                        onClick={() => {
+                          trackButtonClick('cancel_template_creation', 'template_creation', 'admin_dashboard');
+                          setShowNewTemplate(false);
+                        }} 
+                        variant="outline" 
+                        className="flex-1"
+                      >
+                        Tühista
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          trackButtonClick('create_template', 'template_creation', 'admin_dashboard');
+                          handleCreateTemplate();
+                        }}
+                        disabled={creating || !newTemplate.title.trim()}
+                        className="flex-1"
+                      >
+                        {creating ? "Loob..." : "Loo mall"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Button
+                onClick={() => {
+                  trackButtonClick('smart_program_creator', 'smart_program', 'admin_dashboard');
+                  setShowEnhancedCreator(true);
+                }}
+                size="sm"
+                className="flex-1 sm:flex-initial bg-gradient-to-r from-primary to-accent"
+              >
+                <Target className="mr-2 h-4 w-4" />
+                <span className="hidden xs:inline">Smart </span>Program
+              </Button>
+
+              <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-initial"
+                    onClick={() => trackButtonClick('assign_template_modal', 'program_assignment', 'admin_dashboard')}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    <span className="hidden xs:inline">Määra </span>mall
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Määra programm kliendile</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Vali mall</label>
+                      <select
+                        value={selectedTemplate?.id || ""}
+                        onChange={(e) => {
+                          const template = templates.find(t => t.id === e.target.value);
+                          setSelectedTemplate(template || null);
+                        }}
+                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                      >
+                        <option value="">Vali mall...</option>
+                        {templates.map(template => (
+                          <option key={template.id} value={template.id}>
+                            {template.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Kliendi email</label>
+                      <input
+                        type="email"
+                        value={assignEmail}
+                        onChange={(e) => setAssignEmail(e.target.value)}
+                        placeholder="klient@email.com"
+                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Alguskuupäev</label>
+                      <input
+                        type="date"
+                        value={assignDate}
+                        onChange={(e) => setAssignDate(e.target.value)}
+                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <Button 
+                        onClick={() => {
+                          trackButtonClick('cancel_program_assignment', 'program_assignment', 'admin_dashboard');
+                          setShowAssignModal(false);
+                        }} 
+                        variant="outline" 
+                        className="flex-1"
+                      >
+                        Tühista
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          trackButtonClick('assign_program', 'program_assignment', 'admin_dashboard');
+                          handleQuickAssign();
+                        }}
+                        disabled={assigning || !selectedTemplate || !assignEmail.trim()}
+                        className="flex-1"
+                      >
+                        {assigning ? "Määran..." : "Määra programm"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+               </Dialog>
+             </div>
+           </div>
+
+           {/* Enhanced Program Creator */}
+        <EnhancedProgramCreator
+          isOpen={showEnhancedCreator}
+          onOpenChange={setShowEnhancedCreator}
+          onSuccess={loadData}
+        />
+
+        {/* Stats Cards - Improved and Clear */}
+        <div className="grid gap-3 mb-6 grid-cols-2 lg:grid-cols-4">
+          <Card className="border-0 shadow-soft bg-gradient-to-br from-purple-500/10 to-purple-600/5">
+            <CardContent className="p-3 lg:p-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <Target className="h-5 w-5 lg:h-6 lg:w-6 text-purple-600" />
+                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Kokku Programme</p>
+                </div>
+                <p className="text-xl lg:text-2xl font-bold text-purple-600">
+                  {stats.totalPrograms}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-soft bg-gradient-to-br from-green-500/10 to-green-600/5">
+            <CardContent className="p-3 lg:p-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <Activity className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
+                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Aktiivsed Programme</p>
+                </div>
+                <p className="text-xl lg:text-2xl font-bold text-green-600">
+                  {stats.activePrograms}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-soft bg-gradient-to-br from-primary/10 to-primary/5">
+            <CardContent className="p-3 lg:p-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <Users className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
+                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Aktiivsed Kliendid</p>
+                </div>
+                <p className="text-xl lg:text-2xl font-bold text-primary">
+                  {stats.totalClients}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-soft bg-gradient-to-br from-blue-500/10 to-blue-600/5">
+            <CardContent className="p-3 lg:p-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />
+                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Lõpetatud Sessioone</p>
+                </div>
+                <p className="text-xl lg:text-2xl font-bold text-blue-600">
+                  {stats.completedSessions}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Programs List - Cleaner Interface */}
+        <Card className="border-0 shadow-soft bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-lg font-semibold">Klientide Programmid</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Halda määratud programme ja jälgi klientide arengut
+                </p>
+              </div>
+              
+              {/* Cleaner filters */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Otsi kliente või programme..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 text-sm border border-input rounded-lg bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                </div>
+                
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as any)}
+                  className="px-3 py-2 text-sm border border-input rounded-lg bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                >
+                  <option value="all">Kõik ({programs.length})</option>
+                  <option value="active">Aktiivsed ({programs.filter(p => p.is_active !== false).length})</option>
+                  <option value="inactive">Mitteaktiivsed ({programs.filter(p => p.is_active === false).length})</option>
+                </select>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <div className="min-w-full">
+                {filteredPrograms.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      {searchQuery || filterStatus !== "all" ? "Otsingu tulemusi ei leitud" : "Programme pole veel määratud"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {filteredPrograms.map((program) => (
+                      <div key={program.id} className="p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            {/* Program Info - Cleaner display */}
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                                <h3 className="font-medium text-sm lg:text-base truncate">
+                                  {program.title_override || program.template_title || "Nimetu programm"}
+                                </h3>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                                    program.is_active !== false
+                                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                  }`}>
+                                    {program.is_active !== false ? 'Aktiivne' : 'Mitteaktiivne'}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs lg:text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <UserCheck className="h-3 w-3 flex-shrink-0" />
+                                  <span className="truncate">{program.user_email}</span>
+                                </div>
+                                {program.start_date && (
+                                  <div className="flex items-center gap-1">
+                                    <Send className="h-3 w-3 flex-shrink-0" />
+                                    <span>Algas: {new Date(program.start_date).toLocaleDateString('et-EE')}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                          {/* Actions - Mobile Friendly */}
+                          <div className="flex items-center justify-end gap-2 flex-shrink-0">
+                            <Button
+                              onClick={() => {
+                                trackButtonClick('view_program', `/admin/programs/${program.id}`, 'admin_dashboard');
+                                window.open(`/admin/programs/${program.id}`, '_blank');
+                              }}
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs"
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              <span className="hidden sm:inline">Vaata</span>
+                            </Button>
+                            
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    trackButtonClick('delete_program_from_menu', 'program_deletion', 'admin_dashboard');
+                                    handleDeleteProgram(
+                                      program.id!,
+                                      program.title_override || program.template_title || "Programm"
+                                    );
+                                  }}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Kustuta programm
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+         </Card>
+
+         {/* Smart Program Dashboard */}
+         <div className="mt-8">
+           <SmartProgramDashboard />
+         </div>
+         </div>
+         </div>
+       </div>
+     </PTAccessValidator>
+   );
+ }

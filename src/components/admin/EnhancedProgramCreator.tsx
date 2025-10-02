@@ -1,0 +1,645 @@
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Calendar, 
+  Users, 
+  Target, 
+  Plus, 
+  Trash2, 
+  ChevronDown,
+  ChevronUp,
+  Play,
+  Settings,
+  Dumbbell,
+  Clock,
+  Search
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type Template = {
+  id: string;
+  title: string;
+  goal: string | null;
+  is_active: boolean | null;
+};
+
+type Client = {
+  id: string;
+  email: string | null;
+  created_at: string;
+};
+
+type Exercise = {
+  id?: string;
+  exercise_name: string;
+  sets: number;
+  reps: string;
+  rest_seconds: number;
+  weight_kg?: number;
+  coach_notes?: string;
+  video_url?: string;
+  order_in_day: number;
+};
+
+type TrainingDay = {
+  day_number: number;
+  title: string;
+  exercises: Exercise[];
+  is_open: boolean;
+};
+
+interface EnhancedProgramCreatorProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}
+
+export default function EnhancedProgramCreator({ 
+  isOpen, 
+  onOpenChange, 
+  onSuccess 
+}: EnhancedProgramCreatorProps) {
+  const { toast } = useToast();
+  
+  // Program settings
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedClientEmail, setSelectedClientEmail] = useState("");
+  const [clients, setClients] = useState<Client[]>([]);
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [durationWeeks, setDurationWeeks] = useState(4);
+  const [trainingDaysPerWeek, setTrainingDaysPerWeek] = useState(3);
+  const [programTitle, setProgramTitle] = useState("");
+  const [autoProgressionEnabled, setAutoProgressionEnabled] = useState(true);
+  
+  // Training days structure
+  const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
+  
+  // Creating state
+  const [creating, setCreating] = useState(false);
+  const [loadingClients, setLoadingClients] = useState(false);
+
+  // Load clients on dialog open
+  useEffect(() => {
+    if (isOpen) {
+      loadClients();
+    }
+  }, [isOpen]);
+
+  // Initialize training days when trainingDaysPerWeek changes
+  useEffect(() => {
+    const days: TrainingDay[] = [];
+    for (let i = 1; i <= trainingDaysPerWeek; i++) {
+      days.push({
+        day_number: i,
+        title: `Päev ${i}`,
+        exercises: [],
+        is_open: i === 1, // Open first day by default
+      });
+    }
+    setTrainingDays(days);
+  }, [trainingDaysPerWeek]);
+
+  const loadClients = async () => {
+    setLoadingClients(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, email, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setClients((data || []).filter(client => client.email !== null));
+    } catch (error: any) {
+      console.error("Error loading clients:", error);
+      toast({
+        title: "Viga",
+        description: "Klientide laadimine ebaõnnestus",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingClients(false);
+    }
+  };
+
+  const addExercise = (dayIndex: number) => {
+    const newExercise: Exercise = {
+      exercise_name: "Uus harjutus",
+      sets: 3,
+      reps: "8-12",
+      rest_seconds: 60,
+      coach_notes: "",
+      video_url: "",
+      order_in_day: trainingDays[dayIndex].exercises.length + 1,
+    };
+
+    setTrainingDays(prev => prev.map((day, idx) => 
+      idx === dayIndex 
+        ? { ...day, exercises: [...day.exercises, newExercise] }
+        : day
+    ));
+  };
+
+  const updateExercise = (dayIndex: number, exerciseIndex: number, updates: Partial<Exercise>) => {
+    setTrainingDays(prev => prev.map((day, dayIdx) => 
+      dayIdx === dayIndex 
+        ? {
+            ...day,
+            exercises: day.exercises.map((exercise, exIdx) => 
+              exIdx === exerciseIndex ? { ...exercise, ...updates } : exercise
+            )
+          }
+        : day
+    ));
+  };
+
+  const removeExercise = (dayIndex: number, exerciseIndex: number) => {
+    setTrainingDays(prev => prev.map((day, dayIdx) => 
+      dayIdx === dayIndex 
+        ? {
+            ...day,
+            exercises: day.exercises.filter((_, exIdx) => exIdx !== exerciseIndex)
+              .map((exercise, idx) => ({ ...exercise, order_in_day: idx + 1 }))
+          }
+        : day
+    ));
+  };
+
+  const updateDayTitle = (dayIndex: number, title: string) => {
+    setTrainingDays(prev => prev.map((day, idx) => 
+      idx === dayIndex ? { ...day, title } : day
+    ));
+  };
+
+  const toggleDay = (dayIndex: number) => {
+    setTrainingDays(prev => prev.map((day, idx) => 
+      idx === dayIndex ? { ...day, is_open: !day.is_open } : day
+    ));
+  };
+
+  const handleCreateProgram = async () => {
+    if (!selectedClientId) {
+      toast({
+        title: "Viga",
+        description: "Palun vali klient",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate that each day has at least one exercise
+    const emptyDays = trainingDays.filter(day => day.exercises.length === 0);
+    if (emptyDays.length > 0) {
+      toast({
+        title: "Viga",
+        description: `Päevad ${emptyDays.map(d => d.day_number).join(", ")} vajavad vähemalt ühte harjutust`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreating(true);
+    try {
+      // 1. Get selected user data
+      const selectedClient = clients.find(c => c.id === selectedClientId);
+      if (!selectedClient) throw new Error("Valitud klienti ei leitud");
+
+      const userData = { id: selectedClientId, email: selectedClient.email };
+
+      // 2. Create template first (to have a structure)
+      const { data: templateData, error: templateError } = await supabase
+        .from("workout_templates")
+        .insert({
+          title: programTitle || `${userData.email} personaalprogramm`,
+          goal: `${durationWeeks} nädala personaalprogramm (${trainingDaysPerWeek} päeva nädalas)`,
+          is_active: true
+        })
+        .select("id")
+        .single();
+
+      if (templateError) throw templateError;
+
+      // 3. Create template days and items
+      for (const day of trainingDays) {
+        const { data: dayData, error: dayError } = await supabase
+          .from("template_days")
+          .insert({
+            template_id: templateData.id,
+            day_order: day.day_number,
+            title: day.title,
+            note: null
+          })
+          .select("id")
+          .single();
+
+        if (dayError) throw dayError;
+
+        // Add exercises for this day
+        if (day.exercises.length > 0) {
+          const exercisesData = day.exercises.map(exercise => ({
+            template_day_id: dayData.id,
+            exercise_name: exercise.exercise_name,
+            sets: exercise.sets,
+            reps: exercise.reps,
+            rest_seconds: exercise.rest_seconds,
+            seconds: null,
+            weight_kg: exercise.weight_kg || null,
+            coach_notes: exercise.coach_notes || null,
+            video_url: exercise.video_url || null,
+            order_in_day: exercise.order_in_day
+          }));
+
+          const { error: exercisesError } = await supabase
+            .from("template_items")
+            .insert(exercisesData);
+
+          if (exercisesError) throw exercisesError;
+        }
+      }
+
+      // 4. Create client program
+      const currentUser = await supabase.auth.getUser();
+      const { data: programData, error: programError } = await supabase
+        .from("client_programs")
+        .insert({
+          template_id: templateData.id,
+          assigned_to: userData.id,
+          assigned_by: currentUser.data.user?.id || userData.id,
+          start_date: startDate,
+          duration_weeks: durationWeeks,
+          training_days_per_week: trainingDaysPerWeek,
+          auto_progression_enabled: autoProgressionEnabled,
+          status: 'active',
+          title_override: programTitle || null,
+          is_active: true
+        })
+        .select("id")
+        .single();
+
+      if (programError) throw programError;
+
+      // 5. Copy template structure to client structure
+      const { error: copyError } = await supabase.rpc("assign_template_to_user_v2", {
+        p_template_id: templateData.id,
+        p_target_email: userData.email ?? "",
+        p_start_date: startDate
+      });
+
+      if (copyError) {
+        console.warn("Template copy warning:", copyError);
+        // Continue anyway as the program was created
+      }
+
+      toast({
+        title: "Programm loodud!",
+        description: `${durationWeeks}-nädalane programm on määratud kasutajale ${userData.email}`,
+      });
+
+      // Reset form
+      setSelectedClientId("");
+      setSelectedClientEmail("");
+      setProgramTitle("");
+      setTrainingDays([]);
+      onOpenChange(false);
+      onSuccess();
+
+    } catch (error: any) {
+      console.error("Program creation error:", error);
+      toast({
+        title: "Viga",
+        description: error.message || "Programmi loomine ebaõnnestus",
+        variant: "destructive",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            Loo Smart Personaalprogramm
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Program Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Programmi seaded</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    <Users className="inline mr-1 h-4 w-4" />
+                    Vali klient
+                  </label>
+                  <Select 
+                    value={selectedClientId} 
+                    onValueChange={(value) => {
+                      setSelectedClientId(value);
+                      const client = clients.find(c => c.id === value);
+                      setSelectedClientEmail(client?.email ?? "");
+                    }}
+                    disabled={loadingClients}
+                  >
+                    <SelectTrigger className="w-full text-base md:text-sm">
+                      <SelectValue placeholder={loadingClients ? "Laen kliente..." : "Vali klient dropdownist"} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id} className="text-base md:text-sm">
+                          <div className="flex flex-col">
+                            <span className="font-medium">{client.email}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Liitunud: {new Date(client.created_at).toLocaleDateString('et-EE')}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>  
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Programmi pealkiri (valikuline)</label>
+                  <input
+                    type="text"
+                    value={programTitle}
+                    onChange={(e) => setProgramTitle(e.target.value)}
+                    placeholder="nt. Jõuprogramm algajale"
+                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-base md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    <Calendar className="inline mr-1 h-4 w-4" />
+                    Alguskuupäev
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-base md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    <Clock className="inline mr-1 h-4 w-4" />
+                    Kestus nädalates
+                  </label>
+                  <select
+                    value={durationWeeks}
+                    onChange={(e) => setDurationWeeks(Number(e.target.value))}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-base md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  >
+                    {[2, 4, 6, 8, 10, 12, 16, 20, 24].map(weeks => (
+                      <option key={weeks} value={weeks}>
+                        {weeks} nädalat
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    <Dumbbell className="inline mr-1 h-4 w-4" />
+                    Treeninguid nädalas
+                  </label>
+                  <select
+                    value={trainingDaysPerWeek}
+                    onChange={(e) => setTrainingDaysPerWeek(Number(e.target.value))}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-base md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  >
+                    {[1, 2, 3, 4, 5].map(days => (
+                      <option key={days} value={days}>
+                        {days} päeva
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border border-input p-4">
+                <div>
+                  <h4 className="font-medium">Smart Progression</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Automaatne raskusastme reguleerimine RPE põhjal
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoProgressionEnabled}
+                    onChange={(e) => setAutoProgressionEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="relative w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Training Days */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Treeningpäevad</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Loo igaks päevaks treening{trainingDaysPerWeek > 1 ? 'uid' : ''}. Kokku {trainingDaysPerWeek} päeva nädalas.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {trainingDays.map((day, dayIndex) => (
+                <Collapsible key={day.day_number} open={day.is_open} onOpenChange={() => toggleDay(dayIndex)}>
+                  <Card className="border-l-4 border-l-primary">
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-full bg-primary/10 w-8 h-8 flex items-center justify-center text-sm font-semibold text-primary">
+                              {day.day_number}
+                            </div>
+                            <input
+                              type="text"
+                              value={day.title}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                updateDayTitle(dayIndex, e.target.value);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-lg font-semibold bg-transparent border-none outline-none focus:bg-background focus:border focus:border-input rounded px-2 py-1"
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              ({day.exercises.length} harjutus{day.exercises.length !== 1 ? 't' : ''})
+                            </span>
+                          </div>
+                          {day.is_open ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <CardContent className="pt-0 space-y-3">
+                        {day.exercises.map((exercise, exerciseIndex) => (
+                          <div key={exerciseIndex} className="p-4 border rounded-lg bg-muted/30">
+                            <div className="grid md:grid-cols-12 gap-3 items-start">
+                              <div className="md:col-span-3">
+                                <label className="block text-xs font-medium mb-1">Harjutus</label>
+                                <input
+                                  type="text"
+                                  value={exercise.exercise_name}
+                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { exercise_name: e.target.value })}
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs font-medium mb-1">Seeriad</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="10"
+                                  value={exercise.sets}
+                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { sets: Number(e.target.value) })}
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs font-medium mb-1">Kordused</label>
+                                <input
+                                  type="text"
+                                  value={exercise.reps}
+                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { reps: e.target.value })}
+                                  placeholder="8-12"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs font-medium mb-1">Paus (s)</label>
+                                <input
+                                  type="number"
+                                  min="30"
+                                  max="300"
+                                  step="15"
+                                  value={exercise.rest_seconds}
+                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { rest_seconds: Number(e.target.value) })}
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs font-medium mb-1">Kaal (kg)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.5"
+                                  value={exercise.weight_kg || ""}
+                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { weight_kg: e.target.value ? Number(e.target.value) : undefined })}
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                />
+                              </div>
+                              <div className="md:col-span-1 flex items-end">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeExercise(dayIndex, exerciseIndex)}
+                                  className="w-full h-8"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="grid md:grid-cols-2 gap-3 mt-3">
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Märkused</label>
+                                <input
+                                  type="text"
+                                  value={exercise.coach_notes || ""}
+                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { coach_notes: e.target.value })}
+                                  placeholder="Tehnika vihjed..."
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Video URL</label>
+                                <input
+                                  type="url"
+                                  value={exercise.video_url || ""}
+                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { video_url: e.target.value })}
+                                  placeholder="https://youtube.com/..."
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => addExercise(dayIndex)}
+                          className="w-full"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Lisa harjutus
+                        </Button>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4">
+            <Button
+              onClick={() => onOpenChange(false)}
+              variant="outline"
+              className="flex-1"
+              disabled={creating}
+            >
+              Tühista
+            </Button>
+            <Button
+              onClick={handleCreateProgram}
+              disabled={creating || !selectedClientId || trainingDays.some(day => day.exercises.length === 0)}
+              className="flex-1 bg-gradient-to-r from-primary to-accent"
+            >
+              {creating ? "Loon programmi..." : "Loo programm"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

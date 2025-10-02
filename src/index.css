@@ -1,0 +1,456 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Industry-Standard Design System - Premium Visual Experience */
+
+@layer base {
+  :root {
+    /* Safe area support for iOS devices */
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-right: env(safe-area-inset-right);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+    --safe-area-inset-left: env(safe-area-inset-left);
+    
+    /* Premium Brand Colors - Carefully crafted palette */
+    --brand-primary: 195 100% 39%;        /* #009BC7 - Primary brand */
+    --brand-secondary: 195 100% 45%;      /* #00B6E5 - Secondary accent */
+    --brand-light: 195 100% 97%;          /* Ultra light tint */
+    --brand-dark: 195 100% 15%;           /* Deep brand dark */
+    --brand-medium: 195 85% 65%;          /* Medium brand tone */
+    
+    /* Advanced Color Palette */
+    --neutral-50: 210 20% 98%;
+    --neutral-100: 210 20% 96%;
+    --neutral-200: 210 16% 93%;
+    --neutral-300: 210 14% 83%;
+    --neutral-400: 210 14% 64%;
+    --neutral-500: 210 11% 50%;
+    --neutral-600: 210 12% 41%;
+    --neutral-700: 210 15% 32%;
+    --neutral-800: 210 20% 20%;
+    --neutral-900: 210 24% 9%;
+    
+    /* Semantic Color System */
+    --success: 142 76% 36%;
+    --success-light: 142 76% 90%;
+    --warning: 38 92% 50%;
+    --warning-light: 38 92% 90%;
+    --error: 0 84% 60%;
+    --error-light: 0 84% 95%;
+    --info: 217 91% 60%;
+    --info-light: 217 91% 95%;
+    
+    /* Premium Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--brand-primary)) 0%, hsl(var(--brand-secondary)) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--brand-primary)) 0%, hsl(var(--brand-medium)) 50%, hsl(var(--brand-secondary)) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(var(--brand-light) / 0.8) 0%, hsl(0 0% 100% / 0.9) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--brand-light) / 0.4) 0%, hsl(0 0% 100% / 0.8) 100%);
+    --gradient-surface: linear-gradient(145deg, hsl(var(--neutral-50)) 0%, hsl(0 0% 100%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(var(--neutral-50)) 0%, hsl(var(--brand-light) / 0.3) 100%);
+    
+    /* Semantic Design Tokens */
+    --background: var(--neutral-50);
+    --background-elevated: 0 0% 100%;
+    --foreground: var(--neutral-800);
+    --foreground-muted: var(--neutral-600);
+    
+    --primary: var(--brand-primary);
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: var(--brand-dark);
+    
+    --secondary: var(--neutral-100);
+    --secondary-foreground: var(--neutral-700);
+    --secondary-hover: var(--neutral-200);
+    
+    --accent: var(--brand-secondary);
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: var(--brand-medium);
+    
+    --muted: var(--neutral-100);
+    --muted-foreground: var(--neutral-500);
+    --muted-hover: var(--neutral-200);
+    
+    --card: 0 0% 100%;
+    --card-foreground: var(--neutral-800);
+    --card-border: var(--neutral-200);
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--neutral-800);
+    
+    --border: var(--neutral-200);
+    --border-hover: var(--neutral-300);
+    --input: var(--neutral-200);
+    --input-hover: var(--neutral-300);
+    --ring: var(--brand-primary);
+    
+    /* Industry-Grade Shadow System */
+    --shadow-xs: 0 1px 2px 0 hsl(var(--neutral-900) / 0.05);
+    --shadow-sm: 0 1px 3px 0 hsl(var(--neutral-900) / 0.1), 0 1px 2px -1px hsl(var(--neutral-900) / 0.1);
+    --shadow-md: 0 4px 6px -1px hsl(var(--neutral-900) / 0.1), 0 2px 4px -2px hsl(var(--neutral-900) / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(var(--neutral-900) / 0.1), 0 4px 6px -4px hsl(var(--neutral-900) / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(var(--neutral-900) / 0.1), 0 8px 10px -6px hsl(var(--neutral-900) / 0.1);
+    --shadow-2xl: 0 25px 50px -12px hsl(var(--neutral-900) / 0.25);
+    --shadow-inner: inset 0 2px 4px 0 hsl(var(--neutral-900) / 0.05);
+    
+    /* Brand Shadows with Color */
+    --shadow-soft: 0 2px 8px -2px hsl(var(--brand-primary) / 0.12);
+    --shadow-medium: 0 4px 16px -4px hsl(var(--brand-primary) / 0.18);
+    --shadow-strong: 0 8px 32px -8px hsl(var(--brand-primary) / 0.24);
+    --shadow-glow: 0 0 24px hsl(var(--brand-secondary) / 0.35);
+    --shadow-brand: 0 4px 14px 0 hsl(var(--brand-primary) / 0.15);
+    
+    /* Glass Morphism Effects */
+    --glass-bg: hsl(0 0% 100% / 0.85);
+    --glass-border: hsl(0 0% 100% / 0.2);
+    --glass-shadow: 0 8px 32px 0 hsl(var(--neutral-900) / 0.08);
+    --backdrop-blur: blur(16px);
+    --backdrop-saturate: saturate(180%);
+    
+    /* Advanced Animation System */
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-spring: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    
+    /* Easing Functions */
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    
+    /* Typography Scale */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+    --font-size-5xl: 3rem;
+    --font-size-6xl: 3.75rem;
+    
+    /* Line Heights */
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+    --leading-loose: 2;
+    
+    /* Border Radius Scale */
+    --radius-xs: 0.125rem;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+    --radius-3xl: 1.5rem;
+    --radius: var(--radius-xl);
+    
+    /* Spacing Scale */
+    --space-px: 1px;
+    --space-0: 0;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+    --space-20: 5rem;
+    --space-24: 6rem;
+    --space-32: 8rem;
+  }
+  
+  .dark {
+    /* Dark Mode - Premium Experience */
+    --background: var(--neutral-900);
+    --background-elevated: var(--neutral-800);
+    --foreground: var(--neutral-100);
+    --foreground-muted: var(--neutral-400);
+    
+    --primary: var(--brand-secondary);
+    --primary-foreground: var(--neutral-900);
+    --primary-hover: var(--brand-medium);
+    
+    --secondary: var(--neutral-800);
+    --secondary-foreground: var(--neutral-200);
+    --secondary-hover: var(--neutral-700);
+    
+    --accent: var(--brand-primary);
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: var(--brand-secondary);
+    
+    --muted: var(--neutral-800);
+    --muted-foreground: var(--neutral-400);
+    --muted-hover: var(--neutral-700);
+    
+    --card: var(--neutral-800);
+    --card-foreground: var(--neutral-100);
+    --card-border: var(--neutral-700);
+    
+    --popover: var(--neutral-800);
+    --popover-foreground: var(--neutral-100);
+    
+    --border: var(--neutral-700);
+    --border-hover: var(--neutral-600);
+    --input: var(--neutral-700);
+    --input-hover: var(--neutral-600);
+    
+    /* Dark Mode Glass Effects */
+    --glass-bg: hsl(var(--neutral-800) / 0.85);
+    --glass-border: hsl(var(--neutral-600) / 0.2);
+    --glass-shadow: 0 8px 32px 0 hsl(0 0% 0% / 0.24);
+    
+    /* Dark Mode Gradients */
+    --gradient-glass: linear-gradient(135deg, hsl(var(--neutral-800) / 0.8) 0%, hsl(var(--neutral-700) / 0.9) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--neutral-800) / 0.6) 0%, hsl(var(--neutral-700) / 0.8) 100%);
+    --gradient-surface: linear-gradient(145deg, hsl(var(--neutral-800)) 0%, hsl(var(--neutral-700)) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(var(--neutral-800)) 0%, hsl(var(--neutral-700) / 0.7) 100%);
+  }
+}
+
+/* iOS Safe Area Support */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .ios-safe-header {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .ios-safe-top {
+    margin-top: calc(env(safe-area-inset-top) + 4rem);
+  }
+}
+
+/* Article content styling */
+.article-content {
+  line-height: 1.8;
+  color: hsl(var(--foreground));
+}
+
+.article-content h1,
+.article-content h2, 
+.article-content h3 {
+  scroll-margin-top: 2rem;
+  line-height: 1.4;
+}
+
+.article-content p {
+  margin-bottom: 1.5rem;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.article-content ul,
+.article-content ol {
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.article-content li {
+  margin-bottom: 0.75rem;
+  line-height: 1.7;
+}
+
+.article-content strong {
+  font-weight: 600;
+}
+
+.article-content hr {
+  margin: 2.5rem 0;
+  opacity: 0.6;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+    @apply bg-background;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-variation-settings: normal;
+    line-height: var(--leading-normal);
+  }
+
+  #root {
+    @apply bg-background;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Enhanced Mobile Optimization */
+  input, textarea, select {
+    font-size: 16px !important;
+    -webkit-appearance: none;
+    border-radius: var(--radius-lg);
+    transition: var(--transition-smooth);
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-color: hsl(var(--ring));
+  }
+
+  /* Touch-friendly interfaces */
+  @media (max-width: 768px) {
+    input, textarea, select, button {
+      min-height: 44px;
+      font-size: 16px !important;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: 2px;
+    }
+    
+    /* Improved tap targets */
+    button, [role="button"], a {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: var(--radius-sm);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: var(--radius-sm);
+    transition: var(--transition-smooth);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Selection styling */
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Focus visible improvements */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* Advanced Component Utilities */
+@layer components {
+  /* Glass Morphism Utility */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--backdrop-blur) var(--backdrop-saturate);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* Premium Card Styles */
+  .card-premium {
+    background: var(--gradient-card);
+    border: 1px solid hsl(var(--card-border));
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(8px);
+    transition: var(--transition-smooth);
+  }
+
+  .card-premium:hover {
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
+  }
+
+  /* Interactive Elements */
+  .interactive {
+    transition: var(--transition-smooth);
+    cursor: pointer;
+  }
+
+  .interactive:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .interactive:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Enhanced Buttons */
+  .btn-primary {
+    background: var(--gradient-primary);
+    color: hsl(var(--primary-foreground));
+    box-shadow: var(--shadow-brand);
+    border: none;
+    transition: var(--transition-smooth);
+  }
+
+  .btn-primary:hover {
+    box-shadow: var(--shadow-glow), var(--shadow-lg);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Typography Enhancements */
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Layout Utilities */
+  .container-responsive {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 var(--space-4);
+  }
+
+  @media (min-width: 640px) {
+    .container-responsive {
+      padding: 0 var(--space-6);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-responsive {
+      padding: 0 var(--space-8);
+    }
+  }
+}

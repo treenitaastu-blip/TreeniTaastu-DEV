@@ -1,0 +1,889 @@
+// src/pages/ModernWorkoutSession.tsx
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useSmartProgression, type ExerciseProgression } from "@/hooks/useSmartProgression";
+import { toast } from "sonner";
+
+import ModernWorkoutHeader from "@/components/workout/ModernWorkoutHeader";
+import SmartExerciseCard from "@/components/workout/SmartExerciseCard";
+import ModernRestTimer from "@/components/workout/ModernRestTimer";
+import PersonalTrainingCompletionDialog from "@/components/workout/PersonalTrainingCompletionDialog";
+import PTAccessValidator from "@/components/PTAccessValidator";
+import ErrorRecovery from "@/components/ErrorRecovery";
+import RPERIRDialog from "@/components/workout/EnhancedRPERIRDialog";
+
+type ClientProgram = {
+  id: string;
+  title_override?: string | null;
+};
+
+type ClientDay = {
+  id: string;
+  title: string;
+  note?: string | null;
+  day_order?: number | null;
+};
+
+type ClientItem = {
+  id: string;
+  exercise_name: string;
+  sets: number;
+  reps: string;
+  seconds?: number | null;
+  weight_kg?: number | null;
+  rest_seconds?: number | null;
+  coach_notes?: string | null;
+  video_url?: string | null;
+  order_in_day: number;
+};
+
+type WorkoutSession = {
+  id: string;
+  started_at: string;
+  ended_at?: string | null;
+};
+
+type SetLog = {
+  client_item_id: string;
+  set_number: number;
+  reps_done?: number | null;
+  seconds_done?: number | null;
+  weight_kg_done?: number | null;
+};
+
+export default function ModernWorkoutSession() {
+  const { user } = useAuth();
+  const { trackFeatureUsage, trackPageView } = useTrackEvent();
+  const navigate = useNavigate();
+  const { programId, dayId } = useParams<{ programId: string; dayId: string }>();
+
+  // Core data
+  const [program, setProgram] = useState<ClientProgram | null>(null);
+  const [day, setDay] = useState<ClientDay | null>(null);
+  const [exercises, setExercises] = useState<ClientItem[]>([]);
+  const [session, setSession] = useState<WorkoutSession | null>(null);
+  
+  // Progress tracking
+  const [setLogs, setSetLogs] = useState<Record<string, SetLog>>({});
+  const [setInputs, setSetInputs] = useState<Record<string, any>>({});
+  const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
+  const [exerciseRPE, setExerciseRPE] = useState<Record<string, number>>({});
+  
+  // Track completed exercises for RPE/RIR collection
+  const [completedExerciseIds, setCompletedExerciseIds] = useState<Set<string>>(new Set());
+  
+  // UI state
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  
+  // Rest timer
+  const [restTimer, setRestTimer] = useState<{
+    isOpen: boolean;
+    seconds: number;
+    exerciseName: string;
+  }>({
+    isOpen: false,
+    seconds: 60,
+    exerciseName: ""
+  });
+
+  // RPE/RIR dialog state
+  const [rpeRirDialog, setRpeRirDialog] = useState<{
+    isOpen: boolean;
+    exerciseId: string;
+    exerciseName: string;
+    setNumber: number;
+  }>({
+    isOpen: false,
+    exerciseId: "",
+    exerciseName: "",
+    setNumber: 0
+  });
+
+  const totalSets = useMemo(() => {
+    return exercises.reduce((total, ex) => total + ex.sets, 0);
+  }, [exercises]);
+
+  const completedSets = useMemo(() => {
+    return Object.keys(setLogs).length;
+  }, [setLogs]);
+
+  const getCompletedSetsForExercise = useCallback((exerciseId: string) => {
+    return Object.keys(setLogs).filter(key => key.startsWith(exerciseId + ":")).length;
+  }, [setLogs]);
+
+  // Load workout data
+  useEffect(() => {
+    const loadWorkout = async () => {
+      if (!user || !programId || !dayId) {
+        setError("Puuduvad nõutud parameetrid. Kas oled sisse logitud ja URL on korrektne?");
+        setLoading(false);
+        return;
+      }
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(programId) || !uuidRegex.test(dayId)) {
+        setError("Vigased identifikaatorid URL-is. Palun kontrolli linki.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Load program with detailed error context
+        const { data: programData, error: programError } = await supabase
+          .from("client_programs")
+          .select("id, title_override, status, is_active, assigned_to, assigned_by")
+          .eq("id", programId)
+          .eq("assigned_to", user.id)
+          .maybeSingle();
+
+        if (programError) {
+          throw new Error(`Andmebaasi viga programmi laadimisel: ${programError.message || programError.code}`);
+        }
+
+        if (!programData) {
+          // Check if program exists but user doesn't have access
+          const { data: existsCheck } = await supabase
+            .from("client_programs")
+            .select("id, assigned_to, assigned_by")
+            .eq("id", programId)
+            .maybeSingle();
+            
+          if (existsCheck) {
+            throw new Error(`Sul puudub ligipääs sellele programmile. Programm kuulub kasutajale ID: ${existsCheck.assigned_to}`);
+          } else {
+            throw new Error(`Programmi ID-ga ${programId} ei leitud. Kontrolli, kas link on õige.`);
+          }
+        }
+
+        if (!programData.is_active || programData.status !== 'active') {
+          throw new Error(`See programm ei ole aktiivne (staatus: ${programData.status}, aktiivne: ${programData.is_active}). Võta ühendust treeneriga.`);
+        }
+        setProgram(programData);
+
+        // Load day with enhanced validation
+        const { data: dayData, error: dayError } = await supabase
+          .from("client_days")
+          .select("id, title, note, day_order, client_program_id")
+          .eq("id", dayId)
+          .eq("client_program_id", programId)
+          .maybeSingle();
+
+        if (dayError) {
+          throw new Error(`Andmebaasi viga päeva laadimisel: ${dayError.message || dayError.code}`);
+        }
+
+        if (!dayData) {
+          // Check if day exists but belongs to different program
+          const { data: dayCheck } = await supabase
+            .from("client_days")
+            .select("id, client_program_id")
+            .eq("id", dayId)
+            .maybeSingle();
+            
+          if (dayCheck) {
+            throw new Error(`Päev kuulub teise programmi (${dayCheck.client_program_id}). Kontrolli URL-i.`);
+          } else {
+            throw new Error(`Treeningu päeva ID-ga ${dayId} ei leitud. Kontrolli linki.`);
+          }
+        }
+        setDay(dayData);
+
+        // Load exercises with enhanced validation and logging
+        const { data: exerciseData, error: exerciseError } = await supabase
+          .from("client_items")
+          .select("*")
+          .eq("client_day_id", dayId)
+          .order("order_in_day");
+
+        if (exerciseError) {
+          throw new Error(`Harjutuste andmebaasi viga: ${exerciseError.message || exerciseError.code}`);
+        }
+
+        if (!exerciseData || exerciseData.length === 0) {
+          throw new Error("Selles treeningu päevas pole harjutusi määratud. Palun võta ühendust toega.");
+        }
+
+        setExercises(exerciseData);
+
+        // Find or create session
+        let sessionData;
+        const { data: existingSession } = await supabase
+          .from("workout_sessions")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("client_day_id", dayId)
+          .is("ended_at", null)
+          .single();
+
+        if (existingSession) {
+          sessionData = existingSession;
+        } else {
+          const { data: newSession, error: sessionError } = await supabase
+            .from("workout_sessions")
+            .insert({
+              user_id: user.id,
+              client_program_id: programId,
+              client_day_id: dayId,
+              started_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          if (sessionError) {
+            throw new Error(`Treeningu sessiooni loomine ebaõnnestus: ${sessionError.message}`);
+          }
+          sessionData = newSession;
+        }
+
+        setSession(sessionData);
+
+        // Load existing set logs
+        const { data: logsData } = await supabase
+          .from("set_logs")
+          .select("*")
+          .eq("session_id", sessionData.id);
+
+        if (logsData) {
+          const logsMap: Record<string, SetLog> = {};
+          const inputsMap: Record<string, Record<string, unknown>> = {};
+          
+          logsData.forEach((log: any) => {
+            const key = `${log.client_item_id}:${log.set_number}`;
+            logsMap[key] = log;
+            inputsMap[key] = {
+              reps: log.reps_done,
+              seconds: log.seconds_done,
+              kg: log.weight_kg_done
+            };
+          });
+          
+          setSetLogs(logsMap);
+          setSetInputs(inputsMap);
+        }
+
+        // Load latest exercise notes for each exercise (not just current session)
+        if (exerciseData && exerciseData.length > 0) {
+          const { data: notesData } = await supabase
+            .from("exercise_notes")
+            .select("*")
+            .in("client_item_id", exerciseData.map(ex => ex.id))
+            .eq("user_id", user.id)
+            .order("updated_at", { ascending: false });
+
+          if (notesData) {
+            const notesMap: Record<string, string> = {};
+            const rpeMap: Record<string, number> = {};
+            
+            // Group by client_item_id and take the latest note for each exercise
+            const latestNotes = notesData.reduce((acc: Record<string, any>, note: any) => {
+              if (!acc[note.client_item_id] || new Date(note.updated_at) > new Date(acc[note.client_item_id].updated_at)) {
+                acc[note.client_item_id] = note;
+              }
+              return acc;
+            }, {});
+            
+            Object.values(latestNotes).forEach((note: any) => {
+              if (note.notes) notesMap[note.client_item_id] = note.notes;
+              if (note.rpe) rpeMap[note.client_item_id] = note.rpe;
+            });
+            
+            setExerciseNotes(notesMap);
+            setExerciseRPE(rpeMap);
+          }
+        }
+
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Tundmatu viga treeningu laadimisel";
+        
+        // Provide more helpful error messages based on common issues
+        if (errorMessage.includes("JWT")) {
+          setError("Autentimine aegus. Palun logi sisse uuesti.");
+        } else if (errorMessage.includes("permission") || errorMessage.includes("denied")) {
+          setError("Sul puudub ligipääs sellele programmile. Kontrolli, kas see on sulle määratud.");
+        } else if (errorMessage.includes("not found") || errorMessage.includes("ei leitud")) {
+          setError(`${errorMessage} Kui probleem püsib, võta ühendust toega.`);
+        } else {
+          setError(errorMessage);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWorkout();
+  }, [user, programId, dayId]);
+
+  const handleSetComplete = useCallback(async (exerciseId: string, setNumber: number) => {
+    if (!session || !user) return;
+
+    const key = `${exerciseId}:${setNumber}`;
+    const inputs = setInputs[key] || {};
+    const exercise = exercises.find(ex => ex.id === exerciseId);
+
+    try {
+      setSaving(true);
+      
+      // Parse target reps for fallback
+      const targetReps = exercise?.reps ? parseInt(exercise.reps.replace(/[^\d]/g, '')) || null : null;
+      
+      const { error } = await supabase.from("set_logs").insert({
+        session_id: session.id,
+        client_item_id: exerciseId,
+        client_day_id: dayId!,
+        program_id: programId!,
+        user_id: user.id,
+        set_number: setNumber,
+        reps_done: inputs.reps || targetReps,
+        seconds_done: inputs.seconds || exercise?.seconds,
+        weight_kg_done: inputs.kg || exercise?.weight_kg,
+        marked_done_at: new Date().toISOString()
+      });
+
+      if (error) throw error;
+
+      // Update local state with actual saved values
+      const actualReps = inputs.reps || targetReps;
+      const actualSeconds = inputs.seconds || exercise?.seconds;
+      const actualWeight = inputs.kg || exercise?.weight_kg;
+      
+      setSetLogs(prev => ({ 
+        ...prev, 
+        [key]: { 
+          client_item_id: exerciseId, 
+          set_number: setNumber, 
+          reps_done: actualReps, 
+          seconds_done: actualSeconds, 
+          weight_kg_done: actualWeight 
+        } 
+      }));
+      
+      toast.success("Seeria märgitud tehtuks!");
+
+      // Show RPE/RIR dialog only after ALL sets of the exercise are completed
+      const completedSets = getCompletedSetsForExercise(exerciseId) + 1; // +1 for the current set
+      
+      if (exercise && completedSets >= exercise.sets && !completedExerciseIds.has(exerciseId)) {
+        
+        // Mark exercise as completed for RPE/RIR collection
+        setCompletedExerciseIds(prev => new Set(prev).add(exerciseId));
+        
+        // Track exercise completion
+        trackFeatureUsage('exercise', 'completed', {
+          exercise_name: exercise.exercise_name,
+          sets_completed: completedSets,
+          program_id: programId,
+          day_id: dayId
+        });
+        
+        // Show success feedback first
+        toast.success(`✅ ${exercise.exercise_name} lõpetatud!`, {
+          description: "Hinda oma sooritust - see aitab järgmist treeningut kohandada"
+        });
+        
+        // Show RPE/RIR dialog with slight delay for better UX
+        setTimeout(() => {
+          setRpeRirDialog({
+            isOpen: true,
+            exerciseId,
+            exerciseName: exercise.exercise_name,
+            setNumber
+          });
+        }, 500); // Slightly longer delay for better user experience
+      }
+
+    } catch (err) {
+      toast.error("Viga seti märkimisel");
+    } finally {
+      setSaving(false);
+    }
+  }, [session, user, dayId, programId, setInputs, exercises, getCompletedSetsForExercise, completedExerciseIds, trackFeatureUsage]);
+
+  const handleStartRest = useCallback((exercise: ClientItem) => {
+    setRestTimer({
+      isOpen: true,
+      seconds: exercise.rest_seconds || 60,
+      exerciseName: exercise.exercise_name
+    });
+  }, []);
+
+  const handleSetInputChange = useCallback((exerciseId: string, setNumber: number, field: string, value: number) => {
+    const key = `${exerciseId}:${setNumber}`;
+    setSetInputs(prev => ({
+      ...prev,
+      [key]: { ...prev[key], [field]: value }
+    }));
+  }, []);
+
+  const handleNotesChange = useCallback(async (exerciseId: string, notes: string) => {
+    if (!session || !user) return;
+    
+    // Update local state immediately for responsive UI
+    setExerciseNotes(prev => ({ ...prev, [exerciseId]: notes }));
+    
+    // Save to database with simple debouncing
+    const saveNotes = async () => {
+      try {
+        if (notes.trim()) {
+          await supabase.from("exercise_notes").upsert({
+            session_id: session.id,
+            client_day_id: dayId!,
+            client_item_id: exerciseId,
+            program_id: programId!,
+            user_id: user.id,
+            notes: notes.trim()
+          }, {
+            onConflict: "session_id,client_item_id"
+          });
+        } else {
+          // If notes are empty, delete the record for this session
+          await supabase
+            .from("exercise_notes")
+            .delete()
+            .eq("session_id", session.id)
+            .eq("client_item_id", exerciseId);
+        }
+      } catch (error) {
+        // Silently handle note saving error
+      }
+    };
+
+    // Debounce the save operation
+    setTimeout(saveNotes, 500);
+  }, [session, user, dayId, programId]);
+
+  const handleRPEChange = useCallback(async (exerciseId: string, rpe: number) => {
+    if (!session || !user) return;
+    
+    // Update local state immediately
+    setExerciseRPE(prev => ({ ...prev, [exerciseId]: rpe }));
+    
+    // Save to database in real-time
+    try {
+      await supabase.from("exercise_notes").upsert({
+        session_id: session.id,
+        client_day_id: dayId!,
+        client_item_id: exerciseId,
+        program_id: programId!,
+        user_id: user.id,
+        rpe: rpe
+      }, {
+        onConflict: "session_id,client_item_id"
+      });
+    } catch (error) {
+      // Silently handle RPE saving error
+    }
+  }, [session, user, dayId, programId]);
+
+  const handleRPERIRSubmit = useCallback(async (rpe: number, rir: number) => {
+    if (!session || !user || !rpeRirDialog.exerciseId) return;
+
+    try {
+      // Update RPE
+      setExerciseRPE(prev => ({ ...prev, [rpeRirDialog.exerciseId]: rpe }));
+
+      // Save RPE and RIR to database with comprehensive data
+      await supabase.from("exercise_notes").upsert({
+        session_id: session.id,
+        client_day_id: dayId!,
+        client_item_id: rpeRirDialog.exerciseId,
+        program_id: programId!,
+        user_id: user.id,
+        rpe: rpe,
+        rir_done: rir,
+        // Store RPE history for trend analysis
+        rpe_history: {
+          [new Date().toISOString()]: { rpe, rir, session_id: session.id }
+        }
+      }, {
+        onConflict: "session_id,client_item_id"
+      });
+
+      // Track RPE/RIR submission
+      trackFeatureUsage('rpe_rir', 'submitted', {
+        exercise_id: rpeRirDialog.exerciseId,
+        exercise_name: rpeRirDialog.exerciseName,
+        rpe: rpe,
+        rir: rir,
+        program_id: programId,
+        day_id: dayId
+      });
+
+      // Apply intelligent progression immediately
+      await applyIntelligentProgression(rpeRirDialog.exerciseId, rpe, rir);
+
+      toast.success(`Hinnang salvestatud: RPE ${rpe}, RIR ${rir}`, {
+        description: "Järgmine treening kohaneb sinu tulemustel"
+      });
+
+      // Close RPE/RIR dialog
+      setRpeRirDialog(prev => ({ ...prev, isOpen: false }));
+      
+    } catch (error) {
+      toast.error("Viga hinnangu salvestamisel");
+    }
+  }, [session, user, dayId, programId, rpeRirDialog.exerciseId, rpeRirDialog.exerciseName, trackFeatureUsage]);
+
+  // Apply intelligent progression based on RPE and RIR
+  const applyIntelligentProgression = useCallback(async (exerciseId: string, rpe: number, rir: number) => {
+    if (!exerciseId || !rpe) return;
+
+    try {
+      const exercise = exercises.find(ex => ex.id === exerciseId);
+      if (!exercise) return;
+
+      // Use the sophisticated database function for analysis first
+      try {
+        const { data: analysis, error } = await supabase.rpc('analyze_exercise_progression_enhanced', {
+          p_client_item_id: exerciseId,
+          p_weeks_back: 2
+        });
+
+        if (!error && analysis) {
+          const progression = analysis as unknown as ExerciseProgression;
+          
+          // Apply the suggested progression
+          if (progression.action !== 'maintain' && progression.suggested_weight && progression.current_weight) {
+            await supabase
+              .from("client_items")
+              .update({ weight_kg: progression.suggested_weight })
+              .eq("id", exercise.id);
+            
+            // Update local state
+            setExercises(prev => prev.map(ex => 
+              ex.id === exerciseId ? { ...ex, weight_kg: progression.suggested_weight } : ex
+            ));
+            
+            // Track intelligent progression
+            trackFeatureUsage('intelligent_progression', 'applied', {
+              exercise_name: exercise.exercise_name,
+              old_weight: progression.current_weight,
+              new_weight: progression.suggested_weight,
+              rpe: rpe,
+              rir: rir,
+              action: progression.action,
+              reason: progression.reason,
+              confidence: progression.confidence_score
+            });
+            
+            toast.success(`🧠 ${exercise.exercise_name}: ${progression.current_weight}kg → ${progression.suggested_weight}kg`, {
+              description: `${progression.reason} (Confidence: ${Math.round((progression.confidence_score || 0) * 100)}%)`
+            });
+            return;
+          }
+        }
+      } catch (dbError) {
+        // Database progression analysis failed, using local logic
+      }
+
+      // Fallback to enhanced local progression logic
+      const currentWeight = exercise.weight_kg;
+      let newWeight = currentWeight;
+      let progressionType = 'maintain';
+      let reason = '';
+      
+      // Advanced progression logic considering both RPE and RIR
+      if (rpe <= 5 && rir >= 4) {
+        // Very easy - significant increase
+        newWeight = currentWeight ? Math.round(currentWeight * 1.1 * 2) / 2 : currentWeight; // 10% increase
+        progressionType = 'increase_significant';
+        reason = 'Liiga kerge (RPE≤5, RIR≥4) - suurem tõus';
+      } else if (rpe <= 6 && rir >= 3) {
+        // Too easy - standard increase
+        newWeight = currentWeight ? Math.round(currentWeight * 1.075 * 2) / 2 : currentWeight; // 7.5% increase
+        progressionType = 'increase_standard';
+        reason = 'Kerge (RPE≤6, RIR≥3) - tõus';
+      } else if (rpe <= 7 && rir >= 2) {
+        // Slightly easy - micro increase
+        newWeight = currentWeight ? Math.round(currentWeight * 1.025 * 2) / 2 : currentWeight; // 2.5% increase
+        progressionType = 'increase_micro';
+        reason = 'Veidi kerge (RPE≤7, RIR≥2) - väike tõus';
+      } else if ((rpe >= 9 && rir === 0) || rpe >= 10) {
+        // Too hard - decrease
+        newWeight = currentWeight ? Math.round(currentWeight * 0.925 * 2) / 2 : currentWeight; // 7.5% decrease
+        progressionType = 'decrease';
+        reason = 'Liiga raske (RPE≥9, RIR=0) - vähendus';
+      } else if (rpe >= 8.5 && rir <= 1) {
+        // Slightly too hard - micro decrease
+        newWeight = currentWeight ? Math.round(currentWeight * 0.975 * 2) / 2 : currentWeight; // 2.5% decrease
+        progressionType = 'decrease_micro';
+        reason = 'Veidi raske (RPE≥8.5, RIR≤1) - väike vähendus';
+      } else {
+        // Perfect range RPE 7-8, RIR 1-3 - maintain
+        reason = `Ideaalne vahemik (RPE ${rpe}, RIR ${rir}) - säilita`;
+      }
+
+      // Apply progression if weight changed
+      if (newWeight !== currentWeight && newWeight && currentWeight) {
+        await supabase
+          .from("client_items")
+          .update({ weight_kg: newWeight })
+          .eq("id", exercise.id);
+        
+        // Update local state
+        setExercises(prev => prev.map(ex => 
+          ex.id === exerciseId ? { ...ex, weight_kg: newWeight } : ex
+        ));
+        
+        // Track progression
+        trackFeatureUsage('smart_progression', 'applied', {
+          exercise_name: exercise.exercise_name,
+          old_weight: currentWeight,
+          new_weight: newWeight,
+          rpe: rpe,
+          rir: rir,
+          progression_type: progressionType
+        });
+        
+        toast.success(`⚡ ${exercise.exercise_name}: ${currentWeight}kg → ${newWeight}kg`, {
+          description: reason
+        });
+      } else if (progressionType === 'maintain') {
+        toast.success(`✅ ${exercise.exercise_name}: Kaal jääb samaks`, {
+          description: reason
+        });
+      }
+    } catch (error) {
+      toast.error("Viga progressiooni rakendamisel");
+    }
+  }, [exercises, trackFeatureUsage]);
+
+  // Automatic progression based on RPE/RIR data using optimized algorithm
+  const applyAutomaticProgression = useCallback(async () => {
+    if (!session || !programId || !exercises.length) return;
+
+    try {
+      // Use the optimized auto-progression for the entire program
+      const { autoProgressProgram } = useSmartProgression(programId);
+      
+      if (autoProgressProgram) {
+        const result = await autoProgressProgram();
+        
+        if (result?.success && result.updates_made > 0) {
+          
+          // Show success message
+          toast.success(
+            result.deload_exercises && result.deload_exercises > 0 ? "Deload Applied!" : "Program Optimized!",
+            {
+              description: `${result.updates_made} exercises automatically adjusted based on your RPE/RIR data${result.deload_exercises ? ` (${result.deload_exercises} deloaded)` : ''}.`,
+            }
+          );
+        }
+      }
+    } catch (error) {
+      
+      // Fallback to simple RPE-based progression
+      for (const exercise of exercises) {
+        const rpe = exerciseRPE[exercise.id];
+        
+        // Only progress exercises with RPE data
+        if (!rpe) continue;
+
+        // Get current exercise parameters
+        const currentWeight = exercise.weight_kg;
+        
+        // Simple progression logic as fallback
+        let newWeight = currentWeight;
+        
+        if (rpe <= 6) {
+          // Too easy - increase weight by 5%
+          newWeight = currentWeight ? Math.round(currentWeight * 1.05 * 2) / 2 : currentWeight;
+        } else if (rpe >= 9) {
+          // Too hard - decrease weight by 5%
+          newWeight = currentWeight ? Math.round(currentWeight * 0.95 * 2) / 2 : currentWeight;
+        } else {
+          // RPE 7-8 is perfect range - maintain weight
+          continue;
+        }
+
+        // Only update if weight actually changed
+        if (newWeight !== currentWeight && newWeight && currentWeight) {
+          await supabase
+            .from("client_items")
+            .update({ weight_kg: newWeight })
+            .eq("id", exercise.id);
+        }
+      }
+    }
+  }, [session, programId, exercises, exerciseRPE]);
+
+  const handleFinishWorkout = useCallback(async () => {
+    if (!session) return;
+
+    try {
+      setSaving(true);
+      
+      // Save any remaining exercise notes and RPE that weren't saved yet
+      for (const exercise of exercises) {
+        const notes = exerciseNotes[exercise.id];
+        const rpe = exerciseRPE[exercise.id];
+        
+        if (notes || rpe) {
+          await supabase.from("exercise_notes").upsert({
+            session_id: session.id,
+            client_day_id: dayId!,
+            client_item_id: exercise.id,
+            program_id: programId!,
+            user_id: user!.id,
+            notes: notes || undefined,
+            rpe: rpe || undefined
+          }, {
+            onConflict: "session_id,client_item_id"
+          });
+        }
+      }
+      
+      // End session
+      const { error } = await supabase
+        .from("workout_sessions")
+        .update({ 
+          ended_at: new Date().toISOString(),
+          duration_minutes: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)
+        })
+        .eq("id", session.id);
+
+      if (error) throw error;
+
+      // Apply automatic progression based on RPE/RIR data (final cleanup)
+      await applyAutomaticProgression();
+
+      // Track workout completion
+      trackFeatureUsage('workout', 'completed', {
+        program_id: programId,
+        day_id: dayId,
+        exercise_count: exercises.length,
+        duration_minutes: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000),
+        completed_exercises: completedExerciseIds.size
+      });
+
+      toast.success("Treening lõpetatud!");
+      setShowCompletionDialog(true);
+
+    } catch (err) {
+      toast.error("Viga treeningu lõpetamisel");
+    } finally {
+      setSaving(false);
+    }
+  }, [session, exercises, exerciseNotes, exerciseRPE, dayId, programId, user, applyAutomaticProgression, trackFeatureUsage, completedExerciseIds.size]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Laadin treeningut...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <PTAccessValidator>
+        <ErrorRecovery 
+          error={error}
+          context={{
+            programId,
+            dayId,
+            userId: user?.id,
+            action: "load_workout"
+          }}
+          onRetry={() => window.location.reload()}
+        />
+      </PTAccessValidator>
+    );
+  }
+
+  return (
+    <PTAccessValidator>
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
+        {/* Header */}
+        <ModernWorkoutHeader
+          programTitle={program?.title_override || "Isiklik programm"}
+          dayTitle={day?.title || "Treening"}
+          dayOrder={day?.day_order || undefined}
+          onBack={() => navigate("/programs")}
+          startedAt={session?.started_at || new Date().toISOString()}
+          isFinished={!!session?.ended_at}
+          onFinish={handleFinishWorkout}
+          completedSets={completedSets}
+          totalSets={totalSets}
+        />
+
+        {/* Day Notes */}
+        {day?.note && (
+          <div className="px-4 py-3 border-b bg-muted/30">
+            <p className="text-sm text-muted-foreground">
+              <strong>Märkus:</strong> {day.note}
+            </p>
+          </div>
+        )}
+
+        {/* Exercises */}
+        <div className="px-4 py-6 space-y-6">
+          {exercises.map((exercise) => (
+            <SmartExerciseCard
+              key={exercise.id}
+              exercise={exercise}
+              completedSets={getCompletedSetsForExercise(exercise.id)}
+              onSetComplete={(setNumber) => handleSetComplete(exercise.id, setNumber)}
+              onStartRest={() => handleStartRest(exercise)}
+              setInputs={setInputs}
+              onSetInputChange={(setNumber, field, value) => 
+                handleSetInputChange(exercise.id, setNumber, field, value)
+              }
+              notes={exerciseNotes[exercise.id] || ""}
+              onNotesChange={(notes) => handleNotesChange(exercise.id, notes)}
+              rpe={exerciseRPE[exercise.id]}
+              onRPEChange={(rpe) => handleRPEChange(exercise.id, rpe)}
+            />
+          ))}
+        </div>
+
+        {/* Rest Timer */}
+        <ModernRestTimer
+          isOpen={restTimer.isOpen}
+          initialSeconds={restTimer.seconds}
+          exerciseName={restTimer.exerciseName}
+          onClose={() => setRestTimer(prev => ({ ...prev, isOpen: false }))}
+        />
+
+        {/* Completion Dialog */}
+        <PersonalTrainingCompletionDialog
+          isOpen={showCompletionDialog}
+          onClose={() => setShowCompletionDialog(false)}
+        />
+
+        {/* RPE/RIR Dialog */}
+        <RPERIRDialog
+          isOpen={rpeRirDialog.isOpen}
+          onClose={() => setRpeRirDialog(prev => ({ ...prev, isOpen: false }))}
+          onSubmit={handleRPERIRSubmit}
+          exerciseName={rpeRirDialog.exerciseName}
+          setNumber={rpeRirDialog.setNumber}
+          currentWeight={exercises.find(ex => ex.id === rpeRirDialog.exerciseId)?.weight_kg || undefined}
+          previousRPE={exerciseRPE[rpeRirDialog.exerciseId] || undefined}
+        />
+
+        {/* Loading Overlay */}
+        {saving && (
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-background rounded-lg p-6 shadow-lg">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <p className="text-sm text-muted-foreground">Salvestame...</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </PTAccessValidator>
+  );
+}

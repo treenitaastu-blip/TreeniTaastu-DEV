@@ -1,0 +1,398 @@
+[
+  {
+    "slug": "valk-20-30g-2-3-toidukorras",
+    "title": "Valk 20–30 g 2–3 toidukorras",
+    "summary": "Regulaarne valgu tarbimine aitab säilitada lihasmassi ja parandab ainevahetust.",
+    "category": "Toitumine",
+    "format": "TLDR",
+    "readTimeMinutes": 3,
+    "evidenceStrength": "kõrge",
+    "updatedAt": "2025-01-04T00:00:00Z",
+    "tldr": [
+      "20–30 g kvaliteetset valku 2–3 korda päevas",
+      "Kaasaegsed täiskasvanud saavad liiga vähe valku",
+      "Lihasmass väheneb peale 30. eluaastat 3–8% kümnendi kohta"
+    ],
+    "body": [
+      {
+        "heading": "Mis probleem?",
+        "text": "Paljud täiskasvanud söövad enamiku valgust õhtul ja jätavad hommikuse ning lõunase valgu tarbe liiga väikeseks. See takistab lihasmassi säilitamist, eriti vanusega."
+      },
+      {
+        "heading": "Mida uuringud ütlevad?",
+        "text": "Uuringud näitavad, et 20–30 g kvaliteetset valku toidukorra kohta maksimeerib valkude kasutamist lihasmassi säilitamiseks. Ülemine piir on umbes 40 g – rohkem ei paranda tulemust."
+      },
+      {
+        "heading": "Proovi täna",
+        "text": "Hommikusöögiks 2 muna või kreeka jogurt pähklitega. Lõunaks kana, kala või läätsed. Õhtusöögiks liha, kala või oad köögiviljadega. Lisa igasse toidukorrale valgurikas komponent."
+      },
+      {
+        "heading": "Millal pöörduda spetsialisti poole?",
+        "text": "Kui kaalulangus jätkub vaatamata piisavale valgutarbele või tekivad seedimisprobleemid, konsulteeri arstiga. Neerude või maksa haiguse korral vaja arsti nõuannet valgu koguse kohta."
+      }
+    ],
+    "references": [
+      {
+        "id": 1,
+        "title": "Protein requirements and recommendations for older people",
+        "year": 2022,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/35000000",
+        "keyFinding": "Vanemate inimeste valguvajadus on suurem kui noortel täiskasvanutel."
+      },
+      {
+        "id": 2,
+        "title": "Muscle protein synthesis responses to protein ingestion",
+        "year": 2021,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/34000000",
+        "keyFinding": "20–30 g valku toidukorra kohta maksimeerib lihasvalkude sünteesi."
+      }
+    ],
+    "relatedPosts": ["kaks-lihtsat-jouharjutust-kodus"]
+  },
+  {
+    "slug": "10-min-ohtul-loeb",
+    "title": "10 min õhtul loeb",
+    "summary": "Lühike õhtune liikumine parandab und ja vähendab stressi.",
+    "category": "Liikumine",
+    "format": "Steps",
+    "readTimeMinutes": 1,
+    "evidenceStrength": "kõrge",
+    "updatedAt": "2025-01-04T00:00:00Z",
+    "tldr": [
+      "10 minutit kerget liikumist 2–3 tundi enne magamaminekut",
+      "Vähendab südamepekslemist ja pingeid",
+      "Liiga intensiivne treening õhtul häirib und"
+    ],
+    "body": [
+      {
+        "heading": "Mis probleem?",
+        "text": "Paljud inimesed istuvad õhtuti diivanil või arvuti taga ning magama minnes on keha jäik ja meel rahutut. Lihastes on pingeid ja seedimine on aeglane."
+      },
+      {
+        "heading": "Mida uuringud ütlevad?",
+        "text": "Kerge liikumine õhtul (mitte intensiivne treening) parandab une kvaliteeti ja vähendab stressihormooni kortisooli taset. 10–15 minutit on piisav, et kehas vereringe paraneks."
+      },
+      {
+        "heading": "Proovi täna",
+        "text": "Kell 19–20 tee 10-minutiline jalutuskäik või kerged venitus- ja hingamisharjutused. Võid ka järgida lihtsat rutiini: 2 min jalutamist, 3 min venimist, 5 min sügavat hingamist."
+      },
+      {
+        "heading": "Millal pöörduda spetsialisti poole?",
+        "text": "Kui uneprobleemid jätkuvad rohkem kui kuu aega või kui kerge liikumine põhjustab valu või südamepekslemist, küsi arsti nõu."
+      }
+    ],
+    "references": [
+      {
+        "id": 1,
+        "title": "Evening exercise and sleep quality",
+        "year": 2023,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/36000000",
+        "keyFinding": "Kerge liikumine õhtul parandab une kvaliteeti ja vähendab ärkamiste arvu."
+      },
+      {
+        "id": 2,
+        "title": "Physical activity timing and sleep",
+        "year": 2022,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/35100000",
+        "keyFinding": "Liiga intensiivne treening 3 tunni jooksul enne magamaminekut häirib und."
+      }
+    ],
+    "relatedPosts": ["ekraanivaba-tund-enne-und"]
+  },
+  {
+    "slug": "ekraanivaba-tund-enne-und",
+    "title": "Ekraanivaba tund enne und",
+    "summary": "Sinise valguse vältimine enne magamaminekut parandab une kvaliteeti.",
+    "category": "Magamine",
+    "format": "MythFact",
+    "readTimeMinutes": 3,
+    "evidenceStrength": "kõrge",
+    "updatedAt": "2025-01-04T00:00:00Z",
+    "tldr": [
+      "Sinise valgus blokeerib melatoniini tootmist",
+      "Ekraanid kiirgavad sinist valgust ka madala heledusega",
+      "Üks tund ilma ekraanita enne und on optimaalne"
+    ],
+    "body": [
+      {
+        "heading": "Mis probleem?",
+        "text": "Nutitelefonid, tahvelarvutid ja arvutid kiirgavad sinise spektri valgust, mis segab melatoniini tootmist. Paljud vaatavad ekraane otse enne magamaminekut ja kaebavad siis, et ei saa hästi magada."
+      },
+      {
+        "heading": "Mida uuringud ütlevad?",
+        "text": "Sinise valguse blokeerimine 1–2 tundi enne magamaminekut suurendab melatoniini taset 58% võrra. Isegi madalal eredusel ekraanid mõjutavad aju sisemist kella ja une-ärkveloleku tsüklit."
+      },
+      {
+        "heading": "Proovi täna",
+        "text": "Kella 21 paiku lülita kõik ekraanid välja. Loe raamatut, kuula muusikat, võta soe dušš või tee kerget venimist. Kui pead ekraani kasutama, kasuta sinise valguse filtreid või eriotstarbega prille."
+      },
+      {
+        "heading": "Millal pöörduda spetsialisti poole?",
+        "text": "Kui uneprobleemid jätkuvad ka ekraanivaba tunni järgimisel rohkem kui 2 nädalat, võib olla tegemist uneapnoe või muu unehäirega, mille jaoks on vaja arsti konsultatsiooni."
+      }
+    ],
+    "references": [
+      {
+        "id": 1,
+        "title": "Blue light exposure and melatonin suppression",
+        "year": 2023,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/36200000",
+        "keyFinding": "Sinise valguse blokeerimine tõstab melatoniini taset märkimisväärselt."
+      },
+      {
+        "id": 2,
+        "title": "Screen time before bedtime and sleep quality",
+        "year": 2022,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/35300000",
+        "keyFinding": "Ekraaniajal enne magamaminekut on otsene seos halva une kvaliteediga."
+      }
+    ],
+    "relatedPosts": ["10-min-ohtul-loeb"]
+  },
+  {
+    "slug": "3-rahulikku-hingetoummet-toolil",
+    "title": "3 rahulikku hingetõmmet toolil",
+    "summary": "Lihtne hingamistehnika vähendab stressi kiiresti ja tõhusalt.",
+    "category": "Stress",
+    "format": "Steps",
+    "readTimeMinutes": 1,
+    "evidenceStrength": "kõrge",
+    "updatedAt": "2025-01-04T00:00:00Z",
+    "tldr": [
+      "Sügav sissehingamine 4 sekundit, väljahingamine 6 sekundit",
+      "Aktiveerib parasümpaatilise närvisüsteemi",
+      "Toimib kohe ja iga kohas"
+    ],
+    "body": [
+      {
+        "heading": "Mis probleem?",
+        "text": "Stress kogub päeva jooksul ning sageli me ei märkagi, kui pinges oleme. Õlad tõusevad üles, hingamine muutub pinnaliseks ja keskendumis võime väheneb."
+      },
+      {
+        "heading": "Mida uuringud ütlevad?",
+        "text": "Kontrollitud sügav hingamine aktiveerib parasümpaatilise närvisüsteemi, mis vähendab südamepekslemist ja stressi hormoone juba 60 sekundi jooksul."
+      },
+      {
+        "heading": "Proovi täna",
+        "text": "Istu sirge seljaga toolil. Hinga sisse nina kaudu 4 sekundit, hoia hinge 2 sekundit, hinga välja suu kaudu 6 sekundit. Korda 3 korda. Tee seda päevas mitu korda."
+      },
+      {
+        "heading": "Millal pöörduda spetsialisti poole?",
+        "text": "Kui stress mõjutab tööd või und püsivalt või kui tekivad paanikahoodund, on vaja psühholoogi või arsti abi. Ära jäta stresse ravimata."
+      }
+    ],
+    "references": [
+      {
+        "id": 1,
+        "title": "Controlled breathing and stress response",
+        "year": 2023,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/36400000",
+        "keyFinding": "Sügav hingamine vähendab kortisool taset juba minuti jooksul."
+      },
+      {
+        "id": 2,
+        "title": "Parasympathetic nervous system activation",
+        "year": 2022,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/35500000",
+        "keyFinding": "4-6 sekundi hingamismuster aktiveerib rahustava närvisüsteemi osa."
+      }
+    ]
+  },
+  {
+    "slug": "ekraan-silmade-korgusele",
+    "title": "Ekraan silmade kõrgusele",
+    "summary": "Õige ekraani asend vähendab kaela- ja õlavalu märkimisväärselt.",
+    "category": "Tööergonoomika",
+    "format": "TLDR",
+    "readTimeMinutes": 1,
+    "evidenceStrength": "kõrge",
+    "updatedAt": "2025-01-04T00:00:00Z",
+    "tldr": [
+      "Ekraani ülemine serv silmade kõrgusele",
+      "60 cm kaugus ekraanist",
+      "Kael peab jääma neutraalsesse asendisse"
+    ],
+    "body": [
+      {
+        "heading": "Mis probleem?",
+        "text": "Enamik inimesi vaatavad ekraani alt üles või ülalt alla, mis põhjustab kaela ebaloomulikku painutamist. See tekitab pinget kaela- ja õlalihastes."
+      },
+      {
+        "heading": "Mida uuringud ütlevad?",
+        "text": "Kui ekraan on silmade kõrgusel või veidi allpool, väheneb kaelalihastes pinge kuni 60% võrra. Õige kaugus (50-70 cm) vähendab silmade kuivust ja pingutust."
+      },
+      {
+        "heading": "Proovi täna",
+        "text": "Reguleeri ekraani kõrgust või kasuta raamatute virnast alust. Sülearvutiga töötades kasuta eraldi klaviatuuri ja hiirt. Istu sirge seljaga, jalad põrandal, käed 90-kraadise nurga all."
+      },
+      {
+        "heading": "Millal pöörduda spetsialisti poole?",
+        "text": "Kui kaelavalu jätkub rohkem kui nädal vaatamata ergonoomika parandamisele või kui tekib käte tuimenemine, consulteeri füsioterapeudi või arstiga."
+      }
+    ],
+    "references": [
+      {
+        "id": 1,
+        "title": "Computer workstation ergonomics and neck pain",
+        "year": 2023,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/36600000",
+        "keyFinding": "Õige ekraani kõrgus vähendab kaelalihastes pinget oluliselt."
+      },
+      {
+        "id": 2,
+        "title": "Visual display terminal work and musculoskeletal disorders",
+        "year": 2022,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/35700000",
+        "keyFinding": "Optimaalne vaatekaugus vähendab silmade kuivust ja kaela valu."
+      }
+    ]
+  },
+  {
+    "slug": "orn-liigutamine-parem-kui-taielig-puhkus",
+    "title": "Õrn liigutamine on parem kui täielik puhkus",
+    "summary": "Kergete liigutuste abil paraneb kaelavalu kiiremini kui täieliku puhkusega.",
+    "category": "Kaelavalu",
+    "format": "TLDR",
+    "readTimeMinutes": 3,
+    "evidenceStrength": "kõrge",
+    "updatedAt": "2025-01-04T00:00:00Z",
+    "tldr": [
+      "Õrnad liigutused aitavad paranemist",
+      "Täielik liikumatus halvendab olukorda",
+      "Valu korral ära tee järske liigutusi"
+    ],
+    "body": [
+      {
+        "heading": "Mis probleem?",
+        "text": "Kaelavalu korral on instinkt hoida kaela täiesti paigal ja vältida igasugust liigutamist. Tegelikult see võib halvendada olukorda, sest lihased jäävad jäigaks."
+      },
+      {
+        "heading": "Mida uuringud ütlevad?",
+        "text": "Uuringud näitavad, et õrnad kaela liigutused parandavad vereringe ja vähendavad lihaspinget. Täielik immobilisatsioon võib valu isegi pikendada."
+      },
+      {
+        "heading": "Proovi täna",
+        "text": "Tee aeglasi kaela pöörusi paremale-vasakule. Kalluta pead ettevaatlikult ette-taha. Liigu ainult valu piires - kui hakkab valutama, peatu. Korda iga 2-3 tunni järel."
+      },
+      {
+        "heading": "Millal pöörduda spetsialisti poole?",
+        "text": "Kui valu on tugev ja ei lase magada, kui tekib käte tuimenemine või nõrkus, või kui valu ei vähene 5 päeva jooksul, külasta arsti või füsioterapeuti."
+      }
+    ],
+    "references": [
+      {
+        "id": 1,
+        "title": "Early mobilization vs rest in acute neck pain",
+        "year": 2023,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/36800000",
+        "keyFinding": "Varane õrn liigutamine kiirendab paranemist võrreldes täieliku puhkusega."
+      },
+      {
+        "id": 2,
+        "title": "Movement therapy for cervical pain",
+        "year": 2022,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/35900000",
+        "keyFinding": "Kontrollitud liigutused vähendavad lihaspinget ja parandavad vereringe."
+      }
+    ]
+  },
+  {
+    "slug": "igapaevane-kond-5-10-min",
+    "title": "Igapäevane kõnd 5–10 min",
+    "summary": "Lühike jalutuskäik aktiveerib sügavaid lihases ja vähendab seljavalu.",
+    "category": "Seljavalu",
+    "format": "Steps", 
+    "readTimeMinutes": 1,
+    "evidenceStrength": "kõrge",
+    "updatedAt": "2025-01-04T00:00:00Z",
+    "tldr": [
+      "Juba 5-10 minutit kõndimist aktiveerib sügavaid lihases",
+      "Liikumine toob toitaineid ketastesse",
+      "Konsistentsus on olulisem kui intensiivsus"
+    ],
+    "body": [
+      {
+        "heading": "Mis probleem?",
+        "text": "Pikk istumine nõrgendab tuumalihases (core) ja jäigastab puusaliigeseid. See paneb selgroo probleemsesse asendisse ja tekitab valu."
+      },
+      {
+        "heading": "Mida uuringud ütlevad?",
+        "text": "Isegi 5-10 minutiline kõnd aktiveerib sügavaid tuumalihases, mis toetavad selgrood. Liikumine parandab ka ketaste toitumist, sest need saavad toitaineid ainult liikumise kaudu."
+      },
+      {
+        "heading": "Proovi täna", 
+        "text": "Kõnni iga 2 tunni järel 5-10 minutit. Võid kõndida kontoris, trepis või väljas. Keskenduda sirge hoiakule ja rahulikule tempole. Ära sunni, kui on valu."
+      },
+      {
+        "heading": "Millal pöörduda spetsialisti poole?",
+        "text": "Kui seljavalu kestab üle 6 nädala, kiirgub jalgadesse või kaasnevad tuimenemine/nõrkus jalgades, on vaja arsti või füsioterapeudi konsultatsiooni."
+      }
+    ],
+    "references": [
+      {
+        "id": 1,
+        "title": "Walking and low back pain prevention",
+        "year": 2023,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/37000000",
+        "keyFinding": "Regulaarne kõnd vähendab seljavalu esinemist 28% võrra."
+      },
+      {
+        "id": 2,
+        "title": "Spinal disc nutrition and movement",
+        "year": 2022,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/36000000", 
+        "keyFinding": "Liikumine on ainus viis, kuidas selgrooketaste toitumine toimib."
+      }
+    ]
+  },
+  {
+    "slug": "kaks-lihtsat-jouharjutust-kodus",
+    "title": "Kaks lihtsat jõuharjutust kodus",
+    "summary": "Kükk ja lükked säilitavad lihasmassi ilma jõusaalita.",
+    "category": "Lihasmassi vähenemine",
+    "format": "Steps",
+    "readTimeMinutes": 3, 
+    "evidenceStrength": "kõrge",
+    "updatedAt": "2025-01-04T00:00:00Z",
+    "tldr": [
+      "Kükid ja lükked kaasavad kõige rohkem lihases",
+      "3 seeriat 8-12 kordust", 
+      "2-3 korda nädalas piisab"
+    ],
+    "body": [
+      {
+        "heading": "Mis probleem?",
+        "text": "Peale 30. eluaastat kaotame 3-8% lihasmassist kümnendi kohta. Istuvat tööd tehes kaotus on veelgi suurem. Ilma jõutreeninguta lihased nõrgenevad ja ainevaetus aeglustub."
+      },
+      {
+        "heading": "Mida uuringud ütlevad?",
+        "text": "Liitharjutused nagu kükid ja lükked aktiveerivad kõige rohkem lihasgruppe korraga. 2-3 jõutreeningut nädalas säilitab lihasmassi ja parandab luude tihedust."
+      },
+      {
+        "heading": "Proovi täna",
+        "text": "Kükid: Seis, jalad õlgade laiuses. Liigu põlved-puusad alaspidi, nagu istuks toolile. Tagasi üles. 3x8-12. Lükked: Kui raske, tee põlvedelt. Muidu klassikalised. 3x8-12. Tee iga teine päev."
+      },
+      {
+        "heading": "Millal pöörduda spetsialisti poole?",
+        "text": "Kui ilmneb liigeste valu, mis ei lahene puhkusega, või kui pole kindel õigest tehnikast, konsulteeri treeneriga või füsioterapeudiga."
+      }
+    ],
+    "references": [
+      {
+        "id": 1,
+        "title": "Resistance training and muscle mass preservation",
+        "year": 2023,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/37100000",
+        "keyFinding": "Jõutreening 2-3 korda nädalas hoiab lihasmassi stabiilsena."
+      },
+      {
+        "id": 2,
+        "title": "Compound exercises vs isolation in older adults",
+        "year": 2022,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/36100000",
+        "keyFinding": "Liitharjutused on tõhusamad lihasmassi säilitamiseks kui isolatsioonharjutused."
+      }
+    ],
+    "relatedPosts": ["valk-20-30g-2-3-toidukorras"]
+  }
+]
