@@ -30,7 +30,7 @@ export function ArchivedHabitsModal() {
     try {
       const archived = await getArchivedHabits();
       setArchivedHabits(archived);
-    } catch (e) {
+    } catch (_e) {
       console.error("Error loading archived habits:", e);
     } finally {
       setLoading(false);
@@ -52,7 +52,7 @@ export function ArchivedHabitsModal() {
       });
       // Remove from archived list
       setArchivedHabits(prev => prev.filter(h => h.id !== habitId));
-    } catch (e) {
+    } catch (_e) {
       toast({
         title: "Viga",
         description: "Harjumuse taastamine ebaõnnestus",

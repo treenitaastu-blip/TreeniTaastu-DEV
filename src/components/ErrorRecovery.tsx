@@ -1,9 +1,9 @@
 // Enhanced error recovery component for PT system
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw, Home, Bug, ExternalLink } from "lucide-react";
+import { RefreshCw, Home, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface ErrorRecoveryProps {

@@ -32,7 +32,7 @@ const ICON_OPTIONS = [
 ];
 
 export function AddHabitModal() {
-  const { addHabit, canAddMore, maxHabits, habits } = useCustomHabits();
+  const { addHabit, canAddMore, maxHabits, habits: _habits } = useCustomHabits();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
