@@ -194,7 +194,7 @@ export default function ExerciseLibrary({ onAddExercise, compact = false }: Exer
               {selectedCategory}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent>
+          <DropdownMenuContent className="z-50">
             {CATEGORIES.map(category => (
               <DropdownMenuItem
                 key={category}
@@ -214,7 +214,7 @@ export default function ExerciseLibrary({ onAddExercise, compact = false }: Exer
               {selectedDifficulty === "Kõik" ? "Raskus" : getDifficultyText(selectedDifficulty)}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent>
+          <DropdownMenuContent className="z-50">
             {DIFFICULTIES.map(difficulty => (
               <DropdownMenuItem
                 key={difficulty}

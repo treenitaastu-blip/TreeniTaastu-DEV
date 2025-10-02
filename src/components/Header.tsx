@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import useAccess from "@/hooks/useAccess";
+import { useDropdownManager } from "@/contexts/DropdownManager";
 
 const HIDE_ON_PATHS = ["/login", "/signup"];
 
@@ -28,9 +29,11 @@ type NavItem = { to: string; label: string; show?: boolean };
 export default function Header() {
   const { user } = useAuth();
   const { loading: accessLoading, isAdmin, canStatic, canPT } = useAccess();
+  const { closeAllDropdowns } = useDropdownManager();
 
   const [open, setOpen] = useState(false);           // mobile drawer
   const [adminOpen, setAdminOpen] = useState(false); // mobile "Admin" accordion
+  const [ptOpen, setPtOpen] = useState(false);       // mobile "PT" accordion
   const [adminMenuOpen, setAdminMenuOpen] = useState(false); // desktop dropdown
   const [ptMenuOpen, setPtMenuOpen] = useState(false); // PT dropdown
   const adminMenuRef = useRef<HTMLDivElement | null>(null);
@@ -41,9 +44,11 @@ export default function Header() {
   useEffect(() => {
     setOpen(false);
     setAdminOpen(false);
+    setPtOpen(false);
     setAdminMenuOpen(false);
     setPtMenuOpen(false);
-  }, [loc.pathname]);
+    closeAllDropdowns();
+  }, [loc.pathname, closeAllDropdowns]);
 
   // Close dropdowns on outside click / Escape
   useEffect(() => {
@@ -262,23 +267,26 @@ export default function Header() {
                   <div className="mt-1">
                     <button
                       type="button"
-                      onClick={() => setAdminOpen((v) => !v)}
+                      onClick={() => {
+                        setPtOpen((v) => !v);
+                        setAdminOpen(false); // Close admin dropdown when PT opens
+                      }}
                       className={`${linkBase} ${linkInactive} w-full inline-flex items-center justify-between`}
-                      aria-expanded={adminOpen}
+                      aria-expanded={ptOpen}
                     >
                       <span className="inline-flex items-center gap-2">
                         <Activity className="h-4 w-4" />
                         Treeningud
                       </span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${adminOpen ? "rotate-180" : ""}`} />
+                      <ChevronDown className={`h-4 w-4 transition-transform ${ptOpen ? "rotate-180" : ""}`} />
                     </button>
-                    {adminOpen && (
+                    {ptOpen && (
                       <div className="mt-1 ml-3 grid gap-1">
                         <PTMenuItems
                           canPT={canPT || isAdmin}
                           onItem={() => {
                             setOpen(false);
-                            setAdminOpen(false);
+                            setPtOpen(false);
                           }}
                         />
                       </div>
@@ -291,7 +299,10 @@ export default function Header() {
                   <div className="mt-1">
                     <button
                       type="button"
-                      onClick={() => setAdminOpen((v) => !v)}
+                      onClick={() => {
+                        setAdminOpen((v) => !v);
+                        setPtOpen(false); // Close PT dropdown when admin opens
+                      }}
                       className={`${linkBase} ${linkInactive} w-full inline-flex items-center justify-between`}
                       aria-expanded={adminOpen}
                     >
