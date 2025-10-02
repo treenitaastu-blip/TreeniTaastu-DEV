@@ -5,9 +5,7 @@ export const isPreviewMode = () => {
   return (
     window.location.hostname.includes('lovableproject.com') ||
     window.location.search.includes('__lovable_token') ||
-    window.location.hostname === 'localhost' ||
-    window.location.hostname.includes('vercel.app') ||
-    process.env.NODE_ENV === 'development'
+    window.location.hostname.includes('vercel.app')
   );
 };
 
