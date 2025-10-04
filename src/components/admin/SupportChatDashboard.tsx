@@ -156,6 +156,11 @@ export function SupportChatDashboard() {
 
   // Load messages for selected conversation
   const loadMessages = useCallback(async (conversationId: string) => {
+    if (!conversationId || conversationId === 'null') {
+      setMessages([]);
+      return;
+    }
+
     try {
       console.log('Loading messages for conversation:', conversationId);
       
