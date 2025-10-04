@@ -95,7 +95,7 @@ serve(async (req) => {
       // For guests: subscription mode needs different handling than payment mode
       if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK" || 
           priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw" || 
-          priceId === "price_1SBCYgEOy7gy4lEEWJWNz8gW") {
+          priceId === "price_1SEa2gEOy7gy4lEE8sdrZOS0") {
         // Monthly subscription - can't use customer_creation, Stripe will collect email
         sessionData.payment_method_collection = 'always';
       } else {
@@ -112,7 +112,7 @@ serve(async (req) => {
     // Determine mode based on price type
     if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK" || 
         priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw" || 
-        priceId === "price_1SBCYgEOy7gy4lEEWJWNz8gW") {
+        priceId === "price_1SEa2gEOy7gy4lEE8sdrZOS0") {
       // Monthly recurring subscription
       sessionData.mode = "subscription";
     } else if (priceId === "price_1SBJMJCirvfSO0IRAHXrGSzn" || 
@@ -125,7 +125,7 @@ serve(async (req) => {
     }
 
     // If mode is set to subscription but priceId is not recognized, fallback to payment
-    if (sessionData.mode === "subscription" && !["price_1SBCokCirvfSO0IROfFuh6AK", "price_1SBCY0EOy7gy4lEEyRwBvuyw", "price_1SBCYgEOy7gy4lEEWJWNz8gW"].includes(priceId)) {
+    if (sessionData.mode === "subscription" && !["price_1SBCokCirvfSO0IROfFuh6AK", "price_1SBCY0EOy7gy4lEEyRwBvuyw", "price_1SEa2gEOy7gy4lEE8sdrZOS0"].includes(priceId)) {
       logStep("Price ID not recognized for subscription, falling back to payment mode", { priceId });
       sessionData.mode = "payment";
     }

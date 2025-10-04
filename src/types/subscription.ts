@@ -213,8 +213,8 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
       '24/7 chat tugi',
       'Põhjalikum progressi jälgimine'
     ],
-    stripePriceId: 'price_1SBCYgEOy7gy4lEEWJWNz8gW',
-    stripeProductId: 'prod_T7RR0G1rUYqIim'
+    stripePriceId: 'price_1SEa2gEOy7gy4lEE8sdrZOS0',
+    stripeProductId: 'prod_TAvuTZX5ePO2Il'
   },
   {
     id: 'transformatsiooniprogramm',
