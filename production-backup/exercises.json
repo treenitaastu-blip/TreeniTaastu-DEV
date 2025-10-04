@@ -1,0 +1,68 @@
+[
+  {
+    "id": "0ee15361-3bbb-4793-9300-bb12aac3014a",
+    "title": "Õlgade ringid",
+    "description": "Lõdvestab õlalihaseid ja parandab rühti",
+    "category": "shoulders",
+    "duration": "3 min",
+    "difficulty": "Algaja",
+    "video_url": "https://example.com/video2",
+    "created_at": "2025-09-23T07:33:39.492379+00:00",
+    "updated_at": "2025-09-24T21:30:50.481609+00:00"
+  },
+  {
+    "id": "1348c196-bbe4-4e88-86a3-f77ca7e9387b",
+    "title": "Sügav kõhuhingamine",
+    "description": "Rahustab närvisüsteemi ja vähendab stressi",
+    "category": "breathing",
+    "duration": "5 min",
+    "difficulty": "Algaja",
+    "video_url": "https://example.com/video5",
+    "created_at": "2025-09-23T07:33:39.492379+00:00",
+    "updated_at": "2025-09-23T07:33:39.492379+00:00"
+  },
+  {
+    "id": "19f21734-0b12-4440-9bfa-66601893b310",
+    "title": "Kaela külgvenitus",
+    "description": "Leevendab kaela pingeid ja parandab liikuvust",
+    "category": "neck",
+    "duration": "2 min",
+    "difficulty": "Algaja",
+    "video_url": "https://example.com/video1",
+    "created_at": "2025-09-23T07:33:39.492379+00:00",
+    "updated_at": "2025-09-23T07:33:39.492379+00:00"
+  },
+  {
+    "id": "4f2d534f-0637-4177-a4d9-5333960f3d1a",
+    "title": "Õlavöötme tugevdamine",
+    "description": "Tugevdab õlavöötme lihaseid stabiilsuse parandamiseks",
+    "category": "shoulders",
+    "duration": "6 min",
+    "difficulty": "Keskmine",
+    "video_url": "https://example.com/video6",
+    "created_at": "2025-09-23T07:33:39.492379+00:00",
+    "updated_at": "2025-09-23T07:33:39.492379+00:00"
+  },
+  {
+    "id": "721f5164-ffb3-491d-bc4d-71e9d23dae52",
+    "title": "Puusa venitus põlvitades",
+    "description": "Avab puusaliigese ja venitas puusafleksoreid",
+    "category": "hips",
+    "duration": "3 min",
+    "difficulty": "Algaja",
+    "video_url": "https://example.com/video4",
+    "created_at": "2025-09-23T07:33:39.492379+00:00",
+    "updated_at": "2025-09-24T21:31:10.105694+00:00"
+  },
+  {
+    "id": "7d5f7736-7ef3-4dbb-a6b3-50a443649eb8",
+    "title": "Selgroo rotatsioon",
+    "description": "Mobiliseerib selgroogu ja leevendab pingeid",
+    "category": "back",
+    "duration": "4 min",
+    "difficulty": "Keskmine",
+    "video_url": "https://example.com/video3",
+    "created_at": "2025-09-23T07:33:39.492379+00:00",
+    "updated_at": "2025-09-24T21:30:41.089199+00:00"
+  }
+]

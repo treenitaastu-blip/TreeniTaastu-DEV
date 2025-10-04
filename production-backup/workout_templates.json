@@ -1,0 +1,18 @@
+[
+  {
+    "id": "ac6d9d83-188b-4116-a2ac-ea1af2c05d31",
+    "title": "Algajate jõusaalitreening",
+    "goal": "Õppida selgeks liikumismustrid",
+    "is_active": true,
+    "created_by": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "inserted_at": "2025-09-10T13:04:46.705966+00:00"
+  },
+  {
+    "id": "e5203561-d627-4d8c-8e70-d7420a9f4931",
+    "title": "Põmaki",
+    "goal": "4 nädala personaalprogramm (3 päeva nädalas)",
+    "is_active": true,
+    "created_by": null,
+    "inserted_at": "2025-09-28T13:05:46.693102+00:00"
+  }
+]

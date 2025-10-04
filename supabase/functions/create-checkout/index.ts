@@ -26,9 +26,9 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    const { priceId, productId, mode, successUrl, cancelUrl } = await req.json();
+    const { priceId } = await req.json();
     if (!priceId) throw new Error("Price ID is required");
-    logStep("Request data received", { priceId, productId, mode, successUrl, cancelUrl });
+    logStep("Request data received", { priceId });
 
     // Try to get authenticated user (optional)
     const authHeader = req.headers.get("Authorization");
@@ -51,7 +51,7 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
-      apiVersion: "2024-06-20" 
+      apiVersion: "2025-08-27.basil" 
     });
 
     // Check if Stripe customer exists (only if we have user email)
@@ -78,11 +78,10 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: successUrl || `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || `${origin}/teenused`,
+      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/pricing`,
       metadata: {
-        price_id: priceId,
-        product_id: productId
+        price_id: priceId
       }
     };
 
@@ -93,9 +92,7 @@ serve(async (req) => {
       sessionData.customer_email = userEmail;
     } else {
       // For guests: subscription mode needs different handling than payment mode
-      if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK" || 
-          priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw" || 
-          priceId === "price_1SEa2gEOy7gy4lEE8sdrZOS0") {
+      if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK") {
         // Monthly subscription - can't use customer_creation, Stripe will collect email
         sessionData.payment_method_collection = 'always';
       } else {
@@ -110,46 +107,22 @@ serve(async (req) => {
     }
 
     // Determine mode based on price type
-    if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK" || 
-        priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw" || 
-        priceId === "price_1SEa2gEOy7gy4lEE8sdrZOS0") {
+    if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK") {
       // Monthly recurring subscription
       sessionData.mode = "subscription";
-    } else if (priceId === "price_1SBJMJCirvfSO0IRAHXrGSzn" || 
-               priceId === "price_1SBCZeEOy7gy4lEEc3DwQzTu") {
-      // One-time payment
+    } else if (priceId === "price_1SBJMJCirvfSO0IRAHXrGSzn") {
+      // Yearly one-time payment
       sessionData.mode = "payment";
     } else {
       // Default to payment mode for other products
       sessionData.mode = "payment";
     }
 
-    // If mode is set to subscription but priceId is not recognized, fallback to payment
-    if (sessionData.mode === "subscription" && !["price_1SBCokCirvfSO0IROfFuh6AK", "price_1SBCY0EOy7gy4lEEyRwBvuyw", "price_1SEa2gEOy7gy4lEE8sdrZOS0"].includes(priceId)) {
-      logStep("Price ID not recognized for subscription, falling back to payment mode", { priceId });
-      sessionData.mode = "payment";
-    }
-
     logStep("Creating checkout session", { mode: sessionData.mode });
 
-    let session;
-    try {
-      session = await stripe.checkout.sessions.create(sessionData);
-      logStep("Checkout session created", { sessionId: session.id, url: session.url });
-    } catch (stripeError) {
-      logStep("Stripe error creating session", { error: stripeError.message, priceId, mode: sessionData.mode });
-      
-      // If subscription mode fails, try payment mode as fallback
-      if (sessionData.mode === "subscription" && stripeError.message.includes("recurring price")) {
-        logStep("Subscription mode failed, trying payment mode", { priceId });
-        sessionData.mode = "payment";
-        delete sessionData.payment_method_collection; // Remove subscription-specific settings
-        session = await stripe.checkout.sessions.create(sessionData);
-        logStep("Checkout session created in payment mode", { sessionId: session.id, url: session.url });
-      } else {
-        throw stripeError; // Re-throw if not a recurring price error
-      }
-    }
+    const session = await stripe.checkout.sessions.create(sessionData);
+
+    logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

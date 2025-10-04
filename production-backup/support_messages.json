@@ -1,0 +1,106 @@
+[
+  {
+    "id": "1df254e5-ba84-45a3-8e71-7835c50a2fb7",
+    "conversation_id": "45978429-a6dd-48f4-a7f6-75a70d62ce5e",
+    "sender_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "message": "Tervist",
+    "is_admin": false,
+    "created_at": "2025-09-24T08:28:02.922656+00:00"
+  },
+  {
+    "id": "242cb1a6-daf9-4493-a658-42c2acc27f0d",
+    "conversation_id": "45978429-a6dd-48f4-a7f6-75a70d62ce5e",
+    "sender_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "message": "Tere",
+    "is_admin": false,
+    "created_at": "2025-09-24T08:16:32.646665+00:00"
+  },
+  {
+    "id": "37896d6c-16f7-45d8-af61-ab3ded11504c",
+    "conversation_id": "1da52a37-4a3d-49f2-b6eb-91c317303ee8",
+    "sender_id": "c0043a7b-274c-4f92-9b5a-1098dcebaabc",
+    "message": "Halo",
+    "is_admin": false,
+    "created_at": "2025-09-24T08:19:00.055968+00:00"
+  },
+  {
+    "id": "4455f0fc-bed7-4565-abe6-cc9876001ba5",
+    "conversation_id": "3fab238b-621a-400c-a082-73ceb0d7a1f7",
+    "sender_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "message": "Spit it out",
+    "is_admin": true,
+    "created_at": "2025-09-26T10:17:40.777314+00:00"
+  },
+  {
+    "id": "461c0bb3-2a45-4c87-b204-9fa777114ba5",
+    "conversation_id": "1da52a37-4a3d-49f2-b6eb-91c317303ee8",
+    "sender_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "message": "Tere",
+    "is_admin": true,
+    "created_at": "2025-09-24T09:15:10.932083+00:00"
+  },
+  {
+    "id": "6e987627-4d79-49bd-8105-f7bf244f31b7",
+    "conversation_id": "89931eb2-0604-4372-9f03-db1904df99fb",
+    "sender_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "message": "Wtfcky",
+    "is_admin": false,
+    "created_at": "2025-09-24T09:25:07.347338+00:00"
+  },
+  {
+    "id": "8461056e-ed53-4369-a3da-ff6f33bf9fc5",
+    "conversation_id": "e737c67d-7380-46de-930d-7a4effd2d37a",
+    "sender_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "message": "Tervist",
+    "is_admin": false,
+    "created_at": "2025-09-28T13:43:56.296996+00:00"
+  },
+  {
+    "id": "93ef5601-c912-4648-9925-c5d3d855fc8d",
+    "conversation_id": "45978429-a6dd-48f4-a7f6-75a70d62ce5e",
+    "sender_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "message": "Halo",
+    "is_admin": false,
+    "created_at": "2025-09-24T09:12:15.562694+00:00"
+  },
+  {
+    "id": "c32cb650-2934-4db5-aef7-80b9970dc084",
+    "conversation_id": "3fab238b-621a-400c-a082-73ceb0d7a1f7",
+    "sender_id": "2087a3c8-3201-4cd7-9a8e-35aaf3e4e0d2",
+    "message": "Tere, tahtsin midagi küsida",
+    "is_admin": false,
+    "created_at": "2025-09-26T10:17:10.663773+00:00"
+  },
+  {
+    "id": "c420511b-2b9f-4366-a84b-1a2590dfd035",
+    "conversation_id": "89931eb2-0604-4372-9f03-db1904df99fb",
+    "sender_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "message": "Fr",
+    "is_admin": true,
+    "created_at": "2025-09-24T09:25:13.267239+00:00"
+  },
+  {
+    "id": "c7a51175-54e2-4e54-a17e-508dae2bbfb5",
+    "conversation_id": "45978429-a6dd-48f4-a7f6-75a70d62ce5e",
+    "sender_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "message": "Tervist",
+    "is_admin": false,
+    "created_at": "2025-09-24T08:27:57.215187+00:00"
+  },
+  {
+    "id": "e7380b00-3e26-4888-b32f-f72389ed6468",
+    "conversation_id": "45978429-a6dd-48f4-a7f6-75a70d62ce5e",
+    "sender_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "message": "Halo",
+    "is_admin": false,
+    "created_at": "2025-09-24T09:12:20.564093+00:00"
+  },
+  {
+    "id": "fdcd7ed1-33da-4045-8e28-5e647359c019",
+    "conversation_id": "e737c67d-7380-46de-930d-7a4effd2d37a",
+    "sender_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "message": "Jõudu",
+    "is_admin": true,
+    "created_at": "2025-09-28T13:44:22.164118+00:00"
+  }
+]

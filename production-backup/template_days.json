@@ -1,0 +1,38 @@
+[
+  {
+    "id": "0142f362-8525-4267-a2b0-23289c34eebd",
+    "template_id": "ac6d9d83-188b-4116-a2ac-ea1af2c05d31",
+    "day_order": 1,
+    "title": "Ülakeha",
+    "note": "Surumise harjutused",
+    "inserted_at": "2025-09-10T13:13:27.046184+00:00",
+    "weekday": null
+  },
+  {
+    "id": "11a87cd3-7cec-44d0-ba0f-83a414d980d7",
+    "template_id": "e5203561-d627-4d8c-8e70-d7420a9f4931",
+    "day_order": 2,
+    "title": "Päev 2",
+    "note": null,
+    "inserted_at": "2025-09-28T13:05:47.266285+00:00",
+    "weekday": null
+  },
+  {
+    "id": "12d98688-2a3e-4f8a-a0b1-3122fd0cf471",
+    "template_id": "e5203561-d627-4d8c-8e70-d7420a9f4931",
+    "day_order": 1,
+    "title": "Päev 1",
+    "note": null,
+    "inserted_at": "2025-09-28T13:05:46.944884+00:00",
+    "weekday": null
+  },
+  {
+    "id": "469adb7a-0949-49f4-82b6-eafd8b2350a2",
+    "template_id": "e5203561-d627-4d8c-8e70-d7420a9f4931",
+    "day_order": 3,
+    "title": "Päev 3",
+    "note": null,
+    "inserted_at": "2025-09-28T13:05:47.518134+00:00",
+    "weekday": null
+  }
+]

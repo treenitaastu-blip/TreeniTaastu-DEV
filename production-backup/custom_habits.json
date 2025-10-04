@@ -1,0 +1,372 @@
+[
+  {
+    "id": "00373e18-7384-4970-90b5-480f5a5a1eca",
+    "user_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "title": "Magasin 7+ tundi",
+    "icon_name": "CheckCircle",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2025-09-27T11:42:21.842365+00:00",
+    "updated_at": "2025-09-27T11:42:21.842365+00:00"
+  },
+  {
+    "id": "05e75d83-2a18-42b1-83d3-42b49959f802",
+    "user_id": "301fec03-8aec-4904-881c-5bf063e76e3f",
+    "title": "Liikusin 30+ minutit",
+    "icon_name": "Activity",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2025-10-03T14:57:55.355987+00:00",
+    "updated_at": "2025-10-03T14:57:55.355987+00:00"
+  },
+  {
+    "id": "12691d0a-9e29-46eb-906e-47c5dcfb786b",
+    "user_id": "c0043a7b-274c-4f92-9b5a-1098dcebaabc",
+    "title": "Olin sotsiaalne",
+    "icon_name": "Trophy",
+    "is_active": true,
+    "sort_order": 1,
+    "created_at": "2025-09-28T21:06:00.518954+00:00",
+    "updated_at": "2025-09-28T21:06:00.518954+00:00"
+  },
+  {
+    "id": "1afb18ea-8464-4c40-bade-d520b63a034b",
+    "user_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "title": "Olin sotsiaalne",
+    "icon_name": "Trophy",
+    "is_active": false,
+    "sort_order": 1,
+    "created_at": "2025-09-27T11:42:21.842365+00:00",
+    "updated_at": "2025-09-27T11:56:46.225896+00:00"
+  },
+  {
+    "id": "2496c18e-d5cd-4204-85f9-2fb00f357b7e",
+    "user_id": "c0043a7b-274c-4f92-9b5a-1098dcebaabc",
+    "title": "Jõin piisavalt vett",
+    "icon_name": "Zap",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2025-09-28T21:06:00.518954+00:00",
+    "updated_at": "2025-09-28T21:06:00.518954+00:00"
+  },
+  {
+    "id": "267f750d-afaa-4cb0-a60e-8a8fdfd861dd",
+    "user_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "title": "Magasin 7+ tundi",
+    "icon_name": "CheckCircle",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2025-09-27T12:10:13.804662+00:00",
+    "updated_at": "2025-09-27T12:10:13.804662+00:00"
+  },
+  {
+    "id": "415bf770-2aed-4c1d-a451-c5688a24ad60",
+    "user_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "title": "Liikusin 30+ minutit",
+    "icon_name": "Activity",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2025-09-27T11:42:21.842365+00:00",
+    "updated_at": "2025-09-27T11:42:21.842365+00:00"
+  },
+  {
+    "id": "4bd393f7-f144-4d4c-a77e-0834158a6c08",
+    "user_id": "301fec03-8aec-4904-881c-5bf063e76e3f",
+    "title": "Jõin piisavalt vett",
+    "icon_name": "Zap",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2025-10-03T14:57:55.355987+00:00",
+    "updated_at": "2025-10-03T14:57:55.355987+00:00"
+  },
+  {
+    "id": "4dcbf97d-8c08-4914-b38b-66d9dcda0235",
+    "user_id": "d09873a5-934a-4268-ad44-bbb0c83c1a74",
+    "title": "Olin sotsiaalne",
+    "icon_name": "Trophy",
+    "is_active": false,
+    "sort_order": 1,
+    "created_at": "2025-10-02T14:01:24.25674+00:00",
+    "updated_at": "2025-10-02T14:07:06.06622+00:00"
+  },
+  {
+    "id": "4e0ab06d-3402-4b62-9c68-f4e0a706bb65",
+    "user_id": "301fec03-8aec-4904-881c-5bf063e76e3f",
+    "title": "Olin sotsiaalne",
+    "icon_name": "Trophy",
+    "is_active": true,
+    "sort_order": 1,
+    "created_at": "2025-10-03T14:57:55.355987+00:00",
+    "updated_at": "2025-10-03T14:57:55.355987+00:00"
+  },
+  {
+    "id": "596dabe8-6728-4294-ad9d-165e0e1b0af8",
+    "user_id": "41014d96-4bde-4c55-81d5-fee13bf78d33",
+    "title": "Liikusin 30+ minutit",
+    "icon_name": "Activity",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2025-10-02T16:35:24.259327+00:00",
+    "updated_at": "2025-10-02T16:35:24.259327+00:00"
+  },
+  {
+    "id": "5fab3980-a7d5-48d9-8b48-33b0cc37aaa9",
+    "user_id": "59b1d316-dd2c-4a67-8080-7edbc458e783",
+    "title": "Jõin piisavalt vett",
+    "icon_name": "Zap",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2025-09-28T20:55:05.381751+00:00",
+    "updated_at": "2025-09-28T20:55:05.381751+00:00"
+  },
+  {
+    "id": "60a8adf6-6642-4815-b3f7-f1a12b2ffaec",
+    "user_id": "2087a3c8-3201-4cd7-9a8e-35aaf3e4e0d2",
+    "title": "Magasin 7+ tundi",
+    "icon_name": "CheckCircle",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2025-09-27T11:34:54.681175+00:00",
+    "updated_at": "2025-09-27T11:34:54.681175+00:00"
+  },
+  {
+    "id": "639d51a0-6717-477b-a6c2-185c6502916e",
+    "user_id": "c0043a7b-274c-4f92-9b5a-1098dcebaabc",
+    "title": "Liikusin 30+ minutit",
+    "icon_name": "Activity",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2025-09-28T21:06:00.518954+00:00",
+    "updated_at": "2025-09-28T21:06:00.518954+00:00"
+  },
+  {
+    "id": "6ce9c736-7c21-407b-afda-c56635bf2cfd",
+    "user_id": "c0043a7b-274c-4f92-9b5a-1098dcebaabc",
+    "title": "Magasin 7+ tundi",
+    "icon_name": "CheckCircle",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2025-09-28T21:06:00.518954+00:00",
+    "updated_at": "2025-09-28T21:06:00.518954+00:00"
+  },
+  {
+    "id": "704bdee0-af9c-44a5-9df3-3472908b1112",
+    "user_id": "41014d96-4bde-4c55-81d5-fee13bf78d33",
+    "title": "Magasin 7+ tundi",
+    "icon_name": "CheckCircle",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2025-10-02T16:35:24.259327+00:00",
+    "updated_at": "2025-10-02T16:35:24.259327+00:00"
+  },
+  {
+    "id": "78e2cc3d-ab0e-4bc3-9842-d97794000e0f",
+    "user_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "title": "Lugesin 30 minutit",
+    "icon_name": "Book",
+    "is_active": true,
+    "sort_order": 5,
+    "created_at": "2025-09-27T11:56:35.319308+00:00",
+    "updated_at": "2025-09-27T12:48:44.714117+00:00"
+  },
+  {
+    "id": "818e5147-603c-4dde-a809-c3e579499d37",
+    "user_id": "59b1d316-dd2c-4a67-8080-7edbc458e783",
+    "title": "Magasin 7+ tundi",
+    "icon_name": "CheckCircle",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2025-09-28T20:55:05.381751+00:00",
+    "updated_at": "2025-09-28T20:55:05.381751+00:00"
+  },
+  {
+    "id": "8fbbd4cb-b4ee-4db6-96f9-4cf469532200",
+    "user_id": "d09873a5-934a-4268-ad44-bbb0c83c1a74",
+    "title": "Jõin piisavalt vett",
+    "icon_name": "Zap",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2025-10-02T14:01:24.25674+00:00",
+    "updated_at": "2025-10-02T14:01:24.25674+00:00"
+  },
+  {
+    "id": "94d02125-0c21-4531-b31d-b2fb1ceda765",
+    "user_id": "9c4bb881-c8b0-43eb-a824-22f6e0a1a8b9",
+    "title": "Liikusin 30+ minutit",
+    "icon_name": "Activity",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2025-09-29T15:45:13.390653+00:00",
+    "updated_at": "2025-09-29T15:45:13.390653+00:00"
+  },
+  {
+    "id": "9613df39-0996-42c8-8396-ee62541a4c8f",
+    "user_id": "2087a3c8-3201-4cd7-9a8e-35aaf3e4e0d2",
+    "title": "Liikusin 30+ minutit",
+    "icon_name": "Activity",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2025-09-27T11:34:54.681175+00:00",
+    "updated_at": "2025-09-27T11:34:54.681175+00:00"
+  },
+  {
+    "id": "9d89d7b5-67f0-46a4-94e9-16f4aebce9ee",
+    "user_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "title": "Olin sotsiaalne",
+    "icon_name": "Trophy",
+    "is_active": true,
+    "sort_order": 1,
+    "created_at": "2025-09-27T12:10:13.804662+00:00",
+    "updated_at": "2025-09-27T12:10:13.804662+00:00"
+  },
+  {
+    "id": "a8e829a8-1146-4604-b02b-041d2e4eb618",
+    "user_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "title": "Liikusin 30+ minutit",
+    "icon_name": "Activity",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2025-09-27T12:10:13.804662+00:00",
+    "updated_at": "2025-09-27T12:10:13.804662+00:00"
+  },
+  {
+    "id": "b4fa7523-50a1-4312-ad27-84bf1ba41dd2",
+    "user_id": "2087a3c8-3201-4cd7-9a8e-35aaf3e4e0d2",
+    "title": "Jõin piisavalt vett",
+    "icon_name": "Zap",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2025-09-27T11:34:54.681175+00:00",
+    "updated_at": "2025-09-27T11:34:54.681175+00:00"
+  },
+  {
+    "id": "c474afde-e96b-49eb-af80-367b681a9664",
+    "user_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "title": "Jõin piisavalt vett",
+    "icon_name": "Zap",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2025-09-27T11:42:21.842365+00:00",
+    "updated_at": "2025-09-27T11:42:21.842365+00:00"
+  },
+  {
+    "id": "c71b01c7-5ac2-4eff-b354-4b3945c7681a",
+    "user_id": "59b1d316-dd2c-4a67-8080-7edbc458e783",
+    "title": "Liikusin 30+ minutit",
+    "icon_name": "Activity",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2025-09-28T20:55:05.381751+00:00",
+    "updated_at": "2025-09-28T20:55:05.381751+00:00"
+  },
+  {
+    "id": "c90c1cc7-e756-4536-8592-c4011e90fee9",
+    "user_id": "41014d96-4bde-4c55-81d5-fee13bf78d33",
+    "title": "Jõin piisavalt vett",
+    "icon_name": "Zap",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2025-10-02T16:35:24.259327+00:00",
+    "updated_at": "2025-10-02T16:35:24.259327+00:00"
+  },
+  {
+    "id": "c9785d6e-a0fe-49b6-8f05-31b383fb4cb7",
+    "user_id": "41014d96-4bde-4c55-81d5-fee13bf78d33",
+    "title": "Olin sotsiaalne",
+    "icon_name": "Trophy",
+    "is_active": true,
+    "sort_order": 1,
+    "created_at": "2025-10-02T16:35:24.259327+00:00",
+    "updated_at": "2025-10-02T16:35:24.259327+00:00"
+  },
+  {
+    "id": "de2774ad-9449-49ba-b99b-f5478978da97",
+    "user_id": "2087a3c8-3201-4cd7-9a8e-35aaf3e4e0d2",
+    "title": "Olin sotsiaalne",
+    "icon_name": "Trophy",
+    "is_active": true,
+    "sort_order": 1,
+    "created_at": "2025-09-27T11:34:54.681175+00:00",
+    "updated_at": "2025-09-27T11:34:54.681175+00:00"
+  },
+  {
+    "id": "e10e352d-bf70-4c73-b9e8-83a98877941e",
+    "user_id": "59b1d316-dd2c-4a67-8080-7edbc458e783",
+    "title": "Olin sotsiaalne",
+    "icon_name": "Trophy",
+    "is_active": true,
+    "sort_order": 1,
+    "created_at": "2025-09-28T20:55:05.381751+00:00",
+    "updated_at": "2025-09-28T20:55:05.381751+00:00"
+  },
+  {
+    "id": "e6c9511e-9ac8-41db-963f-2aa43f6ceae9",
+    "user_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "title": "Jõin piisavalt vett",
+    "icon_name": "Zap",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2025-09-27T12:10:13.804662+00:00",
+    "updated_at": "2025-09-27T12:10:13.804662+00:00"
+  },
+  {
+    "id": "f00c887a-55db-4eea-903e-3454cec94460",
+    "user_id": "9c4bb881-c8b0-43eb-a824-22f6e0a1a8b9",
+    "title": "Jõin piisavalt vett",
+    "icon_name": "Zap",
+    "is_active": true,
+    "sort_order": 2,
+    "created_at": "2025-09-29T15:45:13.390653+00:00",
+    "updated_at": "2025-09-29T15:45:13.390653+00:00"
+  },
+  {
+    "id": "f106c70c-fa4d-4f9a-9c22-bf8abc22c378",
+    "user_id": "d09873a5-934a-4268-ad44-bbb0c83c1a74",
+    "title": "Liikusin 30+ minutit",
+    "icon_name": "Activity",
+    "is_active": true,
+    "sort_order": 3,
+    "created_at": "2025-10-02T14:01:24.25674+00:00",
+    "updated_at": "2025-10-02T14:01:24.25674+00:00"
+  },
+  {
+    "id": "f4dd1ef4-ef33-4403-84d2-6f1ffe7f9eb2",
+    "user_id": "301fec03-8aec-4904-881c-5bf063e76e3f",
+    "title": "Magasin 7+ tundi",
+    "icon_name": "CheckCircle",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2025-10-03T14:57:55.355987+00:00",
+    "updated_at": "2025-10-03T14:57:55.355987+00:00"
+  },
+  {
+    "id": "fa172386-e9e3-4d39-b84f-579a605396aa",
+    "user_id": "d09873a5-934a-4268-ad44-bbb0c83c1a74",
+    "title": "Magasin 7+ tundi",
+    "icon_name": "CheckCircle",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2025-10-02T14:01:24.25674+00:00",
+    "updated_at": "2025-10-02T14:01:24.25674+00:00"
+  },
+  {
+    "id": "fda24292-84f7-4094-9f53-0ef5e4ebdb4e",
+    "user_id": "9c4bb881-c8b0-43eb-a824-22f6e0a1a8b9",
+    "title": "Olin sotsiaalne",
+    "icon_name": "Trophy",
+    "is_active": true,
+    "sort_order": 1,
+    "created_at": "2025-09-29T15:45:13.390653+00:00",
+    "updated_at": "2025-09-29T15:45:13.390653+00:00"
+  },
+  {
+    "id": "ff581395-d754-42ee-a94d-5c697874428a",
+    "user_id": "9c4bb881-c8b0-43eb-a824-22f6e0a1a8b9",
+    "title": "Magasin 7+ tundi",
+    "icon_name": "CheckCircle",
+    "is_active": true,
+    "sort_order": 4,
+    "created_at": "2025-09-29T15:45:13.390653+00:00",
+    "updated_at": "2025-09-29T15:45:13.390653+00:00"
+  }
+]

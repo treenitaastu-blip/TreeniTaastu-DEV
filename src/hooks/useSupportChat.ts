@@ -79,11 +79,6 @@ export const useSupportChat = () => {
 
   // Load messages for a conversation
   const loadMessages = useCallback(async (conversationId: string) => {
-    if (!conversationId || conversationId === 'null') {
-      setMessages([]);
-      return;
-    }
-
     try {
       const { data, error } = await supabase
         .from('support_messages')

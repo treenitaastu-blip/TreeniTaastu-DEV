@@ -1,0 +1,38 @@
+[
+  {
+    "id": "b4b2c02b-b8ce-4761-b0ed-046d9f7a8ff2",
+    "user_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "email": "henrikraavi1234@gmail.com",
+    "stripe_customer_id": null,
+    "subscribed": true,
+    "subscription_tier": null,
+    "subscription_end": null,
+    "updated_at": "2025-09-15T09:54:38.598137+00:00",
+    "created_at": "2025-08-30T07:54:17.9238+00:00",
+    "status": "active",
+    "plan": "premium",
+    "started_at": "2025-08-31T07:13:44.91281+00:00",
+    "trial_ends_at": "2025-10-15T09:54:38.598137+00:00",
+    "expires_at": "2026-09-15T09:54:38.598137+00:00",
+    "paused": false,
+    "source": null
+  },
+  {
+    "id": "f5c8e981-e3b1-4262-ab5b-f3aa82c44262",
+    "user_id": "c0043a7b-274c-4f92-9b5a-1098dcebaabc",
+    "email": "treenitaastu@gmail.com",
+    "stripe_customer_id": null,
+    "subscribed": false,
+    "subscription_tier": null,
+    "subscription_end": null,
+    "updated_at": "2025-08-30T20:06:08.002455+00:00",
+    "created_at": "2025-08-30T20:06:08.002455+00:00",
+    "status": "trialing",
+    "plan": "basic",
+    "started_at": "2025-08-31T07:13:44.91281+00:00",
+    "trial_ends_at": null,
+    "expires_at": null,
+    "paused": false,
+    "source": null
+  }
+]

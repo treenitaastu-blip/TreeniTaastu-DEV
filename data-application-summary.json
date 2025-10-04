@@ -1,0 +1,128 @@
+{
+  "timestamp": "2025-10-04T19:24:55.835Z",
+  "tables": {
+    "profiles": {
+      "records": 13,
+      "inserted": 0,
+      "success": false
+    },
+    "user_roles": {
+      "records": 1,
+      "inserted": 0,
+      "success": false
+    },
+    "user_entitlements": {
+      "records": 10,
+      "inserted": 0,
+      "success": false
+    },
+    "subscribers": {
+      "records": 2,
+      "inserted": 0,
+      "success": false
+    },
+    "workout_templates": {
+      "records": 2,
+      "inserted": 0,
+      "success": false
+    },
+    "template_days": {
+      "records": 4,
+      "inserted": 0,
+      "success": false
+    },
+    "template_items": {
+      "records": 6,
+      "inserted": 0,
+      "success": false
+    },
+    "client_programs": {
+      "records": 5,
+      "inserted": 0,
+      "success": false
+    },
+    "client_days": {
+      "records": 11,
+      "inserted": 0,
+      "success": false
+    },
+    "client_items": {
+      "records": 14,
+      "inserted": 0,
+      "success": false
+    },
+    "exercises": {
+      "records": 6,
+      "inserted": 0,
+      "success": false
+    },
+    "articles": {
+      "records": 16,
+      "inserted": 0,
+      "success": false
+    },
+    "custom_habits": {
+      "records": 37,
+      "inserted": 0,
+      "success": false
+    },
+    "support_conversations": {
+      "records": 23,
+      "inserted": 0,
+      "success": false
+    },
+    "support_messages": {
+      "records": 13,
+      "inserted": 0,
+      "success": false
+    },
+    "booking_requests": {
+      "records": 21,
+      "inserted": 0,
+      "success": false
+    },
+    "user_analytics_events": {
+      "records": 2345,
+      "inserted": 0,
+      "success": false
+    },
+    "user_streaks": {
+      "records": 4,
+      "inserted": 0,
+      "success": false
+    },
+    "userprogress": {
+      "records": 22,
+      "inserted": 0,
+      "success": false
+    },
+    "workout_sessions": {
+      "records": 39,
+      "inserted": 0,
+      "success": false
+    },
+    "set_logs": {
+      "records": 119,
+      "inserted": 0,
+      "success": false
+    },
+    "exercise_notes": {
+      "records": 37,
+      "inserted": 0,
+      "success": false
+    },
+    "training_journal": {
+      "records": 1,
+      "inserted": 0,
+      "success": false
+    },
+    "challenge_logs": {
+      "records": 91,
+      "inserted": 0,
+      "success": false
+    }
+  },
+  "totalRecords": 2842,
+  "totalInserted": 0,
+  "successRate": 0
+}

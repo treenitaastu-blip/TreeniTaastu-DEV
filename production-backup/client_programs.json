@@ -1,0 +1,122 @@
+[
+  {
+    "id": "10ce1375-af30-4e7d-8042-799ff8ab5359",
+    "template_id": "e5203561-d627-4d8c-8e70-d7420a9f4931",
+    "assigned_to": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "assigned_by": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "title_override": null,
+    "goal_override": null,
+    "start_date": "2025-09-28",
+    "is_active": true,
+    "inserted_at": "2025-09-28T14:09:56.699744+00:00",
+    "user_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "duration_weeks": 4,
+    "auto_progression_enabled": true,
+    "status": "active",
+    "completed_at": null,
+    "progression_parameters": {
+      "rep_increment": 1,
+      "rpe_target_max": 8,
+      "rpe_target_min": 6,
+      "consistency_threshold": 3,
+      "weight_increment_percentage": 5
+    },
+    "training_days_per_week": 3
+  },
+  {
+    "id": "690d5a57-0e9b-4186-a716-14f27e9e1550",
+    "template_id": "ac6d9d83-188b-4116-a2ac-ea1af2c05d31",
+    "assigned_to": "9c4bb881-c8b0-43eb-a824-22f6e0a1a8b9",
+    "assigned_by": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "title_override": null,
+    "goal_override": null,
+    "start_date": "2025-09-29",
+    "is_active": true,
+    "inserted_at": "2025-09-29T21:32:29.567448+00:00",
+    "user_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "duration_weeks": 4,
+    "auto_progression_enabled": true,
+    "status": "active",
+    "completed_at": null,
+    "progression_parameters": {
+      "rep_increment": 1,
+      "rpe_target_max": 8,
+      "rpe_target_min": 6,
+      "consistency_threshold": 3,
+      "weight_increment_percentage": 5
+    },
+    "training_days_per_week": 3
+  },
+  {
+    "id": "6b2d4b95-b844-446f-b562-238fb4bb8624",
+    "template_id": "e5203561-d627-4d8c-8e70-d7420a9f4931",
+    "assigned_to": "41014d96-4bde-4c55-81d5-fee13bf78d33",
+    "assigned_by": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "title_override": null,
+    "goal_override": null,
+    "start_date": "2025-10-02",
+    "is_active": true,
+    "inserted_at": "2025-10-02T18:34:01.215069+00:00",
+    "user_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "duration_weeks": 4,
+    "auto_progression_enabled": true,
+    "status": "active",
+    "completed_at": null,
+    "progression_parameters": {
+      "rep_increment": 1,
+      "rpe_target_max": 8,
+      "rpe_target_min": 6,
+      "consistency_threshold": 3,
+      "weight_increment_percentage": 5
+    },
+    "training_days_per_week": 3
+  },
+  {
+    "id": "97184fb0-fea4-498e-828b-b26908fbfc7b",
+    "template_id": "ac6d9d83-188b-4116-a2ac-ea1af2c05d31",
+    "assigned_to": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "assigned_by": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "title_override": null,
+    "goal_override": null,
+    "start_date": "2025-09-23",
+    "is_active": true,
+    "inserted_at": "2025-09-23T08:21:25.821373+00:00",
+    "user_id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "duration_weeks": 4,
+    "auto_progression_enabled": true,
+    "status": "active",
+    "completed_at": null,
+    "progression_parameters": {
+      "rep_increment": 1,
+      "rpe_target_max": 8,
+      "rpe_target_min": 6,
+      "consistency_threshold": 3,
+      "weight_increment_percentage": 5
+    },
+    "training_days_per_week": 3
+  },
+  {
+    "id": "a71af9b5-ad33-4c8d-9ebd-6a485195b690",
+    "template_id": "e5203561-d627-4d8c-8e70-d7420a9f4931",
+    "assigned_to": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "assigned_by": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "title_override": null,
+    "goal_override": null,
+    "start_date": "2025-09-28",
+    "is_active": true,
+    "inserted_at": "2025-09-28T14:05:34.889795+00:00",
+    "user_id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "duration_weeks": 4,
+    "auto_progression_enabled": true,
+    "status": "active",
+    "completed_at": null,
+    "progression_parameters": {
+      "rep_increment": 1,
+      "rpe_target_max": 8,
+      "rpe_target_min": 6,
+      "consistency_threshold": 3,
+      "weight_increment_percentage": 5
+    },
+    "training_days_per_week": 3
+  }
+]

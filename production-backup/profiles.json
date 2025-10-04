@@ -1,0 +1,145 @@
+[
+  {
+    "id": "2087a3c8-3201-4cd7-9a8e-35aaf3e4e0d2",
+    "email": "unepilv@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": false,
+    "trial_ends_at": null,
+    "created_at": "2025-09-26T06:54:32.541975+00:00",
+    "updated_at": "2025-09-26T06:54:32.541975+00:00",
+    "role": "user"
+  },
+  {
+    "id": "301fec03-8aec-4904-881c-5bf063e76e3f",
+    "email": "janikafri@hotmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": false,
+    "trial_ends_at": null,
+    "created_at": "2025-10-03T14:57:53.655181+00:00",
+    "updated_at": "2025-10-03T14:57:53.655181+00:00",
+    "role": "user"
+  },
+  {
+    "id": "38513fcc-ac79-491b-845d-1d6a3d35b4c6",
+    "email": "kraavi.henri@gmail.com",
+    "is_paid": true,
+    "current_period_end": null,
+    "trial_used": true,
+    "trial_ends_at": "2125-09-03T17:02:14.079819+00:00",
+    "created_at": "2025-09-01T13:04:36.97806+00:00",
+    "updated_at": "2025-09-17T20:21:30.982901+00:00",
+    "role": "admin"
+  },
+  {
+    "id": "41014d96-4bde-4c55-81d5-fee13bf78d33",
+    "email": "leetma.henri@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": false,
+    "trial_ends_at": null,
+    "created_at": "2025-10-02T16:35:21.299815+00:00",
+    "updated_at": "2025-10-02T16:35:21.299815+00:00",
+    "role": "user"
+  },
+  {
+    "id": "59b1d316-dd2c-4a67-8080-7edbc458e783",
+    "email": "jhecombusiness@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": true,
+    "trial_ends_at": "2025-08-31T21:56:32.003359+00:00",
+    "created_at": "2025-08-30T21:56:32.003359+00:00",
+    "updated_at": "2025-08-30T21:56:32.003359+00:00",
+    "role": "user"
+  },
+  {
+    "id": "5b5ea11c-ebae-4420-862c-347dfb7f7819",
+    "email": "oxanatest@mail.ee",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": false,
+    "trial_ends_at": null,
+    "created_at": "2025-09-25T20:01:54.538811+00:00",
+    "updated_at": "2025-09-25T20:01:54.538811+00:00",
+    "role": "user"
+  },
+  {
+    "id": "9c4bb881-c8b0-43eb-a824-22f6e0a1a8b9",
+    "email": "poodproovi@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": false,
+    "trial_ends_at": null,
+    "created_at": "2025-09-29T15:45:12.614921+00:00",
+    "updated_at": "2025-09-29T15:45:12.614921+00:00",
+    "role": "user"
+  },
+  {
+    "id": "c0043a7b-274c-4f92-9b5a-1098dcebaabc",
+    "email": "treenitaastu@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": true,
+    "trial_ends_at": "2025-08-31T21:52:37.490221+00:00",
+    "created_at": "2025-08-30T20:21:09.163532+00:00",
+    "updated_at": "2025-08-30T21:52:37.490221+00:00",
+    "role": "user"
+  },
+  {
+    "id": "d09873a5-934a-4268-ad44-bbb0c83c1a74",
+    "email": "regina.vahi06@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": false,
+    "trial_ends_at": null,
+    "created_at": "2025-10-02T14:01:23.070879+00:00",
+    "updated_at": "2025-10-02T14:01:23.070879+00:00",
+    "role": "user"
+  },
+  {
+    "id": "eb680997-a214-449a-9582-4186f836ab80",
+    "email": "random@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": false,
+    "trial_ends_at": null,
+    "created_at": "2025-09-17T20:21:24.370625+00:00",
+    "updated_at": "2025-09-17T20:21:24.370625+00:00",
+    "role": "user"
+  },
+  {
+    "id": "eb734ca1-ec21-455f-8ea5-a31d0362d99b",
+    "email": "henrikraavi1234@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": true,
+    "trial_ends_at": "2025-09-22T22:09:54.132529+00:00",
+    "created_at": "2025-08-30T19:57:30.425781+00:00",
+    "updated_at": "2025-08-30T21:53:41.198511+00:00",
+    "role": "subscriber"
+  },
+  {
+    "id": "f8498a7e-c690-4a1a-8a77-c4962b631a06",
+    "email": "storetesting232@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": false,
+    "trial_ends_at": null,
+    "created_at": "2025-09-27T12:19:10.50669+00:00",
+    "updated_at": "2025-09-27T12:19:10.50669+00:00",
+    "role": "user"
+  },
+  {
+    "id": "fabf8905-089b-459b-af00-d008912d60e5",
+    "email": "olossenko@gmail.com",
+    "is_paid": false,
+    "current_period_end": null,
+    "trial_used": false,
+    "trial_ends_at": null,
+    "created_at": "2025-09-25T19:56:25.005823+00:00",
+    "updated_at": "2025-09-25T19:56:25.005823+00:00",
+    "role": "user"
+  }
+]
