@@ -26,9 +26,9 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    const { priceId } = await req.json();
+    const { priceId, productId, mode, successUrl, cancelUrl } = await req.json();
     if (!priceId) throw new Error("Price ID is required");
-    logStep("Request data received", { priceId });
+    logStep("Request data received", { priceId, productId, mode, successUrl, cancelUrl });
 
     // Try to get authenticated user (optional)
     const authHeader = req.headers.get("Authorization");
@@ -78,10 +78,11 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/pricing`,
+      success_url: successUrl || `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${origin}/teenused`,
       metadata: {
-        price_id: priceId
+        price_id: priceId,
+        product_id: productId
       }
     };
 
@@ -92,7 +93,9 @@ serve(async (req) => {
       sessionData.customer_email = userEmail;
     } else {
       // For guests: subscription mode needs different handling than payment mode
-      if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK") {
+      if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK" || 
+          priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw" || 
+          priceId === "price_1SBCYgEOy7gy4lEEWJWNz8gW") {
         // Monthly subscription - can't use customer_creation, Stripe will collect email
         sessionData.payment_method_collection = 'always';
       } else {
@@ -107,11 +110,14 @@ serve(async (req) => {
     }
 
     // Determine mode based on price type
-    if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK") {
+    if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK" || 
+        priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw" || 
+        priceId === "price_1SBCYgEOy7gy4lEEWJWNz8gW") {
       // Monthly recurring subscription
       sessionData.mode = "subscription";
-    } else if (priceId === "price_1SBJMJCirvfSO0IRAHXrGSzn") {
-      // Yearly one-time payment
+    } else if (priceId === "price_1SBJMJCirvfSO0IRAHXrGSzn" || 
+               priceId === "price_1SBCZeEOy7gy4lEEc3DwQzTu") {
+      // One-time payment
       sessionData.mode = "payment";
     } else {
       // Default to payment mode for other products
