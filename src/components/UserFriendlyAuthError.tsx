@@ -21,7 +21,7 @@ export function UserFriendlyAuthError({ error }: UserFriendlyAuthErrorProps) {
     }
     
     if (lowerError.includes('user not found')) {
-      return "Selle e-mailiga kontot ei leitud. Palun loo konto või kontrolli e-maili aadressi.";
+      return "Selle e-posti aadressiga kontot ei leitud. Palun loo konto või kontrolli e-posti aadressi.";
     }
     
     if (lowerError.includes('email not confirmed')) {
@@ -30,7 +30,7 @@ export function UserFriendlyAuthError({ error }: UserFriendlyAuthErrorProps) {
     
     // Password reset errors
     if (lowerError.includes('password reset') && lowerError.includes('user not found')) {
-      return "Selle e-mailiga kontot ei leitud. Kontrolli e-maili aadressi.";
+      return "Selle e-posti aadressiga kontot ei leitud. Kontrolli e-posti aadressi.";
     }
     
     // Google/OAuth errors

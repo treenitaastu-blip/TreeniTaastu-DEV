@@ -68,8 +68,8 @@ export const useSupportChat = () => {
     } catch (error) {
       console.error('Error loading conversations:', error);
       toast({
-        title: "Error",
-        description: "Failed to load chat history",
+        title: "Viga",
+        description: "Vestluste ajaloo laadimine ebaõnnestus",
         variant: "destructive"
       });
     } finally {
@@ -91,8 +91,8 @@ export const useSupportChat = () => {
     } catch (error) {
       console.error('Error loading messages:', error);
       toast({
-        title: "Error",
-        description: "Failed to load messages",
+        title: "Viga",
+        description: "Sõnumite laadimine ebaõnnestus",
         variant: "destructive"
       });
     }
@@ -122,8 +122,8 @@ export const useSupportChat = () => {
     } catch (error) {
       console.error('Error creating conversation:', error);
       toast({
-        title: "Error",
-        description: "Failed to start chat",
+        title: "Viga",
+        description: "Vestluse alustamine ebaõnnestus",
         variant: "destructive"
       });
       return null;
@@ -159,8 +159,8 @@ export const useSupportChat = () => {
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
-        title: "Error",
-        description: "Failed to send message",
+        title: "Viga",
+        description: "Sõnumi saatmine ebaõnnestus",
         variant: "destructive"
       });
     } finally {

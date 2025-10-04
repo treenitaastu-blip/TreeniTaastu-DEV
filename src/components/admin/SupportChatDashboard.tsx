@@ -64,8 +64,8 @@ export function SupportChatDashboard() {
       if (error) throw error;
       
       toast({
-        title: "Success",
-        description: data || "You are now an admin"
+        title: "Edu",
+        description: data || "Oled nüüd administraator"
       });
       
       // Refresh auth status and conversations
@@ -74,8 +74,8 @@ export function SupportChatDashboard() {
     } catch (error) {
       console.error('Error setting up admin:', error);
       toast({
-        title: "Error", 
-        description: "Failed to set up admin access. Make sure you're logged in.",
+        title: "Viga", 
+        description: "Administraatori õiguste seadistamine ebaõnnestus. Kontrolli, et oled sisse logitud.",
         variant: "destructive"
       });
     } finally {
@@ -145,8 +145,8 @@ export function SupportChatDashboard() {
     } catch (error) {
       console.error('Error loading conversations:', error);
       toast({
-        title: "Error",
-        description: "Failed to load conversations",
+        title: "Viga",
+        description: "Vestluste laadimine ebaõnnestus",
         variant: "destructive"
       });
     } finally {
@@ -172,8 +172,8 @@ export function SupportChatDashboard() {
     } catch (error) {
       console.error('Error loading messages:', error);
       toast({
-        title: "Error",
-        description: "Failed to load messages",
+        title: "Viga",
+        description: "Sõnumite laadimine ebaõnnestus",
         variant: "destructive"
       });
     }
@@ -220,8 +220,8 @@ export function SupportChatDashboard() {
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
       setNewMessage(messageToSend);
       toast({
-        title: "Error",
-        description: "Failed to send message",
+        title: "Viga",
+        description: "Sõnumi saatmine ebaõnnestus",
         variant: "destructive"
       });
     } finally {
@@ -248,16 +248,16 @@ export function SupportChatDashboard() {
       if (error) throw error;
       
       toast({
-        title: "Success",
-        description: "Conversation closed"
+        title: "Edu",
+        description: "Vestlus suletud"
       });
       
       loadConversations();
     } catch (error) {
       console.error('Error closing conversation:', error);
       toast({
-        title: "Error",
-        description: "Failed to close conversation",
+        title: "Viga",
+        description: "Vestluse sulgemine ebaõnnestus",
         variant: "destructive"
       });
     }
@@ -385,7 +385,7 @@ export function SupportChatDashboard() {
         <Alert className="border-destructive/50 text-destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Not authenticated:</strong> You need to log in first to access the admin chat.
+            <strong>Pole sisse logitud:</strong> Pead sisse logima, et ligipääsu saada administraatori vestlusele.
           </AlertDescription>
         </Alert>
       )}
@@ -394,14 +394,14 @@ export function SupportChatDashboard() {
         <Alert className="border-warning/50">
           <Shield className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
-            <span><strong>Not an admin:</strong> You need admin privileges to access support conversations.</span>
+            <span><strong>Pole administraator:</strong> Sul on vaja administraatori õigusi, et ligipääsu saada tugivestlusele.</span>
             <Button
               onClick={makeCurrentUserAdmin}
               disabled={settingUpAdmin}
               size="sm"
               variant="outline"
             >
-              {settingUpAdmin ? "Setting up..." : "Make me admin"}
+              {settingUpAdmin ? "Seadistan..." : "Tee mind administraatoriks"}
             </Button>
           </AlertDescription>
         </Alert>
@@ -411,7 +411,7 @@ export function SupportChatDashboard() {
         <Alert className="border-success/50 text-success">
           <Shield className="h-4 w-4" />
           <AlertDescription>
-            <strong>Admin access granted:</strong> You can now access all support conversations.
+            <strong>Administraatori ligipääs antud:</strong> Saad nüüd ligipääsu kõikidele tugivestluste.
           </AlertDescription>
         </Alert>
       )}
