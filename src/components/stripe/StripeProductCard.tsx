@@ -7,11 +7,11 @@ import { StripeProduct } from '@/types/subscription';
 
 interface StripeProductCardProps {
   product: StripeProduct;
-  onSelect: (product: StripeProduct) => void;
-  loading?: boolean;
+  onCheckout: (product: StripeProduct) => void;
+  loading?: string | null;
 }
 
-export function StripeProductCard({ product, onSelect, loading }: StripeProductCardProps) {
+export function StripeProductCard({ product, onCheckout, loading }: StripeProductCardProps) {
   return (
     <Card className={`relative ${product.isPopular ? 'border-2 border-primary shadow-lg scale-105' : 'border shadow-sm'}`}>
       {/* Popular Badge */}
@@ -59,10 +59,10 @@ export function StripeProductCard({ product, onSelect, loading }: StripeProductC
         <Button 
           className="w-full"
           variant={product.isPopular ? "default" : "outline"}
-          onClick={() => onSelect(product)}
-          disabled={loading}
+          onClick={() => onCheckout(product)}
+          disabled={loading === product.id}
         >
-          {loading ? (
+          {loading === product.id ? (
             'Laen...'
           ) : product.interval === 'one_time' ? (
             'Osta nüüd'

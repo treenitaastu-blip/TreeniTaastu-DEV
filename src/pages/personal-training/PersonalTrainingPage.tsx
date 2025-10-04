@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { STRIPE_PRODUCTS, StripeProduct } from '@/types/subscription';
 import { StripeProductCard } from '@/components/stripe/StripeProductCard';
-import { StripeCheckout } from '@/components/stripe/StripeCheckout';
-import { StripeConfig } from '@/types/subscription';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Shield, Clock, Users } from 'lucide-react';
 
@@ -13,23 +13,59 @@ import { CheckCircle, Shield, Clock, Users } from 'lucide-react';
  * Updated with Stripe integration for test products
  */
 export default function PersonalTrainingPage() {
-  const [selectedProduct, setSelectedProduct] = useState<StripeProduct | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user, session } = useAuth();
 
-  const handleProductSelect = (product: StripeProduct) => {
-    setSelectedProduct(product);
-  };
+  const handleCheckout = async (product: StripeProduct) => {
+    if (!user) {
+      toast({
+        title: "Viga",
+        description: "Palun logi sisse, et tellimust vormistada.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const handleCheckoutSuccess = () => {
-    toast({
-      title: "Edukas!",
-      description: "Suunatakse makselehele...",
-    });
-  };
+    setLoading(product.id);
 
-  const handleCheckoutError = (error: string) => {
-    console.error('Checkout error:', error);
+    try {
+      // Create checkout session via Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          priceId: product.stripePriceId,
+          productId: product.stripeProductId,
+          mode: product.interval === 'one_time' ? 'payment' : 'subscription',
+          successUrl: `${window.location.origin}/payment-success`,
+          cancelUrl: `${window.location.origin}/teenused`,
+        },
+        headers: session ? {
+          Authorization: `Bearer ${session.access_token}`
+        } : undefined
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        // Redirect to Stripe Checkout immediately
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Tundmatu viga';
+      
+      toast({
+        title: "Viga tellimuse vormistamisel",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -79,32 +115,11 @@ export default function PersonalTrainingPage() {
             <StripeProductCard
               key={product.id}
               product={product}
-              onSelect={handleProductSelect}
+              onCheckout={handleCheckout}
               loading={loading}
             />
           ))}
         </div>
-
-        {/* Selected Product Checkout */}
-        {selectedProduct && (
-          <div className="max-w-md mx-auto">
-            <Card className="border-primary">
-              <CardHeader className="text-center">
-                <CardTitle>Valitud teenus: {selectedProduct.name}</CardTitle>
-                <CardDescription>
-                  {selectedProduct.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <StripeCheckout
-                  product={selectedProduct}
-                  onSuccess={handleCheckoutSuccess}
-                  onError={handleCheckoutError}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Additional Info */}
         <div className="text-center mt-16">
