@@ -105,33 +105,43 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Password updated successfully for:", email);
 
-    // Send new password via email
-    const resendResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: "Treenitaastu <noreply@treenitaastu.app>",
-        to: [email],
-        subject: "Uus parool - Treenitaastu",
-        html: createNewPasswordEmail({
-          email: email,
-          newPassword: newPassword
-        }),
-        text: `Sinu uus Treenitaastu parool: ${newPassword}`,
-      }),
-    });
+    // Try to send new password via email
+    try {
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      if (!resendApiKey) {
+        console.warn("RESEND_API_KEY not found, skipping email send");
+      } else {
+        const resendResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: "Treenitaastu <noreply@treenitaastu.app>",
+            to: [email],
+            subject: "Uus parool - Treenitaastu",
+            html: createNewPasswordEmail({
+              email: email,
+              newPassword: newPassword
+            }),
+            text: `Sinu uus Treenitaastu parool: ${newPassword}`,
+          }),
+        });
 
-    const emailResponse = await resendResponse.json();
+        const emailResponse = await resendResponse.json();
 
-    if (!resendResponse.ok) {
-      console.error("Resend API error:", emailResponse);
-      throw new Error(emailResponse.message || 'Failed to send email');
+        if (!resendResponse.ok) {
+          console.error("Resend API error:", emailResponse);
+          throw new Error(emailResponse.message || 'Failed to send email');
+        }
+
+        console.log("New password email sent successfully:", emailResponse);
+      }
+    } catch (emailError) {
+      console.error("Email sending failed, but password was updated:", emailError);
+      // Don't fail the whole operation if email fails
     }
-
-    console.log("New password email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

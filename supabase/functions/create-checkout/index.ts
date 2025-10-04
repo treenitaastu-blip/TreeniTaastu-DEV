@@ -92,8 +92,8 @@ serve(async (req) => {
       sessionData.customer_email = userEmail;
     } else {
       // For guests: subscription mode needs different handling than payment mode
-      if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK") {
-        // Monthly subscription - can't use customer_creation, Stripe will collect email
+      if (priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw" || priceId === "price_1SBCYgEOy7gy4lEEWJWNz8gW") {
+        // Monthly subscriptions - can't use customer_creation, Stripe will collect email
         sessionData.payment_method_collection = 'always';
       } else {
         // Payment mode can use customer_creation
@@ -107,11 +107,11 @@ serve(async (req) => {
     }
 
     // Determine mode based on price type
-    if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK") {
-      // Monthly recurring subscription
+    if (priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw" || priceId === "price_1SBCYgEOy7gy4lEEWJWNz8gW") {
+      // Monthly recurring subscriptions
       sessionData.mode = "subscription";
-    } else if (priceId === "price_1SBJMJCirvfSO0IRAHXrGSzn") {
-      // Yearly one-time payment
+    } else if (priceId === "price_1SBCZeEOy7gy4lEEc3DwQzTu") {
+      // One-time payment for transformation program
       sessionData.mode = "payment";
     } else {
       // Default to payment mode for other products
