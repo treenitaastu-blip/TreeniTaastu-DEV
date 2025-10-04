@@ -28,7 +28,7 @@ export function useSubscription() {
 
     try {
       const { data, error } = await supabase
-        .from('user_subscriptions')
+        .from('subscribers')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active')
