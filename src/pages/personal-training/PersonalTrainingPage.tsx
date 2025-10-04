@@ -18,11 +18,6 @@ export default function PersonalTrainingPage() {
   const { user, session } = useAuth();
 
   const handleCheckout = async (product: StripeProduct) => {
-    console.log('=== CHECKOUT DEBUG ===');
-    console.log('User:', user);
-    console.log('Session:', session);
-    console.log('Product:', product);
-
     if (!user) {
       toast({
         title: "Viga",
@@ -35,8 +30,6 @@ export default function PersonalTrainingPage() {
     setLoading(product.id);
 
     try {
-      console.log('Creating checkout request...');
-      
       // Create checkout session via Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
@@ -51,19 +44,12 @@ export default function PersonalTrainingPage() {
         } : undefined
       });
 
-      console.log('Checkout response:', { data, error });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (data?.url) {
-        console.log('Redirecting to:', data.url);
         // Redirect to Stripe Checkout immediately
         window.location.href = data.url;
       } else {
-        console.error('No checkout URL in response:', data);
         throw new Error('No checkout URL received');
       }
     } catch (error) {
