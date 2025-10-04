@@ -380,14 +380,9 @@ function PTMenuItems({ onItem, canPT }: { onItem?: () => void; canPT: boolean })
   return (
     <>
       {canPT && (
-        <>
-          <Item to="/teenused" icon={Activity}>
-            Teenused
-          </Item>
-          <Item to="/programs" icon={Users2}>
-            Minu programmid
-          </Item>
-        </>
+        <Item to="/programs" icon={Users2}>
+          Minu programmid
+        </Item>
       )}
       <Item to="/kalkulaatorid" icon={Calculator}>
         Kalkulaatorid
