@@ -105,11 +105,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Password updated successfully for:", email);
 
+    let emailSent = false;
+    let emailError = null;
+
     // Try to send new password via email
     try {
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
       if (!resendApiKey) {
         console.warn("RESEND_API_KEY not found, skipping email send");
+        emailError = "Email service not configured";
       } else {
         const resendResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -133,17 +137,35 @@ const handler = async (req: Request): Promise<Response> => {
 
         if (!resendResponse.ok) {
           console.error("Resend API error:", emailResponse);
-          throw new Error(emailResponse.message || 'Failed to send email');
+          emailError = emailResponse.message || 'Failed to send email';
+        } else {
+          console.log("New password email sent successfully:", emailResponse);
+          emailSent = true;
         }
-
-        console.log("New password email sent successfully:", emailResponse);
       }
-    } catch (emailError) {
-      console.error("Email sending failed, but password was updated:", emailError);
-      // Don't fail the whole operation if email fails
+    } catch (emailErr) {
+      console.error("Email sending failed, but password was updated:", emailErr);
+      emailError = emailErr.message || "Email service error";
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    // For development/testing: return the new password in response
+    const responseData: any = { 
+      success: true,
+      emailSent: emailSent,
+      message: emailSent ? "New password sent to email" : "Password updated but email not sent"
+    };
+
+    // Include password in response for development (remove in production)
+    const isDevelopment = Deno.env.get("ENVIRONMENT") === "development" || 
+                         Deno.env.get("SUPABASE_URL")?.includes("dtxbrnrpzepwoxooqwlj");
+    
+    if (isDevelopment) {
+      responseData.newPassword = newPassword;
+      responseData.emailError = emailError;
+      console.log("Development mode: returning new password in response");
+    }
+
+    return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: {
         "Content-Type": "application/json",

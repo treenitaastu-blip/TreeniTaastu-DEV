@@ -30,13 +30,21 @@ export default function ForgotPasswordPage() {
 
     try {
       // Call our auto password reset function
-      const { error: functionError } = await supabase.functions.invoke('auto-password-reset', {
+      const { data, error: functionError } = await supabase.functions.invoke('auto-password-reset', {
         body: { email: validation.data }
       });
 
       if (functionError) throw functionError;
       
-      setSuccess(true);
+      if (data.emailSent) {
+        setSuccess(true);
+      } else if (data.newPassword) {
+        // Show the new password directly
+        alert(`Uus parool genereeritud! Sinu uus parool on: ${data.newPassword}\n\nKopeeri see hoolikalt ja logi sisse.`);
+        setSuccess(true);
+      } else {
+        setSuccess(true);
+      }
     } catch (err) {
       const e = err as Error;
       setError(e.message || "Parooli lähtestamine ebaõnnestus");

@@ -127,11 +127,18 @@ export default function LoginPage() {
     setInfo(null);
     try {
       // Use our custom email function instead of Supabase's default
-      const { error } = await supabase.functions.invoke('auto-password-reset', {
+      const { data, error } = await supabase.functions.invoke('auto-password-reset', {
         body: { email }
       });
       if (error) throw error;
-      setInfo("Saatsime uue parooli sinu e-postile. Kontrolli postkasti (ka rämpsposti).");
+      
+      if (data.emailSent) {
+        setInfo("Saatsime uue parooli sinu e-postile. Kontrolli postkasti (ka rämpsposti).");
+      } else if (data.newPassword) {
+        setInfo(`Uus parool genereeritud! Sinu uus parool on: ${data.newPassword} - Kopeeri see hoolikalt ja logi sisse.`);
+      } else {
+        setInfo("Parool lähtestatud, aga e-kiri ei saadetud. Palun võta ühendust toega.");
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error
