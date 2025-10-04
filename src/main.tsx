@@ -28,8 +28,6 @@ const PTDebug = lazy(() => import("@/pages/PTDebug"));
 // Access hook
 import useAccess from "@/hooks/useAccess";
 import { useAuth } from "@/hooks/useAuth";
-import { isPreviewMode } from "@/utils/preview";
-import PreviewFallback from "@/components/PreviewFallback";
 
 // Layout
 import App from "@/App";
@@ -105,14 +103,7 @@ function RequireAdmin() {
   const { loading, isAdmin } = useAccess();
   const loc = useLocation();
 
-  // In preview mode, allow admin access
-  if (isPreviewMode()) {
-    return (
-      <PreviewFallback requireAuth>
-        <Outlet />
-      </PreviewFallback>
-    );
-  }
+  // Check admin access
 
   if (status === "loading" || loading) {
     return (

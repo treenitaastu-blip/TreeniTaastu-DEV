@@ -2,7 +2,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-// Prefer env vars (local/dev/prod) but fall back to hardcoded defaults for Lovable previews
+// Prefer env vars (local/dev/prod) but fall back to hardcoded defaults for development
 const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL || "https://dtxbrnrpzepwoxooqwlj.supabase.co";
 const SUPABASE_ANON_KEY =

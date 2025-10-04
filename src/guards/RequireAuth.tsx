@@ -1,21 +1,12 @@
 // src/guards/RequireAuth.tsx
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { isPreviewMode } from "@/utils/preview";
-import PreviewFallback from "@/components/PreviewFallback";
 
 export default function RequireAuth() {
   const loc = useLocation();
   const { status, user } = useAuth();
 
-  // In preview mode, allow access without authentication
-  if (isPreviewMode()) {
-    return (
-      <PreviewFallback requireAuth>
-        <Outlet />
-      </PreviewFallback>
-    );
-  }
+  // Check authentication status
 
   if (status === "loading") {
     return (

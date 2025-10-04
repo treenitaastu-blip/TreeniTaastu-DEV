@@ -48,21 +48,13 @@ export default function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // Detect preview mode for Lovable only (exclude localhost and development)
-  const isPreviewMode = typeof window !== 'undefined' && (
-    window.location.hostname.includes('lovableproject.com') ||
-    window.location.search.includes('__lovable_token')
-  ) && !window.location.hostname.includes('localhost');
-
-  const [status, setStatus] = useState<AuthStatus>(isPreviewMode ? "signedOut" : "loading");
+  const [status, setStatus] = useState<AuthStatus>("loading");
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
-  const [entitlement, setEntitlement] = useState<Entitlement | null>(
-    isPreviewMode ? { isSubscriber: true } : null
-  );
-  const [loading, setLoading] = useState<boolean>(!isPreviewMode);
-  const [loadingEntitlement, setLoadingEntitlement] = useState<boolean>(!isPreviewMode);
+  const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingEntitlement, setLoadingEntitlement] = useState<boolean>(true);
   const [error, setError] = useState<unknown>(null);
 
   const aliveRef = useRef(true);
@@ -76,7 +68,7 @@ export default function AuthProvider({
   const lastFetchAtRef = useRef<number | null>(null);
 
   const refreshEntitlements = useCallback(async () => {
-    if (!user || isPreviewMode) return;
+    if (!user) return;
 
     const now = Date.now();
     if (fetchingRef.current) return;
@@ -114,21 +106,14 @@ export default function AuthProvider({
       if (aliveRef.current) setLoadingEntitlement(false);
       fetchingRef.current = false;
     }
-  }, [user, isPreviewMode]);
+  }, [user]);
 
   const didInit = useRef(false);
   useEffect(() => {
     if (didInit.current) return;
     didInit.current = true;
 
-    // Skip auth initialization in preview mode
-    if (isPreviewMode) {
-      setLoading(false);
-      setLoadingEntitlement(false);
-      setStatus("signedOut");
-      setEntitlement({ isSubscriber: true });
-      return;
-    }
+    // Initialize authentication
 
     let unsub: (() => void) | null = null;
     
@@ -203,7 +188,7 @@ export default function AuthProvider({
         // ignore
       }
     };
-  }, [refreshEntitlements, isPreviewMode]);
+  }, [refreshEntitlements]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
@@ -243,14 +228,13 @@ export default function AuthProvider({
     ]
   );
 
-  // Don't render children until first bootstrap done (but allow preview mode)
-  if (loading && !isPreviewMode) {
+  // Don't render children until first bootstrap done
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <div>Loading…</div>
-          {isPreviewMode && <div className="text-xs text-muted-foreground mt-1">Preview Mode</div>}
         </div>
       </div>
     );

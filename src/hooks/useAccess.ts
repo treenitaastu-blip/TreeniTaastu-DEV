@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { isPreviewMode, getPreviewAccess } from "@/utils/preview";
 
 type UseAccess = {
   loading: boolean;
@@ -15,10 +14,7 @@ type UseAccess = {
 export default function useAccess(): UseAccess {
   const { user } = useAuth();
   
-  // Return preview access immediately if in preview mode
-  if (isPreviewMode()) {
-    return getPreviewAccess();
-  }
+  // Check user access
   
   const [state, setState] = useState<UseAccess>({
     loading: true,

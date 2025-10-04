@@ -1,22 +1,13 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import useAccess from "@/hooks/useAccess";
-import { isPreviewMode } from "@/utils/preview";
-import PreviewFallback from "@/components/PreviewFallback";
 
 export default function RequireStatic() {
   const loc = useLocation();
   const { status, user } = useAuth();
   const { loading, canStatic, isAdmin } = useAccess();
 
-  // In preview mode, allow static access
-  if (isPreviewMode()) {
-    return (
-      <PreviewFallback requireAuth>
-        <Outlet />
-      </PreviewFallback>
-    );
-  }
+  // Check access permissions
 
   // Still resolving auth or access
   if (status === "loading" || loading) {

@@ -49,19 +49,13 @@ export default function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // Detect preview mode (exclude localhost for development)
-  const isPreviewMode = typeof window !== 'undefined' && (
-    window.location.hostname.includes('lovableproject.com') ||
-    window.location.search.includes('__lovable_token')
-  ) && !window.location.hostname.includes('localhost');
-
-  const [status, setStatus] = useState<AuthStatus>(isPreviewMode ? "signedOut" : "loading");
+  const [status, setStatus] = useState<AuthStatus>("loading");
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
-  const [loading, setLoading] = useState<boolean>(!isPreviewMode);
-  const [loadingEntitlement, setLoadingEntitlement] = useState<boolean>(!isPreviewMode);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingEntitlement, setLoadingEntitlement] = useState<boolean>(true);
   const [error, setError] = useState<unknown>(null);
 
   const aliveRef = useRef(true);
@@ -123,19 +117,10 @@ export default function AuthProvider({
     if (didInit.current) return;
     didInit.current = true;
 
-    // Skip auth initialization in preview mode
-    if (isPreviewMode) {
-      console.log("[AuthProvider] Preview mode detected, skipping auth");
-      setLoading(false);
-      setLoadingEntitlement(false);
-      setStatus("signedOut");
-      setEntitlement({ isSubscriber: false });
-      return;
-    }
-
+    // Initialize authentication
     let unsub: (() => void) | null = null;
     
-    // Shorter timeout for non-preview mode
+    // Timeout for auth initialization
     const timeoutId = setTimeout(() => {
       console.warn("[AuthProvider] Auth initialization timeout, forcing loading to false");
       if (aliveRef.current) {
@@ -145,7 +130,7 @@ export default function AuthProvider({
         setError(new Error("Auth initialization timeout"));
         setEntitlement({ isSubscriber: false });
       }
-    }, 3000); // 3 second timeout for faster preview
+    }, 5000);
 
     (async () => {
       setLoading(true);
@@ -209,7 +194,7 @@ export default function AuthProvider({
         // ignore
       }
     };
-  }, [refreshEntitlements, isPreviewMode]);
+  }, [refreshEntitlements]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
