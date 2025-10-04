@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Check } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
+import { PricingCards } from "@/components/subscription/PricingCards";
+import { Check, ArrowRight, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 // Trial signup component
@@ -123,7 +125,24 @@ export default function Pricing() {
   const [loading, setLoading] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, status } = useAuth();
+  const { subscription, subscribe, getCurrentTier } = useSubscription();
   const navigate = useNavigate();
+
+  const handleSelectPlan = async (planId: string) => {
+    setLoading(planId);
+
+    try {
+      await subscribe(planId);
+      
+      // Redirect to dashboard after successful subscription
+      navigate('/home');
+    } catch (error) {
+      console.error('Subscription error:', error);
+      // Error is already handled in the subscribe function
+    } finally {
+      setLoading(null);
+    }
+  };
 
   const handleCheckout = async (priceId: string, planType: string) => {
     setLoading(priceId);
@@ -163,94 +182,87 @@ export default function Pricing() {
     "Elektrooniline tugi"
   ];
 
+  // Show trial signup if user is not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+        <div className="max-w-md mx-auto pt-20">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-4">Alusta tasuta prooviga</h1>
+            <p className="text-lg text-muted-foreground">
+              7 päeva tasuta ligipääsu kõikidele funktsioonidele
+            </p>
+          </div>
+          
+          <TrialSignupCard />
+          
+          <div className="mt-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              Kas sul on juba konto?{' '}
+              <Link to="/login" className="text-primary hover:underline">
+                Logi sisse
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Vali oma plaan</h1>
           <p className="text-xl text-muted-foreground">
-            Alusta 3-päevase tasuta prooviperioodiga
+            {subscription ? 'Uuenda oma tellimust' : 'Alusta 7-päevase tasuta prooviga'}
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          {/* Monthly Plan */}
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="text-2xl">Kuumakse</CardTitle>
-              <CardDescription>
-                Paindlik valik, tühista igal ajal
-              </CardDescription>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">€14,99</span>
-                <span className="text-muted-foreground">/kuu</span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-3">
-                {features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-600" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                onClick={() => handleCheckout(MONTHLY_PRICE_ID, "monthly")}
-                disabled={loading === MONTHLY_PRICE_ID}
-                className="w-full"
-                size="lg"
-              >
-                {loading === MONTHLY_PRICE_ID ? "Ümbersuunamine..." : "Alusta kuumaksega"}
-              </Button>
-            </CardContent>
-          </Card>
+        {/* New Subscription Plans */}
+        <PricingCards 
+          onSelectPlan={handleSelectPlan}
+          loading={loading}
+          currentPlan={subscription?.planId}
+          showTrial={!subscription}
+        />
 
-          {/* Yearly Plan */}
-          <Card className="border-2 border-primary relative">
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-              <Badge className="bg-primary text-primary-foreground">
-                Säästa €60
-              </Badge>
-            </div>
-            <CardHeader>
-              <CardTitle className="text-2xl">Aastamakse</CardTitle>
-              <CardDescription>
-                Parim väärtus - märkimisväärne kokkuhoid
-              </CardDescription>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">€119,88</span>
-                <span className="text-muted-foreground">/aasta</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Võrreldes kuumaksega (€179,88)
-              </p>
+        {/* Current Subscription Info */}
+        {subscription && (
+          <Card className="max-w-2xl mx-auto mt-8">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Star className="h-5 w-5 text-yellow-500" />
+                Sinu praegune tellimus
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-3">
-                {features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-600" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                onClick={() => handleCheckout(YEARLY_PRICE_ID, "yearly")}
-                disabled={loading === YEARLY_PRICE_ID}
-                className="w-full"
-                size="lg"
-                variant="default"
-              >
-                {loading === YEARLY_PRICE_ID ? "Ümbersuunamine..." : "Alusta aastamaksega"}
-              </Button>
+            <CardContent className="text-center space-y-2">
+              <p className="text-lg font-medium">
+                {subscription.planId === 'trial_self_guided' ? '7-päevane proov' : 
+                 subscription.planId === 'self_guided' ? 'Self-Guided' :
+                 subscription.planId === 'guided' ? 'Guided' :
+                 subscription.planId === 'transformation' ? 'Transformation' : 'Teadmata'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Status: {subscription.status}
+              </p>
+              {subscription.trialEndsAt && (
+                <p className="text-sm text-muted-foreground">
+                  Proov lõpeb: {subscription.trialEndsAt.toLocaleDateString('et-EE')}
+                </p>
+              )}
+              {subscription.currentPeriodEnd && (
+                <p className="text-sm text-muted-foreground">
+                  Järgmine arve: {subscription.currentPeriodEnd.toLocaleDateString('et-EE')}
+                </p>
+              )}
             </CardContent>
           </Card>
-        </div>
+        )}
 
         <div className="text-center mt-8 space-y-4">
           <p className="text-sm text-muted-foreground">
-            3-päevane tasuta prooviperiood • Tühista igal ajal • Turvaline makse
+            7-päevane tasuta prooviperiood • Tühista igal ajal • Turvaline makse
           </p>
           
           {status !== "signedIn" && (
