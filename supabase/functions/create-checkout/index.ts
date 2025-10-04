@@ -124,11 +124,32 @@ serve(async (req) => {
       sessionData.mode = "payment";
     }
 
+    // If mode is set to subscription but priceId is not recognized, fallback to payment
+    if (sessionData.mode === "subscription" && !["price_1SBCokCirvfSO0IROfFuh6AK", "price_1SBCY0EOy7gy4lEEyRwBvuyw", "price_1SBCYgEOy7gy4lEEWJWNz8gW"].includes(priceId)) {
+      logStep("Price ID not recognized for subscription, falling back to payment mode", { priceId });
+      sessionData.mode = "payment";
+    }
+
     logStep("Creating checkout session", { mode: sessionData.mode });
 
-    const session = await stripe.checkout.sessions.create(sessionData);
-
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(sessionData);
+      logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    } catch (stripeError) {
+      logStep("Stripe error creating session", { error: stripeError.message, priceId, mode: sessionData.mode });
+      
+      // If subscription mode fails, try payment mode as fallback
+      if (sessionData.mode === "subscription" && stripeError.message.includes("recurring price")) {
+        logStep("Subscription mode failed, trying payment mode", { priceId });
+        sessionData.mode = "payment";
+        delete sessionData.payment_method_collection; // Remove subscription-specific settings
+        session = await stripe.checkout.sessions.create(sessionData);
+        logStep("Checkout session created in payment mode", { sessionId: session.id, url: session.url });
+      } else {
+        throw stripeError; // Re-throw if not a recurring price error
+      }
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
