@@ -48,12 +48,11 @@ export default function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // Detect preview mode for Lovable (exclude localhost for development)
+  // Detect preview mode for Lovable only (exclude localhost and development)
   const isPreviewMode = typeof window !== 'undefined' && (
     window.location.hostname.includes('lovableproject.com') ||
-    window.location.search.includes('__lovable_token') ||
-    window.location.hostname.includes('vercel.app')
-  );
+    window.location.search.includes('__lovable_token')
+  ) && !window.location.hostname.includes('localhost');
 
   const [status, setStatus] = useState<AuthStatus>(isPreviewMode ? "signedOut" : "loading");
   const [session, setSession] = useState<Session | null>(null);

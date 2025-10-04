@@ -3,9 +3,9 @@ export const isPreviewMode = () => {
   if (typeof window === 'undefined') return false;
   
   return (
-    window.location.hostname.includes('lovableproject.com') ||
-    window.location.search.includes('__lovable_token') ||
-    window.location.hostname.includes('vercel.app')
+    (window.location.hostname.includes('lovableproject.com') ||
+     window.location.search.includes('__lovable_token')) &&
+    !window.location.hostname.includes('localhost')
   );
 };
 

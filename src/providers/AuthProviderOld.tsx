@@ -52,9 +52,8 @@ export default function AuthProvider({
   // Detect preview mode (exclude localhost for development)
   const isPreviewMode = typeof window !== 'undefined' && (
     window.location.hostname.includes('lovableproject.com') ||
-    window.location.search.includes('__lovable_token') ||
-    window.location.hostname.includes('vercel.app')
-  );
+    window.location.search.includes('__lovable_token')
+  ) && !window.location.hostname.includes('localhost');
 
   const [status, setStatus] = useState<AuthStatus>(isPreviewMode ? "signedOut" : "loading");
   const [session, setSession] = useState<Session | null>(null);
