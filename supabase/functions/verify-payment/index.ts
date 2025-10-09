@@ -75,8 +75,8 @@ serve(async (req) => {
     logStep("Processing successful payment", { priceId, mode: session.mode });
 
     // Grant access based on the price/product purchased
-    if (priceId === "price_1SBCokCirvfSO0IROfFuh6AK") {
-      // Monthly subscription - grant both static and PT access
+    if (priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw") {
+      // Self-Guided: 19.99€/month - grant static access
       await supabaseClient
         .from('user_entitlements')
         .upsert({
@@ -86,8 +86,27 @@ serve(async (req) => {
           started_at: new Date().toISOString(),
           expires_at: null, // Recurring subscription, managed by Stripe
           paused: false,
-          source: 'stripe_monthly',
-          note: `Monthly subscription - Session: ${sessionId}`
+          source: 'stripe_self_guided',
+          note: `Self-Guided monthly subscription - Session: ${sessionId}`
+        }, {
+          onConflict: 'user_id,product'
+        });
+
+      logStep("Granted Self-Guided (static) access");
+
+    } else if (priceId === "price_1SBCYgEOy7gy4lEEWJWNz8gW") {
+      // Guided: 49.99€/month - grant both static and PT access
+      await supabaseClient
+        .from('user_entitlements')
+        .upsert({
+          user_id: userData.user.id,
+          product: 'static',
+          status: 'active',
+          started_at: new Date().toISOString(),
+          expires_at: null, // Recurring subscription, managed by Stripe
+          paused: false,
+          source: 'stripe_guided',
+          note: `Guided monthly subscription - Session: ${sessionId}`
         }, {
           onConflict: 'user_id,product'
         });
@@ -101,18 +120,18 @@ serve(async (req) => {
           started_at: new Date().toISOString(),
           expires_at: null, // Recurring subscription, managed by Stripe
           paused: false,
-          source: 'stripe_monthly',
-          note: `Monthly subscription with PT access - Session: ${sessionId}`
+          source: 'stripe_guided',
+          note: `Guided monthly with PT access - Session: ${sessionId}`
         }, {
           onConflict: 'user_id,product'
         });
 
-      logStep("Granted monthly static and PT access");
+      logStep("Granted Guided (static + PT) access");
 
-    } else if (priceId === "price_1SBJMJCirvfSO0IRAHXrGSzn") {
-      // Yearly one-time payment - grant both static and PT access for 1 year
+    } else if (priceId === "price_1SBCZeEOy7gy4lEEc3DwQzTu") {
+      // Transformation: 199€ one-time - grant both static and PT access for extended period
       const expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1); // 1 year access
 
       await supabaseClient
         .from('user_entitlements')
@@ -123,8 +142,8 @@ serve(async (req) => {
           started_at: new Date().toISOString(),
           expires_at: expiresAt.toISOString(),
           paused: false,
-          source: 'stripe_yearly',
-          note: `Yearly payment - Session: ${sessionId}`
+          source: 'stripe_transformation',
+          note: `Transformation package - Session: ${sessionId}`
         }, {
           onConflict: 'user_id,product'
         });
@@ -138,19 +157,24 @@ serve(async (req) => {
           started_at: new Date().toISOString(),
           expires_at: expiresAt.toISOString(),
           paused: false,
-          source: 'stripe_yearly',
-          note: `Yearly payment with PT access - Session: ${sessionId}`
+          source: 'stripe_transformation',
+          note: `Transformation package with PT - Session: ${sessionId}`
         }, {
           onConflict: 'user_id,product'
         });
 
-      logStep("Granted yearly static and PT access", { expiresAt });
+      logStep("Granted Transformation (static + PT) access for 1 year", { expiresAt });
+    } else {
+      // Unknown price ID - log but don't fail
+      logStep("WARNING: Unknown price ID, no access granted", { priceId });
+      throw new Error(`Unknown price ID: ${priceId}. Please contact support.`);
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
       message: "Payment verified and access granted",
-      sessionId 
+      sessionId,
+      priceId
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
@@ -159,7 +183,10 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      success: false
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

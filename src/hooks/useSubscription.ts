@@ -18,7 +18,7 @@ export function useSubscription() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load current subscription
+  // Load current subscription from user_entitlements
   const loadSubscription = useCallback(async () => {
     if (!user) {
       setSubscription(null);
@@ -27,22 +27,69 @@ export function useSubscription() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('user_subscriptions')
+      // Check user_entitlements for active access
+      const { data: entitlements, error } = await supabase
+        .from('user_entitlements')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle();
+        .in('status', ['active', 'trialing']);
 
       if (error) throw error;
 
-      if (data) {
+      // Determine which plan the user has based on entitlements
+      let planId = 'free';
+      let status: 'active' | 'trial' | 'cancelled' | 'expired' = 'expired';
+      let trialEndsAt: Date | undefined;
+      let currentPeriodEnd: Date | undefined;
+      let createdAt = new Date();
+      let updatedAt = new Date();
+
+      if (entitlements && entitlements.length > 0) {
+        const hasPT = entitlements.some(e => e.product === 'pt' && e.status === 'active');
+        const hasStatic = entitlements.some(e => e.product === 'static' && (e.status === 'active' || e.status === 'trialing'));
+        
+        // Determine plan based on entitlements
+        if (hasPT && hasStatic) {
+          // Has both PT and static - check if it's transformation (one-time) or guided (subscription)
+          const ptEnt = entitlements.find(e => e.product === 'pt');
+          if (ptEnt?.source === 'stripe_transformation') {
+            planId = 'transformation';
+          } else {
+            planId = 'guided';
+          }
+        } else if (hasStatic) {
+          const staticEnt = entitlements.find(e => e.product === 'static');
+          if (staticEnt?.status === 'trialing') {
+            planId = 'trial_self_guided';
+            status = 'trial';
+            trialEndsAt = staticEnt.trial_ends_at ? new Date(staticEnt.trial_ends_at) : undefined;
+          } else {
+            planId = 'self_guided';
+          }
+        }
+
+        // Get status from first entitlement
+        const firstEnt = entitlements[0];
+        if (firstEnt.status === 'trialing') {
+          status = 'trial';
+          trialEndsAt = firstEnt.trial_ends_at ? new Date(firstEnt.trial_ends_at) : undefined;
+        } else {
+          status = 'active';
+        }
+
+        currentPeriodEnd = firstEnt.expires_at ? new Date(firstEnt.expires_at) : undefined;
+        createdAt = firstEnt.created_at ? new Date(firstEnt.created_at) : new Date();
+        updatedAt = firstEnt.updated_at ? new Date(firstEnt.updated_at) : new Date();
+
         setSubscription({
-          ...data,
-          trialEndsAt: data.trial_ends_at ? new Date(data.trial_ends_at) : undefined,
-          currentPeriodEnd: data.current_period_end ? new Date(data.current_period_end) : undefined,
-          createdAt: new Date(data.created_at),
-          updatedAt: new Date(data.updated_at)
+          id: firstEnt.id,
+          userId: user.id,
+          planId,
+          status,
+          trialEndsAt,
+          currentPeriodEnd,
+          createdAt,
+          updatedAt
         });
       } else {
         setSubscription(null);
