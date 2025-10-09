@@ -60,7 +60,7 @@ serve(async (req) => {
 
     // Send email using Resend
     const emailResponse = await resend.emails.send({
-      from: 'Treenitaas Tuntud <noreply@treenitaas.ee>',
+      from: 'Treenitaastu <noreply@treenitaastu.ee>',
       to: [to],
       subject: subject,
       html: html,

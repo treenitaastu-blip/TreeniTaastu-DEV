@@ -104,7 +104,7 @@ export function useSubscription() {
     return false;
   }, [subscription, isTrialActive]);
 
-  // Subscribe to a plan
+  // Subscribe to a plan - uses Stripe Checkout
   const subscribe = useCallback(async (planId: string) => {
     if (!user) {
       toast({
@@ -112,7 +112,7 @@ export function useSubscription() {
         description: "Palun logi sisse",
         variant: "destructive"
       });
-      return;
+      throw new Error("User not logged in");
     }
 
     const plan = SUBSCRIPTION_PLANS[planId];
@@ -122,34 +122,43 @@ export function useSubscription() {
         description: "Valitud plaan ei ole leitud",
         variant: "destructive"
       });
+      throw new Error("Plan not found");
+    }
+
+    // Handle free trial (no payment needed)
+    if (plan.price === 0 || plan.tier === 'trial') {
+      toast({
+        title: "Tasuta proov",
+        description: "Tasuta proov aktiveeritakse automaatselt konto loomisel",
+      });
       return;
+    }
+
+    // For paid plans, use Stripe checkout
+    if (!plan.stripePriceId) {
+      toast({
+        title: "Viga",
+        description: "Stripe Price ID puudub",
+        variant: "destructive"
+      });
+      throw new Error("Stripe Price ID missing");
     }
 
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase.functions.invoke('subscribe-to-plan', {
-        body: {
-          planId,
-          userId: user.id
-        }
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId: plan.stripePriceId }
       });
 
       if (error) throw error;
 
-      if (data.success) {
-        toast({
-          title: "Edukalt tellitud!",
-          description: `Sinu ${plan.name} plaan on aktiveeritud.`
-        });
-        
-        // Reload subscription
-        await loadSubscription();
-        
-        return data;
+      if (data?.url) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
       } else {
-        throw new Error(data.error || 'Tellimine ebaõnnestus');
+        throw new Error("Checkout URL not received");
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Tellimine ebaõnnestus';
@@ -163,7 +172,7 @@ export function useSubscription() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, loadSubscription]);
+  }, [user, toast]);
 
   // Cancel subscription
   const cancelSubscription = useCallback(async () => {
@@ -227,8 +236,7 @@ export function useSubscription() {
       }
     }
 
-    // Program completion prompt (you can implement this based on your logic)
-    // For now, we'll add it if user has been using the app for a while
+    // Program completion prompt
     if (currentTier === 'self_guided' && subscription.createdAt) {
       const daysSinceJoined = Math.floor(
         (now.getTime() - subscription.createdAt.getTime()) / (1000 * 60 * 60 * 24)

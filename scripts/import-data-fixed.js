@@ -6,7 +6,7 @@ import { spawn } from 'child_process';
 
 const DB_URL = "postgresql://postgres:pajxuD-cikbe8-jovzem@db.dtxbrnrpzepwoxooqwlj.supabase.co:5432/postgres";
 
-async function importJSONFile(tableName, filePath) {
+async function importJSONFile(tableName, filePath, fieldMapping = {}) {
   return new Promise((resolve, reject) => {
     console.log(`📥 Importing ${tableName}...`);
     
@@ -25,9 +25,16 @@ async function importJSONFile(tableName, filePath) {
     sql += `TRUNCATE TABLE public.${tableName} CASCADE;\n`;
     
     for (const record of data) {
-      const columns = Object.keys(record);
+      // Apply field mapping
+      const mappedRecord = {};
+      for (const [key, value] of Object.entries(record)) {
+        const mappedKey = fieldMapping[key] || key;
+        mappedRecord[mappedKey] = value;
+      }
+      
+      const columns = Object.keys(mappedRecord);
       const values = columns.map(col => {
-        const value = record[col];
+        const value = mappedRecord[col];
         if (value === null) return 'NULL';
         if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
         if (typeof value === 'object') return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
@@ -69,11 +76,17 @@ async function importJSONFile(tableName, filePath) {
 }
 
 async function main() {
-  console.log('🚀 Importing production data to development database...');
-  console.log('=======================================================');
+  console.log('🚀 Importing production data with field mapping...');
+  console.log('==================================================');
   
   const backupDir = 'production-backup';
   const files = fs.readdirSync(backupDir).filter(f => f.endsWith('.json'));
+  
+  // Field mappings for tables with different field names
+  const fieldMappings = {
+    'exercises.json': { title: 'name' },
+    'articles.json': { title: 'name' }
+  };
   
   // Import order based on dependencies
   const importOrder = [
@@ -109,9 +122,10 @@ async function main() {
     if (files.includes(filename)) {
       const filepath = path.join(backupDir, filename);
       const tableName = filename.replace('.json', '');
+      const fieldMapping = fieldMappings[filename] || {};
       
       try {
-        const imported = await importJSONFile(tableName, filepath);
+        const imported = await importJSONFile(tableName, filepath, fieldMapping);
         totalImported += imported;
       } catch (error) {
         console.log(`   ⚠️  Skipping ${filename}: ${error.message}`);
@@ -126,3 +140,4 @@ async function main() {
 }
 
 main().catch(console.error);
+

@@ -17,7 +17,7 @@ export type SubscriptionPlan = {
 };
 
 export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
-  // Free Trial - 7 days for 19.99€ (feeds the funnel)
+  // Free Trial - 7 days (no payment needed)
   trial_self_guided: {
     id: 'trial_self_guided',
     name: '7-päevane proov',
@@ -43,6 +43,7 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     price: 19.99,
     currency: 'EUR',
     interval: 'month',
+    stripePriceId: 'price_1SBCY0EOy7gy4lEEyRwBvuyw',
     features: [
       'Täielik ligipääs kõikidele harjutustele',
       'Personaalsed treeningprogrammid',
@@ -62,6 +63,7 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     price: 49.99,
     currency: 'EUR',
     interval: 'month',
+    stripePriceId: 'price_1SBCYgEOy7gy4lEEWJWNz8gW',
     isPopular: true,
     features: [
       'Kõik Self-Guided funktsioonid',
@@ -82,6 +84,7 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     price: 199,
     currency: 'EUR',
     interval: 'one_time',
+    stripePriceId: 'price_1SBCZeEOy7gy4lEEc3DwQzTu',
     features: [
       '5x privaatsed video konsultatsioonid',
       'Täielikult personaalne treeningprogramm',

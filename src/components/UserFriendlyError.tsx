@@ -19,15 +19,15 @@ export function UserFriendlyError({ error, onRetry, className }: UserFriendlyErr
     }
     
     if (lowerError.includes('invalid login') || lowerError.includes('invalid email or password')) {
-      return "E-post või parool on vale. Palun kontrolli oma andmeid ja proovi uuesti.";
+      return "E-mail või parool on vale. Palun kontrolli oma andmeid ja proovi uuesti.";
     }
     
     if (lowerError.includes('user not found')) {
-      return "Selle e-posti aadressiga kontot ei leitud. Palun loo konto või kontrolli e-posti aadressi.";
+      return "Selle e-mailiga kontot ei leitud. Palun loo konto või kontrolli e-maili aadressi.";
     }
     
     if (lowerError.includes('email already registered') || lowerError.includes('user already registered')) {
-      return "See e-post on juba registreeritud. Proovi sisse logida või kasuta parooli taastamist.";
+      return "See e-mail on juba registreeritud. Proovi sisse logida või kasuta parooli taastamist.";
     }
     
     if (lowerError.includes('session expired') || lowerError.includes('token expired')) {

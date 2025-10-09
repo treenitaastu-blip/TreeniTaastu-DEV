@@ -78,24 +78,6 @@ export default function LoginForm({
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setError(null);
-    try {
-      // Build an absolute redirect URL from the prop (defaults to /home)
-      const oauthRedirect = new URL(redirectTo, window.location.origin).toString();
-      await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: oauthRedirect,
-          queryParams: { access_type: "offline", prompt: "consent" },
-        },
-      });
-    } catch (err) {
-      const e = err as Error;
-      setError(e.message || "Google sisselogimine ebaõnnestus");
-    }
-  };
-
   const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) {
@@ -146,15 +128,6 @@ export default function LoginForm({
           <Alert className="mb-4 border-blue-200 bg-blue-50">
             <AlertDescription className="text-blue-900">{info}</AlertDescription>
           </Alert>
-        )}
-
-        {!isResetMode && (
-          <>
-            {/* Google login */}
-            <Button onClick={handleGoogleLogin} className="w-full mb-6" variant="hero" size="lg" disabled={loading}>
-              Jätka Google'iga
-            </Button>
-          </>
         )}
 
         {/* Email form */}

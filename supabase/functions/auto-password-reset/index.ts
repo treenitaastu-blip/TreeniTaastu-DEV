@@ -122,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: "Treenitaastu <noreply@treenitaastu.app>",
+            from: "Treenitaastu <noreply@treenitaastu.ee>",
             to: [email],
             subject: "Uus parool - Treenitaastu",
             html: createNewPasswordEmail({

@@ -32,6 +32,14 @@ export default function LoginPage() {
   const [isResetMode, setIsResetMode] = useState(false);
 
   const isExpired = searchParams.get("expired") === "1";
+  const isConfirmed = searchParams.get("confirmed") === "true";
+  
+  // Show success message after email confirmation
+  useEffect(() => {
+    if (isConfirmed) {
+      setInfo("✅ E-post on kinnitatud! Nüüd saad sisse logida.");
+    }
+  }, [isConfirmed]);
 
   // Decide where to send the user after successful auth
   const postLoginPath = useMemo(() => {
@@ -84,33 +92,6 @@ export default function LoginPage() {
           : "Sisselogimine ebaõnnestus";
       setError(message);
     } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      // Make sure your Supabase Auth "Redirect URLs" include your site origin
-      const redirectTo = window.location.origin + postLoginPath;
-      await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-          queryParams: { access_type: "offline", prompt: "consent" },
-        },
-      });
-      // Supabase will redirect the browser
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === "object" && err !== null && "message" in err
-          ? String((err as { message?: unknown }).message)
-          : "Google sisselogimine ebaõnnestus";
-      setError(message);
       setSubmitting(false);
     }
   };
@@ -199,18 +180,6 @@ export default function LoginPage() {
 
           {!isResetMode ? (
             <>
-              {/* Google login */}
-              <Button
-                onClick={handleGoogleLogin}
-                className="w-full mb-6"
-                variant="hero"
-                size="lg"
-                disabled={submitting}
-                aria-disabled={submitting}
-              >
-                Jätka Google'iga
-              </Button>
-
               {/* Login form */}
               <form onSubmit={handleLogin} className="space-y-4" noValidate>
                 <div className="space-y-2">

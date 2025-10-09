@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LogIn, UserPlus } from "lucide-react";
 
@@ -41,19 +40,6 @@ export default function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-
-  // GOOGLE OAUTH
-  const signInGoogle = async () => {
-    setErr(null);
-    try {
-      await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/home` },
-      });
-    } catch (e: unknown) {
-      setErr(getErrMessage(e, "Google sisselogimine ebaõnnestus."));
-    }
-  };
 
   // EMAIL LOGIN
   const handleLogin = async () => {
@@ -157,21 +143,6 @@ export default function LoginModal({ open, onOpenChange }: LoginModalProps) {
             <AlertDescription className="text-blue-900">{msg}</AlertDescription>
           </Alert>
         )}
-
-        {/* Google */}
-        <Button
-          onClick={signInGoogle}
-          className="w-full"
-          variant="hero"
-          size="lg"
-          disabled={loading}
-        >
-          Jätka Google’iga
-        </Button>
-
-        <div className="my-4">
-          <Separator />
-        </div>
 
         {/* Email form */}
         <div className="space-y-3">

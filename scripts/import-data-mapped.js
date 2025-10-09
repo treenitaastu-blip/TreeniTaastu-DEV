@@ -32,10 +32,11 @@ async function importJSONFile(tableName, filePath, fieldMapping = {}) {
         mappedRecord[mappedKey] = value;
       }
       
+      // Only include fields that exist in the mapped record
       const columns = Object.keys(mappedRecord);
       const values = columns.map(col => {
         const value = mappedRecord[col];
-        if (value === null) return 'NULL';
+        if (value === null || value === undefined) return 'NULL';
         if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
         if (typeof value === 'object') return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
         return value;
@@ -76,19 +77,34 @@ async function importJSONFile(tableName, filePath, fieldMapping = {}) {
 }
 
 async function main() {
-  console.log('🚀 Importing production data with field mapping...');
-  console.log('==================================================');
+  console.log('🚀 Importing production data with correct field mappings...');
+  console.log('==========================================================');
   
   const backupDir = 'production-backup';
   const files = fs.readdirSync(backupDir).filter(f => f.endsWith('.json'));
   
-  // Field mappings for tables with different field names
+  // Correct field mappings based on analysis
   const fieldMappings = {
-    'exercises.json': { title: 'name' },
-    'articles.json': { title: 'name' }
+    // exercises.json: title -> name
+    'exercises.json': { 
+      title: 'name'
+    },
+    
+    // articles.json: keep title, content, category, created_at
+    'articles.json': { 
+      // Keep: id, title, content, category, created_at
+      // Ignore: slug, summary, format, read_time_minutes, evidence_strength, 
+      //         published, updated_at, excerpt, tags, featured_image_url, author, meta_description
+    },
+    
+    // custom_habits.json: title -> name, ignore description
+    'custom_habits.json': { 
+      title: 'name'
+      // Ignore: icon_name, is_active, sort_order, updated_at
+    }
   };
   
-  // Import order based on dependencies
+  // Import order based on dependencies (excluding user_analytics_events)
   const importOrder = [
     'user_roles.json',
     'profiles.json',
@@ -112,8 +128,8 @@ async function main() {
     'challenge_logs.json',
     'support_conversations.json',
     'support_messages.json',
-    'booking_requests.json',
-    'user_analytics_events.json'
+    'booking_requests.json'
+    // 'user_analytics_events.json' - EXCLUDED as requested
   ];
   
   let totalImported = 0;
@@ -136,7 +152,9 @@ async function main() {
   console.log('\n🎉 Data import completed!');
   console.log('==========================');
   console.log(`✅ Total records imported: ${totalImported}`);
-  console.log('✅ Development database now has production data');
+  console.log('✅ Development database now has production data (excluding analytics)');
+  console.log('⚠️  user_analytics_events excluded as requested');
 }
 
 main().catch(console.error);
+

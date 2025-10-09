@@ -23,21 +23,6 @@ export default function SignupPage() {
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  const handleGoogleSignup = async () => {
-    setErr(null);
-    try {
-      await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/home`,
-          queryParams: { access_type: "offline", prompt: "consent" },
-        },
-      });
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Google kaudu liitumine ebaõnnestus.");
-    }
-  };
-
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErr(null);
@@ -58,7 +43,7 @@ export default function SignupPage() {
         password: validation.data!.password,
         options: {
           data: { full_name: validation.data!.fullName || undefined },
-          emailRedirectTo: `${window.location.origin}/home`,
+          emailRedirectTo: `${window.location.origin}/login?confirmed=true`,
         },
       });
       if (error) throw error;
@@ -108,16 +93,6 @@ export default function SignupPage() {
                   <AlertDescription className="text-blue-900">{info}</AlertDescription>
                 </Alert>
               )}
-
-              <Button
-                onClick={handleGoogleSignup}
-                className="w-full mb-6"
-                variant="hero"
-                size="lg"
-                disabled={loading}
-              >
-                Jätka Google’iga
-              </Button>
 
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
