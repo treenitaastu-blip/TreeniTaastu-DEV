@@ -10,6 +10,49 @@ import {
 } from '@/types/subscription';
 import { useToast } from '@/hooks/use-toast';
 
+// Map entitlements to subscription-like object for backward compatibility
+function mapEntitlementsToSubscription(
+  userId: string, 
+  entitlements: any[]
+): UserSubscription | null {
+  if (!entitlements || entitlements.length === 0) return null;
+
+  // Determine the plan based on what entitlements user has
+  const hasStatic = entitlements.some(e => e.product === 'static' && !e.paused);
+  const hasPT = entitlements.some(e => e.product === 'pt' && !e.paused);
+  
+  // Determine if it's a trial
+  const staticEnt = entitlements.find(e => e.product === 'static');
+  const ptEnt = entitlements.find(e => e.product === 'pt');
+  
+  const isTrial = staticEnt?.status === 'trialing' || ptEnt?.status === 'trialing';
+  const trialEndsAt = staticEnt?.trial_ends_at || ptEnt?.trial_ends_at;
+  
+  // Map to plan ID
+  let planId = 'trial_self_guided'; // default
+  if (isTrial) {
+    planId = 'trial_self_guided';
+  } else if (hasPT && hasStatic) {
+    planId = 'guided'; // or 'transformation' if one-time
+  } else if (hasStatic) {
+    planId = 'self_guided';
+  }
+
+  // Get expiry dates
+  const currentPeriodEnd = staticEnt?.expires_at || ptEnt?.expires_at;
+  
+  return {
+    id: staticEnt?.id || ptEnt?.id || '',
+    userId,
+    planId,
+    status: isTrial ? 'trial' : 'active',
+    trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : undefined,
+    currentPeriodEnd: currentPeriodEnd ? new Date(currentPeriodEnd) : undefined,
+    createdAt: new Date(staticEnt?.created_at || ptEnt?.created_at || new Date()),
+    updatedAt: new Date(staticEnt?.updated_at || ptEnt?.updated_at || new Date())
+  };
+}
+
 export function useSubscription() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -27,76 +70,25 @@ export function useSubscription() {
     }
 
     try {
-      // Check user_entitlements for active access
-      const { data: entitlements, error } = await supabase
+      const now = new Date().toISOString();
+      
+      // Query active entitlements
+      const { data, error } = await supabase
         .from('user_entitlements')
         .select('*')
         .eq('user_id', user.id)
-        .in('status', ['active', 'trialing']);
+        .in('status', ['active', 'trialing'])
+        .or(`trial_ends_at.gt.${now},expires_at.gt.${now},expires_at.is.null`);
 
       if (error) throw error;
 
-      // Determine which plan the user has based on entitlements
-      let planId = 'free';
-      let status: 'active' | 'trial' | 'cancelled' | 'expired' = 'expired';
-      let trialEndsAt: Date | undefined;
-      let currentPeriodEnd: Date | undefined;
-      let createdAt = new Date();
-      let updatedAt = new Date();
-
-      if (entitlements && entitlements.length > 0) {
-        const hasPT = entitlements.some(e => e.product === 'pt' && e.status === 'active');
-        const hasStatic = entitlements.some(e => e.product === 'static' && (e.status === 'active' || e.status === 'trialing'));
-        
-        // Determine plan based on entitlements
-        if (hasPT && hasStatic) {
-          // Has both PT and static - check if it's transformation (one-time) or guided (subscription)
-          const ptEnt = entitlements.find(e => e.product === 'pt');
-          if (ptEnt?.source === 'stripe_transformation') {
-            planId = 'transformation';
-          } else {
-            planId = 'guided';
-          }
-        } else if (hasStatic) {
-          const staticEnt = entitlements.find(e => e.product === 'static');
-          if (staticEnt?.status === 'trialing') {
-            planId = 'trial_self_guided';
-            status = 'trial';
-            trialEndsAt = staticEnt.trial_ends_at ? new Date(staticEnt.trial_ends_at) : undefined;
-          } else {
-            planId = 'self_guided';
-          }
-        }
-
-        // Get status from first entitlement
-        const firstEnt = entitlements[0];
-        if (firstEnt.status === 'trialing') {
-          status = 'trial';
-          trialEndsAt = firstEnt.trial_ends_at ? new Date(firstEnt.trial_ends_at) : undefined;
-        } else {
-          status = 'active';
-        }
-
-        currentPeriodEnd = firstEnt.expires_at ? new Date(firstEnt.expires_at) : undefined;
-        createdAt = firstEnt.created_at ? new Date(firstEnt.created_at) : new Date();
-        updatedAt = firstEnt.updated_at ? new Date(firstEnt.updated_at) : new Date();
-
-        setSubscription({
-          id: firstEnt.id,
-          userId: user.id,
-          planId,
-          status,
-          trialEndsAt,
-          currentPeriodEnd,
-          createdAt,
-          updatedAt
-        });
-      } else {
-        setSubscription(null);
-      }
+      const mappedSubscription = mapEntitlementsToSubscription(user.id, data || []);
+      setSubscription(mappedSubscription);
+      
     } catch (err) {
       console.error('Error loading subscription:', err);
       setError(err instanceof Error ? err.message : 'Failed to load subscription');
+      setSubscription(null);
     } finally {
       setLoading(false);
     }
@@ -221,7 +213,7 @@ export function useSubscription() {
     }
   }, [user, toast]);
 
-  // Cancel subscription
+  // Cancel subscription - would need to track Stripe subscription ID
   const cancelSubscription = useCallback(async () => {
     if (!subscription) return;
 
@@ -229,25 +221,12 @@ export function useSubscription() {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase.functions.invoke('cancel-subscription', {
-        body: {
-          subscriptionId: subscription.id
-        }
+      // For now, we'd need to call Stripe customer portal or manage via admin
+      toast({
+        title: "Tellimuse haldamine",
+        description: "Kasuta 'Minu Konto' lehte tellimuse haldamiseks",
       });
-
-      if (error) throw error;
-
-      if (data.success) {
-        toast({
-          title: "Tellimus tühistatud",
-          description: "Sinu tellimus on tühistatud."
-        });
-        
-        // Reload subscription
-        await loadSubscription();
-      } else {
-        throw new Error(data.error || 'Tühistamine ebaõnnestus');
-      }
+      
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Tühistamine ebaõnnestus';
       setError(message);
@@ -259,7 +238,7 @@ export function useSubscription() {
     } finally {
       setLoading(false);
     }
-  }, [subscription, toast, loadSubscription]);
+  }, [subscription, toast]);
 
   // Get upgrade prompts for current user
   const getUpgradePrompts = useCallback(() => {
@@ -276,10 +255,13 @@ export function useSubscription() {
       );
       
       if (daysUntilTrialEnds <= 2) {
-        prompts.push({
-          ...UPGRADE_PROMPTS.find(p => p.id === 'trial_to_guided')!,
-          daysUntilExpiry: daysUntilTrialEnds
-        });
+        const prompt = UPGRADE_PROMPTS.find(p => p.id === 'trial_to_guided');
+        if (prompt) {
+          prompts.push({
+            ...prompt,
+            daysUntilExpiry: daysUntilTrialEnds
+          });
+        }
       }
     }
 
@@ -290,10 +272,13 @@ export function useSubscription() {
       );
       
       if (daysSinceJoined >= 30) {
-        prompts.push({
-          ...UPGRADE_PROMPTS.find(p => p.id === 'program_completion_transform')!,
-          daysSinceJoined
-        });
+        const prompt = UPGRADE_PROMPTS.find(p => p.id === 'program_completion_transform');
+        if (prompt) {
+          prompts.push({
+            ...prompt,
+            daysSinceJoined
+          });
+        }
       }
     }
 

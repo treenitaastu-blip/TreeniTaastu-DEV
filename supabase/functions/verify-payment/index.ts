@@ -76,7 +76,7 @@ serve(async (req) => {
 
     // Grant access based on the price/product purchased
     if (priceId === "price_1SBCY0EOy7gy4lEEyRwBvuyw") {
-      // Self-Guided: 19.99€/month - grant static access
+      // Self-Guided Monthly (19.99€) - grant static access only
       await supabaseClient
         .from('user_entitlements')
         .upsert({
@@ -95,7 +95,7 @@ serve(async (req) => {
       logStep("Granted Self-Guided (static) access");
 
     } else if (priceId === "price_1SBCYgEOy7gy4lEEWJWNz8gW") {
-      // Guided: 49.99€/month - grant both static and PT access
+      // Guided Monthly (49.99€) - grant both static and PT access
       await supabaseClient
         .from('user_entitlements')
         .upsert({
@@ -121,7 +121,7 @@ serve(async (req) => {
           expires_at: null, // Recurring subscription, managed by Stripe
           paused: false,
           source: 'stripe_guided',
-          note: `Guided monthly with PT access - Session: ${sessionId}`
+          note: `Guided monthly with PT - Session: ${sessionId}`
         }, {
           onConflict: 'user_id,product'
         });
@@ -129,9 +129,9 @@ serve(async (req) => {
       logStep("Granted Guided (static + PT) access");
 
     } else if (priceId === "price_1SBCZeEOy7gy4lEEc3DwQzTu") {
-      // Transformation: 199€ one-time - grant both static and PT access for extended period
+      // Transformation (199€ one-time) - grant both static and PT access for 1 year
       const expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1); // 1 year access
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
       await supabaseClient
         .from('user_entitlements')
@@ -165,16 +165,15 @@ serve(async (req) => {
 
       logStep("Granted Transformation (static + PT) access for 1 year", { expiresAt });
     } else {
-      // Unknown price ID - log but don't fail
-      logStep("WARNING: Unknown price ID, no access granted", { priceId });
-      throw new Error(`Unknown price ID: ${priceId}. Please contact support.`);
+      // Unknown price ID - log error and fail
+      logStep("ERROR: Unknown price ID", { priceId });
+      throw new Error(`Unknown price ID: ${priceId}. No entitlements granted.`);
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
       message: "Payment verified and access granted",
-      sessionId,
-      priceId
+      sessionId 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
@@ -183,10 +182,7 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ 
-      error: errorMessage,
-      success: false
-    }), {
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
