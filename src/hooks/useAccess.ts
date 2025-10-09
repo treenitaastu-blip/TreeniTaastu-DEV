@@ -91,20 +91,24 @@ export default function useAccess(): UseAccess {
           return;
         }
 
-        // Check for active entitlements - Static program only for PAID users (not trial)
+        // Check for active entitlements - includes both trial and paid users
         const now = new Date();
         const hasActiveStatic = entitlements?.some(e => 
           e.product === "static" && 
           !e.paused && 
-          e.status === "active" && // Only active subscribers, not trial users
-          (e.expires_at === null || new Date(e.expires_at) > now) // Check expiry for yearly payments
+          (
+            (e.status === "active" && (e.expires_at === null || new Date(e.expires_at) > now)) ||
+            (e.status === "trialing" && e.trial_ends_at && new Date(e.trial_ends_at) > now)
+          )
         ) ?? false;
         
         const hasActivePT = entitlements?.some(e => 
           e.product === "pt" && 
           !e.paused && 
-          (e.status === "active" || 
-            (e.status === "trialing" && e.trial_ends_at && new Date(e.trial_ends_at) > now))
+          (
+            (e.status === "active" && (e.expires_at === null || new Date(e.expires_at) > now)) ||
+            (e.status === "trialing" && e.trial_ends_at && new Date(e.trial_ends_at) > now)
+          )
         ) ?? false;
 
         if (alive) {
