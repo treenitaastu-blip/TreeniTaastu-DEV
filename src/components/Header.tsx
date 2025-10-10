@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import useAccess from "@/hooks/useAccess";
 import { useDropdownManager } from "@/contexts/DropdownManager";
+import { useTrialStatus } from "@/hooks/useTrialStatus";
 
 const HIDE_ON_PATHS = ["/login", "/signup"];
 
@@ -30,6 +31,7 @@ export default function Header() {
   const { user } = useAuth();
   const { loading: accessLoading, isAdmin, canStatic, canPT } = useAccess();
   const { closeAllDropdowns } = useDropdownManager();
+  const trialStatus = useTrialStatus();
 
   const [open, setOpen] = useState(false);           // mobile drawer
   const [adminOpen, setAdminOpen] = useState(false); // mobile "Admin" accordion
@@ -215,6 +217,27 @@ export default function Header() {
 
             {/* Right cluster */}
             <div className="hidden items-center gap-2 md:flex overflow-visible">
+              {/* Trial Countdown Badge (Desktop) */}
+              {user && trialStatus.isOnTrial && trialStatus.daysRemaining !== null && (
+                <Link
+                  to="/pricing"
+                  className={`
+                    inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold
+                    transition-all duration-300 hover:scale-105 motion-reduce:hover:scale-100
+                    ${trialStatus.isUrgent 
+                      ? 'bg-destructive/10 text-destructive border border-destructive/30 animate-pulse' 
+                      : trialStatus.isWarningPeriod
+                      ? 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-200 border border-yellow-300 dark:border-yellow-700'
+                      : 'bg-primary/10 text-primary border border-primary/20'
+                    }
+                  `}
+                  title="Kliki, et vaadata tellimusi"
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>Proov: {trialStatus.daysRemaining} {trialStatus.daysRemaining === 1 ? 'päev' : 'päeva'}</span>
+                </Link>
+              )}
+              
               {user ? (
                 <UserMenu />
               ) : (
@@ -251,6 +274,31 @@ export default function Header() {
           {open && (
             <div id="mobile-nav" className="border-t bg-card/95 shadow-soft backdrop-blur-xl md:hidden">
               <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3" aria-label="Mobiilne navigatsioon">
+                {/* Trial Countdown Badge (Mobile) */}
+                {user && trialStatus.isOnTrial && trialStatus.daysRemaining !== null && (
+                  <Link
+                    to="/pricing"
+                    className={`
+                      inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold mb-2
+                      transition-all duration-300
+                      ${trialStatus.isUrgent 
+                        ? 'bg-destructive/10 text-destructive border-2 border-destructive/30 animate-pulse' 
+                        : trialStatus.isWarningPeriod
+                        ? 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-200 border-2 border-yellow-300 dark:border-yellow-700'
+                        : 'bg-primary/10 text-primary border-2 border-primary/20'
+                      }
+                    `}
+                  >
+                    <Clock className="h-4 w-4" />
+                    <span>
+                      {trialStatus.isUrgent 
+                        ? `⚠️ Proov lõpeb ${trialStatus.daysRemaining === 0 ? 'täna' : 'homme'}!` 
+                        : `Tasuta proov: ${trialStatus.daysRemaining} ${trialStatus.daysRemaining === 1 ? 'päev' : 'päeva'}`
+                      }
+                    </span>
+                  </Link>
+                )}
+                
                 {nav.map((n) => (
                   <NavLink
                     key={n.to}
