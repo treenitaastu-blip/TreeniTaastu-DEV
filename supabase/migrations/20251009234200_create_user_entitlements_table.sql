@@ -93,3 +93,5 @@ COMMENT ON COLUMN public.user_entitlements.status IS
 COMMENT ON COLUMN public.user_entitlements.source IS 
 'How this entitlement was granted: stripe_self_guided, stripe_guided, stripe_transformation, manual, signup_trigger, etc.';
 
+
+

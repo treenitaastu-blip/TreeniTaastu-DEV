@@ -75,3 +75,5 @@ $$;
 COMMENT ON FUNCTION public.ensure_trial_on_signup() IS 
 'Automatically grants 7-day static program trial when user signs up. Also creates profile and maintains subscribers table for backward compatibility.';
 
+
+

@@ -188,3 +188,5 @@ SELECT EXISTS (
 -- Success message
 SELECT 'user_entitlements table created and signup trigger updated successfully!' as status;
 
+
+

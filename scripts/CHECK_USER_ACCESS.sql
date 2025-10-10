@@ -23,3 +23,5 @@ LEFT JOIN user_entitlements ue ON ue.user_id = u.id
 WHERE u.email = 'YOUR_EMAIL_HERE'
 ORDER BY ue.created_at DESC;
 
+
+

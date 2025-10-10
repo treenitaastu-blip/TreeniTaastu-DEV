@@ -106,3 +106,5 @@ WHERE EXISTS (
   WHERE table_name = 'user_entitlements' AND table_schema = 'public'
 );
 
+
+

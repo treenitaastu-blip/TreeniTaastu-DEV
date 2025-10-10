@@ -29,3 +29,5 @@ WHERE proname = 'ensure_trial_on_signup';
 -- 5. Check if product_kind enum exists
 SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_kind') as product_kind_exists;
 
+
+

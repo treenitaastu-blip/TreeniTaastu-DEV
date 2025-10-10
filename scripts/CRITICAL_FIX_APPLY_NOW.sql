@@ -191,3 +191,5 @@ SELECT EXISTS (
 -- If all above return TRUE, you're good!
 SELECT '✅ All fixes applied successfully! Try signing up again.' as status;
 
+
+
