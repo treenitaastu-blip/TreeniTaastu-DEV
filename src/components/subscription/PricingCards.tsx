@@ -104,12 +104,20 @@ export function PricingCards({ onSelectPlan, loading, currentPlan, showTrial = t
             <CardContent className="space-y-4">
               {/* Features */}
               <div className="space-y-2">
-                {plan.features.map((feature, index) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">{feature}</span>
-                  </div>
-                ))}
+                {plan.features.map((feature, index) => {
+                  // Check if feature starts with emoji (✅, ❌, 💡, etc.)
+                  const hasEmoji = /^[\u{1F300}-\u{1F9FF}]|^[✅❌]/u.test(feature);
+                  const isExcluded = feature.startsWith('❌');
+                  
+                  return (
+                    <div key={index} className={`flex items-start gap-2 ${isExcluded ? 'opacity-60' : ''}`}>
+                      {!hasEmoji && (
+                        <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      )}
+                      <span className="text-sm">{feature}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Action Button */}

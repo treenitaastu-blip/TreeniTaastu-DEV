@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { PricingCards } from "@/components/subscription/PricingCards";
+import { FeatureComparison } from "@/components/subscription/FeatureComparison";
+import { TrustIndicators } from "@/components/subscription/TrustIndicators";
 import { Check, ArrowRight, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -212,12 +214,18 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8 pt-8">
           <h1 className="text-4xl font-bold mb-4">Vali oma plaan</h1>
-          <p className="text-xl text-muted-foreground">
+          <p className="text-xl text-muted-foreground mb-2">
             {subscription ? 'Uuenda oma tellimust' : 'Alusta 7-päevase tasuta prooviga'}
           </p>
+          <p className="text-sm text-muted-foreground">
+            Krediitkaart ei ole vajalik • Tühista igal ajal
+          </p>
         </div>
+
+        {/* Trust Indicators */}
+        <TrustIndicators />
 
         {/* New Subscription Plans */}
         <PricingCards 
@@ -226,6 +234,9 @@ export default function Pricing() {
           currentPlan={subscription?.planId}
           showTrial={!subscription}
         />
+
+        {/* Feature Comparison Table */}
+        <FeatureComparison />
 
         {/* Current Subscription Info */}
         {subscription && (
