@@ -89,11 +89,15 @@ export function useOptimizedSubscriptions(): SubscriptionManager {
     channel.on('postgres_changes', pgConfig, debouncedCallback);
 
     // Subscribe and store reference
-    channel.subscribe((status) => {
+    channel.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
         console.log(`✅ Subscribed to ${config.table} (${subscriptionId})`);
       } else if (status === 'CHANNEL_ERROR') {
-        console.error(`❌ Subscription error for ${config.table} (${subscriptionId})`);
+        console.warn(`⚠️ Subscription error for ${config.table} (${subscriptionId}):`, err);
+        // Gracefully handle realtime errors (e.g., during signup when Realtime cache is stale)
+        // This prevents signup from failing if realtime subscription can't be established
+      } else if (status === 'TIMED_OUT') {
+        console.warn(`⏱️ Subscription timed out for ${config.table} (${subscriptionId})`);
       }
     });
 

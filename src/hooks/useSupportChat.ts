@@ -180,59 +180,74 @@ export const useSupportChat = () => {
 
     if (import.meta.env.DEV) console.log('Setting up optimized support chat subscriptions...');
 
-    // Subscribe to conversation changes with debounced reload
-    let conversationTimeout: NodeJS.Timeout;
-    const conversationsChannel = supabase
-      .channel(channelNames.conversations)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'support_conversations',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          // Debounce conversation reloads
-          clearTimeout(conversationTimeout);
-          conversationTimeout = setTimeout(() => {
-            loadConversations();
-          }, 100);
-        }
-      )
-      .subscribe();
-
-    // Subscribe to message changes with optimistic updates
-    const messagesChannel = supabase
-      .channel(channelNames.messages)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'support_messages'
-        },
-        (payload) => {
-          const newMessage = payload.new as SupportMessage;
-          
-          // Only add message if it's for current conversation and not duplicate
-          if (newMessage.conversation_id === currentConversationIdRef.current) {
-            setMessages(prev => {
-              // Prevent duplicate messages
-              if (prev.some(msg => msg.id === newMessage.id)) {
-                return prev;
-              }
-              return [...prev, newMessage];
-            });
+    // Add delay for newly created users to allow Realtime to pick up replica identity settings
+    const setupDelay = setTimeout(() => {
+      // Subscribe to conversation changes with debounced reload
+      let conversationTimeout: NodeJS.Timeout;
+      const conversationsChannel = supabase
+        .channel(channelNames.conversations)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'support_conversations',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            // Debounce conversation reloads
+            clearTimeout(conversationTimeout);
+            conversationTimeout = setTimeout(() => {
+              loadConversations();
+            }, 100);
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe((status, err) => {
+          if (status === 'CHANNEL_ERROR') {
+            console.warn('Support conversations subscription error (may resolve on retry):', err);
+          }
+        });
+
+      // Subscribe to message changes with optimistic updates
+      const messagesChannel = supabase
+        .channel(channelNames.messages)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'support_messages'
+          },
+          (payload) => {
+            const newMessage = payload.new as SupportMessage;
+            
+            // Only add message if it's for current conversation and not duplicate
+            if (newMessage.conversation_id === currentConversationIdRef.current) {
+              setMessages(prev => {
+                // Prevent duplicate messages
+                if (prev.some(msg => msg.id === newMessage.id)) {
+                  return prev;
+                }
+                return [...prev, newMessage];
+              });
+            }
+          }
+        )
+        .subscribe((status, err) => {
+          if (status === 'CHANNEL_ERROR') {
+            console.warn('Support messages subscription error (may resolve on retry):', err);
+          }
+        });
+
+      return () => {
+        clearTimeout(conversationTimeout);
+        supabase.removeChannel(conversationsChannel);
+        supabase.removeChannel(messagesChannel);
+      };
+    }, 2000); // 2 second delay to allow Realtime to update after user creation
 
     return () => {
-      clearTimeout(conversationTimeout);
-      supabase.removeChannel(conversationsChannel);
-      supabase.removeChannel(messagesChannel);
+      clearTimeout(setupDelay);
     };
   }, [user, channelNames, loadConversations]);
 
