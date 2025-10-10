@@ -45,26 +45,39 @@ function TrialSignupCard() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('start-pt-trial', {
-        body: { email, password }
+      // Use standard signup flow (same as SignupPage.tsx) to ensure 7-day trial
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login?confirmed=true`,
+        },
       });
 
       if (error) throw error;
 
-      if (data?.success) {
+      // If auto-confirmed and session created
+      if (data.session) {
         toast({
           title: "Konto loodud!",
-          description: "7-päevane tasuta proov on käivitatud. Logi nüüd sisse.",
+          description: "7-päevane tasuta proov on käivitatud!",
         });
-        
-        // Redirect to auth page for login
-        navigate("/auth?mode=login");
-      } else {
-        throw new Error(data?.error || "Konto loomine ebaõnnestus");
+        navigate("/home", { replace: true });
+        return;
       }
 
+      // Email confirmation required
+      toast({
+        title: "Konto loodud!",
+        description: "7-päevane tasuta proov on käivitatud. Kontrolli oma emaili kinnituslingi saamiseks.",
+      });
+      
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 3000);
+
     } catch (error) {
-      console.error('Trial signup error:', error);
+      console.error('Signup error:', error);
       toast({
         title: "Viga konto loomisel",
         description: error instanceof Error ? error.message : "Proovi hiljem uuesti",
