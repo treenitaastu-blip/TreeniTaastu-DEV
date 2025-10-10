@@ -22,6 +22,7 @@ import { AddHabitModal } from "@/components/AddHabitModal";
 import { ArchivedHabitsModal } from "@/components/ArchivedHabitsModal";
 import { UserLevelDisplay } from "@/components/UserLevelDisplay";
 import { LevelUpToast } from "@/components/LevelUpToast";
+import { TrialStatusBanner } from "@/components/TrialStatusBanner";
 import { 
   Trophy, 
   TrendingUp, 
@@ -74,6 +75,13 @@ export default function Home() {
   const { streaks, totalVolumeKg, summary, weekly } = useProgressTracking();
   const { trackButtonClick, trackPageView } = useTrackEvent();
   const { habits, loading: habitsLoading, toggleHabit, removeHabit } = useCustomHabits();
+
+  // Trial status state
+  const [trialEntitlement, setTrialEntitlement] = useState<{
+    status: string;
+    trial_ends_at: string | null;
+    product: string;
+  } | null>(null);
 
   const [stats, setStats] = useState<Stats>({
     completedDays: 0,
@@ -205,6 +213,30 @@ export default function Home() {
     loadPTStats();
   }, [user?.id]);
 
+  // Load trial entitlement data
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const loadTrialStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_entitlements")
+          .select("status, trial_ends_at, product")
+          .eq("user_id", user.id)
+          .eq("status", "trialing")
+          .maybeSingle();
+
+        if (!error && data) {
+          setTrialEntitlement(data);
+        }
+      } catch (error) {
+        console.error("Trial status error:", error);
+      }
+    };
+
+    loadTrialStatus();
+  }, [user?.id]);
+
   // Optimized comprehensive stats loading
   useEffect(() => {
     if (!user?.id) return;
@@ -312,6 +344,16 @@ export default function Home() {
       <LevelUpToast />
       <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
         
+        {/* Trial Status Banner */}
+        {trialEntitlement && trialEntitlement.trial_ends_at && (
+          <div className="pt-6">
+            <TrialStatusBanner 
+              trialEndsAt={trialEntitlement.trial_ends_at}
+              product={trialEntitlement.product}
+            />
+          </div>
+        )}
+
         {/* Welcome Header - Clean and Warm */}
         <div className="text-center space-y-6 pt-8">
           <div className="flex justify-center mb-6">
