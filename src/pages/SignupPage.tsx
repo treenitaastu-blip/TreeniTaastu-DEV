@@ -78,7 +78,18 @@ export default function SignupPage() {
                 <UserPlus className="w-6 h-6 text-white" />
               </div>
               <CardTitle className="text-2xl">Loo konto</CardTitle>
-              <CardDescription>Alusta oma treeninguteekonda</CardDescription>
+              <CardDescription>
+                Alusta oma treeninguteekonda
+              </CardDescription>
+              {/* Trial Badge */}
+              <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <p className="text-sm font-semibold text-primary mb-1">
+                  🎁 7-päevane tasuta proov sisaldub
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Täielik ligipääs Self-Guided programmidele • Tühista igal ajal
+                </p>
+              </div>
             </CardHeader>
             <CardContent>
               {err && (
@@ -145,9 +156,15 @@ export default function SignupPage() {
                 </div>
 
                 <Button type="submit" className="w-full" variant="hero" size="lg" disabled={loading}>
-                  {loading ? "Loon kontot..." : "Loo konto"}
+                  {loading ? "Loon kontot..." : "Alusta 7-päevast tasuta proovi"}
                 </Button>
               </form>
+
+              {/* Trial Disclaimer */}
+              <div className="mt-3 text-xs text-center text-muted-foreground">
+                Konto loomisel saad automaatselt 7-päevase tasuta proovi. <br />
+                Krediitkaart ei ole vajalik. Tühista igal ajal.
+              </div>
 
               <div className="mt-4 text-sm text-center">
                 <span className="text-muted-foreground">Juba konto olemas? </span>
