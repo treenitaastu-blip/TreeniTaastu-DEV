@@ -23,6 +23,8 @@ import { ArchivedHabitsModal } from "@/components/ArchivedHabitsModal";
 import { UserLevelDisplay } from "@/components/UserLevelDisplay";
 import { LevelUpToast } from "@/components/LevelUpToast";
 import { TrialStatusBanner } from "@/components/TrialStatusBanner";
+import { TrialWarningBanner } from "@/components/TrialWarningBanner";
+import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { 
   Trophy, 
   TrendingUp, 
@@ -75,13 +77,9 @@ export default function Home() {
   const { streaks, totalVolumeKg, summary, weekly } = useProgressTracking();
   const { trackButtonClick, trackPageView } = useTrackEvent();
   const { habits, loading: habitsLoading, toggleHabit, removeHabit } = useCustomHabits();
-
-  // Trial status state
-  const [trialEntitlement, setTrialEntitlement] = useState<{
-    status: string;
-    trial_ends_at: string | null;
-    product: string;
-  } | null>(null);
+  
+  // Trial status using new hook
+  const trialStatus = useTrialStatus();
 
   const [stats, setStats] = useState<Stats>({
     completedDays: 0,
@@ -213,30 +211,6 @@ export default function Home() {
     loadPTStats();
   }, [user?.id]);
 
-  // Load trial entitlement data
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const loadTrialStatus = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("user_entitlements")
-          .select("status, trial_ends_at, product")
-          .eq("user_id", user.id)
-          .eq("status", "trialing")
-          .maybeSingle();
-
-        if (!error && data) {
-          setTrialEntitlement(data);
-        }
-      } catch (error) {
-        console.error("Trial status error:", error);
-      }
-    };
-
-    loadTrialStatus();
-  }, [user?.id]);
-
   // Optimized comprehensive stats loading
   useEffect(() => {
     if (!user?.id) return;
@@ -344,12 +318,23 @@ export default function Home() {
       <LevelUpToast />
       <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
         
-        {/* Trial Status Banner */}
-        {trialEntitlement && trialEntitlement.trial_ends_at && (
+        {/* Trial Warning Banner (≤3 days, dismissible) */}
+        {trialStatus.isWarningPeriod && trialStatus.trialEndsAt && trialStatus.daysRemaining !== null && (
+          <div className="pt-6">
+            <TrialWarningBanner 
+              daysRemaining={trialStatus.daysRemaining}
+              trialEndsAt={trialStatus.trialEndsAt}
+              isUrgent={trialStatus.isUrgent}
+            />
+          </div>
+        )}
+
+        {/* Trial Status Banner (regular, always visible for trial users) */}
+        {trialStatus.isOnTrial && trialStatus.trialEndsAt && !trialStatus.isWarningPeriod && (
           <div className="pt-6">
             <TrialStatusBanner 
-              trialEndsAt={trialEntitlement.trial_ends_at}
-              product={trialEntitlement.product}
+              trialEndsAt={trialStatus.trialEndsAt}
+              product={trialStatus.product || 'Static'}
             />
           </div>
         )}
