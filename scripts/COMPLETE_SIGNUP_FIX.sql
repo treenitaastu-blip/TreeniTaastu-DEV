@@ -95,7 +95,7 @@ UNION ALL
 
 -- Check realtime setup
 SELECT 
-  'Realtime: ' || tablename as check_item,
+  'Realtime: ' || c.relname as check_item,
   CASE relreplident
     WHEN 'f' THEN '✅ FULL (can filter)'
     WHEN 'd' THEN '⚠️ DEFAULT (primary key only)'
