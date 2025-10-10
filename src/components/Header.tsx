@@ -217,8 +217,20 @@ export default function Header() {
 
             {/* Right cluster */}
             <div className="hidden items-center gap-2 md:flex overflow-visible">
+              {/* Grace Period Badge (Desktop) */}
+              {user && trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 hover:scale-105 motion-reduce:hover:scale-100 bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 animate-pulse"
+                  title="Lisaaeg lõpeb varsti - kliki tellimiseks"
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>Lisaaeg: {trialStatus.hoursRemainingInGrace}h</span>
+                </Link>
+              )}
+              
               {/* Trial Countdown Badge (Desktop) */}
-              {user && trialStatus.isOnTrial && trialStatus.daysRemaining !== null && (
+              {user && !trialStatus.isInGracePeriod && trialStatus.isOnTrial && trialStatus.daysRemaining !== null && (
                 <Link
                   to="/pricing"
                   className={`
@@ -274,8 +286,19 @@ export default function Header() {
           {open && (
             <div id="mobile-nav" className="border-t bg-card/95 shadow-soft backdrop-blur-xl md:hidden">
               <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3" aria-label="Mobiilne navigatsioon">
-                {/* Trial Countdown Badge (Mobile) */}
-                {user && trialStatus.isOnTrial && trialStatus.daysRemaining !== null && (
+                {/* Grace Period Badge (Mobile) */}
+                {user && trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (
+                  <Link
+                    to="/pricing"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold mb-2 transition-all duration-300 bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-200 border-2 border-orange-300 dark:border-orange-700 animate-pulse"
+                  >
+                    <Clock className="h-4 w-4" />
+                    <span>⏰ Lisaaeg: {trialStatus.hoursRemainingInGrace}h – Telli nüüd!</span>
+                  </Link>
+                )}
+
+                {/* Trial Countdown Badge (Mobile) - only if NOT in grace period */}
+                {user && !trialStatus.isInGracePeriod && trialStatus.isOnTrial && trialStatus.daysRemaining !== null && (
                   <Link
                     to="/pricing"
                     className={`

@@ -24,6 +24,7 @@ import { UserLevelDisplay } from "@/components/UserLevelDisplay";
 import { LevelUpToast } from "@/components/LevelUpToast";
 import { TrialStatusBanner } from "@/components/TrialStatusBanner";
 import { TrialWarningBanner } from "@/components/TrialWarningBanner";
+import { GracePeriodBanner } from "@/components/GracePeriodBanner";
 import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { 
   Trophy, 
@@ -298,12 +299,12 @@ export default function Home() {
     loadOptimizedStats();
   }, [user?.id]); // Use user.id for more precise dependency
 
-  // Redirect to trial-expired page if trial has expired and user has no active subscription
+  // Redirect to trial-expired page if trial AND grace period have expired
   useEffect(() => {
     if (!user || trialStatus.loading) return;
     
-    // If trial expired and user has no access to static programs, redirect
-    if (trialStatus.isExpired) {
+    // Only redirect if BOTH trial and grace period have expired
+    if (trialStatus.isExpired && !trialStatus.isInGracePeriod) {
       // Small delay to allow access check to complete
       const timer = setTimeout(() => {
         window.location.href = '/trial-expired';
@@ -311,7 +312,7 @@ export default function Home() {
       
       return () => clearTimeout(timer);
     }
-  }, [user, trialStatus.isExpired, trialStatus.loading]);
+  }, [user, trialStatus.isExpired, trialStatus.isInGracePeriod, trialStatus.loading]);
 
   // Remove old habits loading logic - now handled by useCustomHabits hook
 
@@ -333,8 +334,15 @@ export default function Home() {
       <LevelUpToast />
       <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
         
-        {/* Trial Warning Banner (≤3 days, dismissible) */}
-        {trialStatus.isWarningPeriod && trialStatus.trialEndsAt && trialStatus.daysRemaining !== null && (
+        {/* Grace Period Banner (trial expired but within 48h grace period) */}
+        {trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (
+          <div className="pt-6">
+            <GracePeriodBanner hoursRemaining={trialStatus.hoursRemainingInGrace} />
+          </div>
+        )}
+
+        {/* Trial Warning Banner (≤3 days, dismissible) - only if NOT in grace period */}
+        {!trialStatus.isInGracePeriod && trialStatus.isWarningPeriod && trialStatus.trialEndsAt && trialStatus.daysRemaining !== null && (
           <div className="pt-6">
             <TrialWarningBanner 
               daysRemaining={trialStatus.daysRemaining}
@@ -344,8 +352,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* Trial Status Banner (regular, always visible for trial users) */}
-        {trialStatus.isOnTrial && trialStatus.trialEndsAt && !trialStatus.isWarningPeriod && (
+        {/* Trial Status Banner (regular, always visible for trial users) - only if NOT in grace or warning period */}
+        {!trialStatus.isInGracePeriod && trialStatus.isOnTrial && trialStatus.trialEndsAt && !trialStatus.isWarningPeriod && (
           <div className="pt-6">
             <TrialStatusBanner 
               trialEndsAt={trialStatus.trialEndsAt}

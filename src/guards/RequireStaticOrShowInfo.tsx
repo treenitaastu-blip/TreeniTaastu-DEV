@@ -23,9 +23,15 @@ export default function RequireStaticOrShowInfo() {
     return <Navigate to="/login" state={{ from: loc }} replace />;
   }
 
-  // Check if trial has expired (redirect to trial-expired page)
-  if (trialStatus.isExpired && !canStatic && !isAdmin) {
+  // Check if trial has expired AND grace period has ended (redirect to trial-expired page)
+  if (trialStatus.isExpired && !trialStatus.isInGracePeriod && !canStatic && !isAdmin) {
     return <Navigate to="/trial-expired" replace />;
+  }
+
+  // Allow access during grace period (even if expired)
+  if (trialStatus.isInGracePeriod && !isAdmin) {
+    // Grace period users get read-only access, banner will prompt upgrade
+    return <Outlet />;
   }
 
   // Signed in but no Static access - redirect to program info instead of pricing (admins always have access)

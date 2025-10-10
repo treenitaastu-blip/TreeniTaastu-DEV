@@ -12,6 +12,9 @@ export interface TrialStatus {
   isExpired: boolean;
   isWarningPeriod: boolean; // ≤3 days remaining
   isUrgent: boolean; // ≤1 day remaining
+  isInGracePeriod: boolean; // Expired but within 48h grace period
+  gracePeriodEndsAt: string | null; // When grace period ends
+  hoursRemainingInGrace: number | null; // Hours left in grace period
 }
 
 export function useTrialStatus(): TrialStatus {
@@ -25,6 +28,9 @@ export function useTrialStatus(): TrialStatus {
     isExpired: false,
     isWarningPeriod: false,
     isUrgent: false,
+    isInGracePeriod: false,
+    gracePeriodEndsAt: null,
+    hoursRemainingInGrace: null,
   });
 
   useEffect(() => {
@@ -38,6 +44,9 @@ export function useTrialStatus(): TrialStatus {
         isExpired: false,
         isWarningPeriod: false,
         isUrgent: false,
+        isInGracePeriod: false,
+        gracePeriodEndsAt: null,
+        hoursRemainingInGrace: null,
       });
       return;
     }
@@ -69,6 +78,9 @@ export function useTrialStatus(): TrialStatus {
             isExpired: false,
             isWarningPeriod: false,
             isUrgent: false,
+            isInGracePeriod: false,
+            gracePeriodEndsAt: null,
+            hoursRemainingInGrace: null,
           });
           return;
         }
@@ -77,6 +89,14 @@ export function useTrialStatus(): TrialStatus {
         const today = new Date();
         const daysRemaining = differenceInDays(endDate, today);
         const isExpired = daysRemaining < 0;
+        
+        // Grace period: 48 hours after trial ends
+        const GRACE_PERIOD_HOURS = 48;
+        const gracePeriodEnd = new Date(endDate.getTime() + GRACE_PERIOD_HOURS * 60 * 60 * 1000);
+        const isInGracePeriod = isExpired && today < gracePeriodEnd;
+        const hoursRemainingInGrace = isInGracePeriod 
+          ? Math.max(0, Math.floor((gracePeriodEnd.getTime() - today.getTime()) / (1000 * 60 * 60)))
+          : null;
 
         setStatus({
           loading: false,
@@ -87,6 +107,9 @@ export function useTrialStatus(): TrialStatus {
           isExpired,
           isWarningPeriod: daysRemaining <= 3 && daysRemaining >= 0,
           isUrgent: daysRemaining <= 1 && daysRemaining >= 0,
+          isInGracePeriod,
+          gracePeriodEndsAt: gracePeriodEnd.toISOString(),
+          hoursRemainingInGrace,
         });
       } catch (error) {
         console.error("Failed to load trial status:", error);
@@ -99,6 +122,9 @@ export function useTrialStatus(): TrialStatus {
           isExpired: false,
           isWarningPeriod: false,
           isUrgent: false,
+          isInGracePeriod: false,
+          gracePeriodEndsAt: null,
+          hoursRemainingInGrace: null,
         });
       }
     };
