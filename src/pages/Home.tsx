@@ -298,6 +298,21 @@ export default function Home() {
     loadOptimizedStats();
   }, [user?.id]); // Use user.id for more precise dependency
 
+  // Redirect to trial-expired page if trial has expired and user has no active subscription
+  useEffect(() => {
+    if (!user || trialStatus.loading) return;
+    
+    // If trial expired and user has no access to static programs, redirect
+    if (trialStatus.isExpired) {
+      // Small delay to allow access check to complete
+      const timer = setTimeout(() => {
+        window.location.href = '/trial-expired';
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, trialStatus.isExpired, trialStatus.loading]);
+
   // Remove old habits loading logic - now handled by useCustomHabits hook
 
   if (status === "loading" || loading || habitsLoading) {

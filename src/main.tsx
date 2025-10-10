@@ -40,6 +40,7 @@ import SignupPage from "@/pages/SignupPage";
 import Join from "@/pages/Join";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import Pricing from "@/pages/Pricing";
+import TrialExpired from "@/pages/TrialExpired";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ChangePasswordPage from "@/pages/ChangePasswordPage";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
@@ -150,6 +151,7 @@ if (container) {
               {/* ---------- PUBLIC WITH HEADER ---------- */}
               <Route element={<App />}>
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/trial-expired" element={<TrialExpired />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
               </Route>
 
