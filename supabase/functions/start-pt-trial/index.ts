@@ -46,7 +46,7 @@ serve(async (req) => {
 
     console.log(`[START-PT-TRIAL] User created successfully: ${authData.user.id}`);
 
-    // Start 3-day PT trial using the database function
+    // Start 7-day trial using the database function (note: function name still references 3d for backward compatibility)
     const { data: trialData, error: trialError } = await supabaseAdmin.rpc('start_pt_trial_3d', {
       u: authData.user.id
     });
@@ -60,7 +60,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      message: "3-day PT trial started successfully",
+      message: "7-day trial started successfully",
       user_id: authData.user.id,
       trial_info: trialData
     }), {

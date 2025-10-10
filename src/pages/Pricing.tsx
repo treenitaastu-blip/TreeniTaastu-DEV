@@ -52,7 +52,7 @@ function TrialSignupCard() {
       if (data?.success) {
         toast({
           title: "Konto loodud!",
-          description: "3-päevane Personal Training proov on käivitatud. Logi nüüd sisse.",
+          description: "7-päevane tasuta proov on käivitatud. Logi nüüd sisse.",
         });
         
         // Redirect to auth page for login
@@ -76,9 +76,9 @@ function TrialSignupCard() {
   return (
     <Card className="max-w-md mx-auto border-primary/20">
       <CardHeader className="text-center">
-        <CardTitle className="text-lg">3-päevane tasuta proov</CardTitle>
+        <CardTitle className="text-lg">7-päevane tasuta proov</CardTitle>
         <CardDescription>
-          Loo konto ja saa ligipääs Personal Training programmidele
+          Loo konto ja saa ligipääs programmidele
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -110,7 +110,7 @@ function TrialSignupCard() {
             {loading ? "Konto loomine..." : "Alusta tasuta proovi"}
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            Sisaldab ligipääsu Personal Training programmidele 3 päeva jooksul
+            Sisaldab täieliku ligipääsu programmidele 7 päeva jooksul
           </p>
         </form>
       </CardContent>
