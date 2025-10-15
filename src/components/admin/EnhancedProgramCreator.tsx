@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Calendar, 
@@ -60,6 +63,9 @@ type Exercise = {
   coach_notes?: string;
   video_url?: string;
   order_in_day: number;
+  is_unilateral?: boolean;
+  reps_per_side?: number | null;
+  total_reps?: number | null;
 };
 
 type TrainingDay = {
@@ -151,6 +157,9 @@ export default function EnhancedProgramCreator({
       coach_notes: "",
       video_url: "",
       order_in_day: trainingDays[dayIndex].exercises.length + 1,
+      is_unilateral: false,
+      reps_per_side: null,
+      total_reps: null,
     };
 
     setTrainingDays(prev => prev.map((day, idx) => 
@@ -160,14 +169,44 @@ export default function EnhancedProgramCreator({
     ));
   };
 
+  const processExerciseInput = (exercise: Exercise) => {
+    const { reps, is_unilateral, weight_kg } = exercise;
+
+    let reps_per_side: number | null = null;
+    let total_reps: number;
+    let display_reps: string;
+
+    if (is_unilateral) {
+      const repsNumber = parseInt(reps.replace(/[^\d]/g, ''));
+      reps_per_side = repsNumber;
+      total_reps = repsNumber * 2;
+      display_reps = `${repsNumber} per side`;
+    } else {
+      const repsNumber = parseInt(reps.replace(/[^\d]/g, ''));
+      total_reps = repsNumber;
+      display_reps = repsNumber.toString();
+    }
+
+    return {
+      ...exercise,
+      reps: display_reps,
+      reps_per_side,
+      total_reps,
+    };
+  };
+
   const updateExercise = (dayIndex: number, exerciseIndex: number, updates: Partial<Exercise>) => {
     setTrainingDays(prev => prev.map((day, dayIdx) => 
       dayIdx === dayIndex 
         ? {
             ...day,
-            exercises: day.exercises.map((exercise, exIdx) => 
-              exIdx === exerciseIndex ? { ...exercise, ...updates } : exercise
-            )
+            exercises: day.exercises.map((exercise, exIdx) => {
+              if (exIdx === exerciseIndex) {
+                const updatedExercise = { ...exercise, ...updates };
+                return processExerciseInput(updatedExercise);
+              }
+              return exercise;
+            })
           }
         : day
     ));
@@ -266,7 +305,10 @@ export default function EnhancedProgramCreator({
             weight_kg: exercise.weight_kg || null,
             coach_notes: exercise.coach_notes || null,
             video_url: exercise.video_url || null,
-            order_in_day: exercise.order_in_day
+            order_in_day: exercise.order_in_day,
+            is_unilateral: exercise.is_unilateral || false,
+            reps_per_side: exercise.reps_per_side || null,
+            total_reps: exercise.total_reps || null
           }));
 
           const { error: exercisesError } = await supabase
@@ -550,14 +592,21 @@ export default function EnhancedProgramCreator({
                                 />
                               </div>
                               <div className="md:col-span-2">
-                                <label className="block text-xs font-medium mb-1">Kordused</label>
+                                <label className="block text-xs font-medium mb-1">
+                                  Kordused {exercise.is_unilateral ? "(per side)" : ""}
+                                </label>
                                 <input
                                   type="text"
                                   value={exercise.reps}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { reps: e.target.value })}
-                                  placeholder="8-12"
+                                  placeholder={exercise.is_unilateral ? "8" : "8-12"}
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
                                 />
+                                {exercise.is_unilateral && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Sisesta ainult number (nt. 8), süsteem näitab "8 per side"
+                                  </p>
+                                )}
                               </div>
                               <div className="md:col-span-2">
                                 <label className="block text-xs font-medium mb-1">Paus (s)</label>
@@ -594,6 +643,44 @@ export default function EnhancedProgramCreator({
                                 </Button>
                               </div>
                             </div>
+                            
+                            {/* Unilateral Toggle */}
+                            <div className="flex items-center space-x-2 mt-3">
+                              <Checkbox
+                                id={`unilateral-${dayIndex}-${exerciseIndex}`}
+                                checked={exercise.is_unilateral || false}
+                                onCheckedChange={(checked) =>
+                                  updateExercise(dayIndex, exerciseIndex, { is_unilateral: checked as boolean })
+                                }
+                              />
+                              <Label htmlFor={`unilateral-${dayIndex}-${exerciseIndex}`} className="text-sm">
+                                Ühepoolne harjutus
+                              </Label>
+                            </div>
+
+                            {/* Preview Section */}
+                            {exercise.exercise_name && (
+                              <div className="mt-3 p-3 border rounded-lg bg-muted/50">
+                                <h4 className="font-medium mb-2 text-sm">Eelvaade:</h4>
+                                <div className="space-y-1 text-sm">
+                                  <p><strong>Harjutus:</strong> {exercise.exercise_name}</p>
+                                  <p><strong>Seeriat:</strong> {exercise.sets}</p>
+                                  <p><strong>Kordusi:</strong> {exercise.is_unilateral ? `${exercise.reps} per side` : exercise.reps}</p>
+                                  <p><strong>Kaal:</strong> {exercise.weight_kg === 0 || exercise.weight_kg === null ? "ilma lisaraskuseta" : `${exercise.weight_kg}kg`}</p>
+                                  {exercise.is_unilateral && exercise.total_reps && (
+                                    <p><strong>Kokku kordusi:</strong> {exercise.total_reps}</p>
+                                  )}
+                                  <div className="flex gap-2 mt-2">
+                                    {exercise.is_unilateral && (
+                                      <Badge variant="secondary" className="text-xs">Ühepoolne</Badge>
+                                    )}
+                                    {(exercise.weight_kg === 0 || exercise.weight_kg === null) && (
+                                      <Badge variant="outline" className="text-xs">Ilma lisaraskuseta</Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                             
                             <div className="grid md:grid-cols-2 gap-3 mt-3">
                               <div>
