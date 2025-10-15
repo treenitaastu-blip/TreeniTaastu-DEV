@@ -76,3 +76,4 @@ $$;
 -- Verify it worked
 SELECT '✅ Signup trigger fixed! Try creating an account now.' as status;
 
+

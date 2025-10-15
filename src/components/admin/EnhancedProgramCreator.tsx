@@ -299,15 +299,32 @@ export default function EnhancedProgramCreator({
       if (programError) throw programError;
 
       // 5. Copy template structure to client structure
-      const { error: copyError } = await supabase.rpc("assign_template_to_user_v2", {
+      const { data: programId, error: copyError } = await supabase.rpc("assign_template_to_user_v2", {
         p_template_id: templateData.id,
         p_target_email: userData.email ?? "",
         p_start_date: startDate
       });
 
       if (copyError) {
-        console.warn("Template copy warning:", copyError);
-        // Continue anyway as the program was created
+        console.error("Template copy error:", copyError);
+        throw new Error(`Mall kopeerimisel tekkis viga: ${copyError.message}`);
+      }
+
+      if (!programId) {
+        throw new Error("Programm loodi, kuid ID-d ei saadud tagasi");
+      }
+
+      // 6. Verify the program was created with content
+      const { data: programCheck, error: checkError } = await supabase
+        .from("client_days")
+        .select("id")
+        .eq("client_program_id", programId)
+        .limit(1);
+
+      if (checkError) {
+        console.warn("Program verification warning:", checkError);
+      } else if (!programCheck || programCheck.length === 0) {
+        throw new Error("Programm loodi, kuid sellel pole päevi. Palun kontrolli malli sisu.");
       }
 
       toast({

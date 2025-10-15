@@ -30,3 +30,4 @@ AND n.nspname = 'public';
 -- Success message
 SELECT '✅ Realtime filters fixed! Signup should work now.' as status;
 
+

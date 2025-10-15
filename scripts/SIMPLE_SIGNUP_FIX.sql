@@ -37,3 +37,4 @@ ALTER TABLE public.profiles REPLICA IDENTITY FULL;
 -- Done!
 SELECT '✅ Signup fixes applied successfully!' as status;
 
+

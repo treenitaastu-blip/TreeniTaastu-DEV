@@ -38,6 +38,9 @@ type ClientItem = {
   coach_notes: string | null;
   rest_seconds: number | null;
   video_url: string | null;
+  is_unilateral?: boolean;
+  reps_per_side?: number | null;
+  total_reps?: number | null;
 };
 
 type WorkoutSession = {
@@ -234,6 +237,9 @@ export default function WorkoutSessionPage() {
               coach_notes,
               rest_seconds,
               video_url,
+              is_unilateral,
+              reps_per_side,
+              total_reps,
               client_days!inner(
                 id,
                 client_programs!inner(assigned_to)
@@ -805,7 +811,19 @@ export default function WorkoutSessionPage() {
                         {idx + 1}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-xl font-semibold mb-1">{it.exercise_name}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-xl font-semibold">{it.exercise_name}</h3>
+                          {it.is_unilateral && (
+                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                              Ühepoolne
+                            </span>
+                          )}
+                          {(it.weight_kg === 0 || it.weight_kg === null) && (
+                            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                              Ilma lisaraskuseta
+                            </span>
+                          )}
+                        </div>
                         {it.coach_notes && (
                           <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
                             <strong>Juhendaja märge:</strong> {it.coach_notes}
@@ -814,7 +832,13 @@ export default function WorkoutSessionPage() {
                         <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
                           <span>{sets} seeriat</span>
                           <span>{it.reps} kordust</span>
-                          {it.weight_kg && <span>{it.weight_kg}kg</span>}
+                          {it.is_unilateral && it.total_reps && (
+                            <span className="text-blue-600">(kokku {it.total_reps})</span>
+                          )}
+                          {it.weight_kg && it.weight_kg > 0 && <span>{it.weight_kg}kg</span>}
+                          {it.weight_kg === 0 || it.weight_kg === null ? (
+                            <span className="text-green-600">ilma lisaraskuseta</span>
+                          ) : null}
                           {it.seconds && <span>{it.seconds}s</span>}
                         </div>
                       </div>

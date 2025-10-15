@@ -115,3 +115,4 @@ AND ue.status = 'trialing';
 
 SELECT '🎉 Trial system verification complete!' as final_status;
 
+

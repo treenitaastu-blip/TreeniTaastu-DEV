@@ -2,13 +2,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Save, Trash2, UserCheck, Calendar, AlertTriangle, UserPlus, UserMinus, BarChart3 } from "lucide-react";
+import { Save, Trash2, UserCheck, Calendar, AlertTriangle, UserPlus, UserMinus, BarChart3, Edit3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminCard, AdminCardHeader, AdminCardTitle, AdminCardContent } from "@/components/ui/admin-card";
 import { ProgramProgressCard } from "@/components/smart-progression/ProgramProgressCard";
 import { useSmartProgression } from "@/hooks/useSmartProgression";
+import ProgramContentEditor from "@/components/admin/ProgramContentEditor";
 
 type UUID = string;
 
@@ -45,6 +46,7 @@ export default function ProgramEdit() {
   const [startDate, setStartDate] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [newAssigneeEmail, setNewAssigneeEmail] = useState("");
+  const [showContentEditor, setShowContentEditor] = useState(false);
 
   // Smart progression hook
   const { 
@@ -438,6 +440,16 @@ export default function ProgramEdit() {
               </Button>
               
               <Button
+                onClick={() => setShowContentEditor(true)}
+                variant="outline"
+                disabled={saving || deleting}
+                className="flex items-center gap-2"
+              >
+                <Edit3 className="h-4 w-4" />
+                Redigeeri sisu
+              </Button>
+              
+              <Button
                 onClick={() => navigate(`/admin/programs/${id}/analytics`)}
                 variant="outline"
                 disabled={saving || deleting}
@@ -459,6 +471,24 @@ export default function ProgramEdit() {
           </div>
         </AdminCardContent>
       </AdminCard>
+
+      {/* Program Content Editor Modal */}
+      {showContentEditor && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <ProgramContentEditor
+              programId={id!}
+              isOpen={showContentEditor}
+              onOpenChange={setShowContentEditor}
+              onSuccess={() => {
+                setShowContentEditor(false);
+                // Optionally reload program data
+                loadProgram();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

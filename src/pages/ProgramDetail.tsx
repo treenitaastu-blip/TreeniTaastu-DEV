@@ -34,6 +34,9 @@ type ClientItem = {
   coach_notes?: string | null;
   video_url?: string | null;
   order_in_day: number;
+  is_unilateral?: boolean;
+  reps_per_side?: number | null;
+  total_reps?: number | null;
 };
 
 /** Rows for meta */
@@ -182,6 +185,9 @@ export default function ProgramDetail() {
                 coach_notes,
                 video_url,
                 order_in_day,
+                is_unilateral,
+                reps_per_side,
+                total_reps,
                 client_days!inner(
                   id,
                   client_programs!inner(assigned_to)

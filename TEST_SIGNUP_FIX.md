@@ -94,3 +94,4 @@ Share the error and we'll debug further!
 - [ ] Subscribers table has email populated
 - [ ] No errors in Postgres logs
 
+
