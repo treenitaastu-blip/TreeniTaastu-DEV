@@ -396,22 +396,22 @@ export default function EnhancedProgramCreator({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Target className="h-5 w-5 text-primary" />
             Loo Smart Personaalprogramm
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Program Settings */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Programmi seaded</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Programmi seaded</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Users className="inline mr-1 h-4 w-4" />
@@ -426,12 +426,12 @@ export default function EnhancedProgramCreator({
                     }}
                     disabled={loadingClients}
                   >
-                    <SelectTrigger className="w-full text-base md:text-sm">
+                    <SelectTrigger className="w-full text-sm">
                       <SelectValue placeholder={loadingClients ? "Laen kliente..." : "Vali klient dropdownist"} />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
                       {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id} className="text-base md:text-sm">
+                        <SelectItem key={client.id} value={client.id} className="text-sm">
                           <div className="flex flex-col">
                             <span className="font-medium">{client.email}</span>
                             <span className="text-xs text-muted-foreground">
@@ -450,12 +450,12 @@ export default function EnhancedProgramCreator({
                     value={programTitle}
                     onChange={(e) => setProgramTitle(e.target.value)}
                     placeholder="nt. Jõuprogramm algajale"
-                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-base md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Calendar className="inline mr-1 h-4 w-4" />
@@ -465,7 +465,7 @@ export default function EnhancedProgramCreator({
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-base md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
                 <div>
@@ -476,7 +476,7 @@ export default function EnhancedProgramCreator({
                   <select
                     value={durationWeeks}
                     onChange={(e) => setDurationWeeks(Number(e.target.value))}
-                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-base md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   >
                     {[2, 4, 6, 8, 10, 12, 16, 20, 24].map(weeks => (
                       <option key={weeks} value={weeks}>
@@ -493,7 +493,7 @@ export default function EnhancedProgramCreator({
                   <select
                     value={trainingDaysPerWeek}
                     onChange={(e) => setTrainingDaysPerWeek(Number(e.target.value))}
-                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-base md:text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   >
                     {[1, 2, 3, 4, 5].map(days => (
                       <option key={days} value={days}>
@@ -570,8 +570,8 @@ export default function EnhancedProgramCreator({
                       <CardContent className="pt-0 space-y-3">
                         {day.exercises.map((exercise, exerciseIndex) => (
                           <div key={exerciseIndex} className="p-4 border rounded-lg bg-muted/30">
-                            <div className="grid md:grid-cols-12 gap-3 items-start">
-                              <div className="md:col-span-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-start">
+                              <div className="sm:col-span-2 lg:col-span-3">
                                 <label className="block text-xs font-medium mb-1">Harjutus</label>
                                 <input
                                   type="text"
@@ -580,7 +580,7 @@ export default function EnhancedProgramCreator({
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
                                 />
                               </div>
-                              <div className="md:col-span-2">
+                              <div className="sm:col-span-1 lg:col-span-2">
                                 <label className="block text-xs font-medium mb-1">Seeriad</label>
                                 <input
                                   type="number"
@@ -591,7 +591,7 @@ export default function EnhancedProgramCreator({
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
                                 />
                               </div>
-                              <div className="md:col-span-2">
+                              <div className="sm:col-span-1 lg:col-span-2">
                                 <label className="block text-xs font-medium mb-1">
                                   Kordused {exercise.is_unilateral ? "(per side)" : ""}
                                 </label>
@@ -608,7 +608,7 @@ export default function EnhancedProgramCreator({
                                   </p>
                                 )}
                               </div>
-                              <div className="md:col-span-2">
+                              <div className="sm:col-span-1 lg:col-span-2">
                                 <label className="block text-xs font-medium mb-1">Paus (s)</label>
                                 <input
                                   type="number"
@@ -620,7 +620,7 @@ export default function EnhancedProgramCreator({
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
                                 />
                               </div>
-                              <div className="md:col-span-2">
+                              <div className="sm:col-span-1 lg:col-span-2">
                                 <label className="block text-xs font-medium mb-1">Kaal (kg)</label>
                                 <input
                                   type="number"
@@ -631,7 +631,7 @@ export default function EnhancedProgramCreator({
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
                                 />
                               </div>
-                              <div className="md:col-span-1 flex items-end">
+                              <div className="sm:col-span-2 lg:col-span-1 flex items-end">
                                 <Button
                                   type="button"
                                   variant="outline"

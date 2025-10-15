@@ -78,6 +78,7 @@ export default function PersonalTraining() {
   });
   const [programs, setPrograms] = useState<ClientProgram[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [users, setUsers] = useState<{id: string, email: string, full_name: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
@@ -85,7 +86,7 @@ export default function PersonalTraining() {
   // Quick assign modal
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [assignEmail, setAssignEmail] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [assignDate, setAssignDate] = useState(new Date().toISOString().slice(0, 10));
   const [assigning, setAssigning] = useState(false);
 
@@ -136,6 +137,24 @@ export default function PersonalTraining() {
         throw programsError;
       }
 
+      // Load all templates separately
+      const { data: templatesData, error: templatesError } = await supabase
+        .from("workout_templates")
+        .select(`
+          id,
+          title,
+          goal,
+          is_active,
+          created_by,
+          inserted_at
+        `)
+        .order("inserted_at", { ascending: false });
+
+      if (templatesError) {
+        console.error("Templates list error:", templatesError);
+        throw templatesError;
+      }
+
       // Get emails for assigned users
       const userIds = [...new Set(programsData?.map(p => p.assigned_to).filter(Boolean))];
       const { data: profilesData } = await supabase
@@ -151,7 +170,17 @@ export default function PersonalTraining() {
         template_title: program.templates?.title || "Mall kustutatud",
       }));
 
+      // Load all users for dropdown
+      const { data: usersData, error: usersError } = await supabase.rpc("get_all_users");
+
+      if (usersError) {
+        console.error("Users list error:", usersError);
+        throw usersError;
+      }
+
       setPrograms(formattedPrograms);
+      setTemplates(templatesData || []);
+      setUsers(usersData || []);
 
       // Calculate accurate stats
       const activePrograms = formattedPrograms.filter(p => p.is_active !== false);
@@ -212,19 +241,25 @@ export default function PersonalTraining() {
   };
 
   const handleQuickAssign = async () => {
-    if (!selectedTemplate || !assignEmail.trim()) return;
+    if (!selectedTemplate || !selectedUserId) return;
 
     setAssigning(true);
     try {
+      // Get selected user email
+      const selectedUser = users.find(u => u.id === selectedUserId);
+      if (!selectedUser) {
+        throw new Error("Valitud kasutajat ei leitud");
+      }
+
       // Track assignment attempt
       trackFeatureUsage('program_assignment', 'attempted', {
         template_id: selectedTemplate.id,
-        target_email: assignEmail
+        target_email: selectedUser.email
       });
 
       const { data: programId, error } = await supabase.rpc("assign_template_to_user_v2", {
         p_template_id: selectedTemplate.id,
-        p_target_email: assignEmail.trim().toLowerCase(),
+        p_target_email: selectedUser.email,
         p_start_date: assignDate,
       });
 
@@ -247,24 +282,24 @@ export default function PersonalTraining() {
       // Track successful assignment
       trackFeatureUsage('program_assignment', 'completed', {
         template_id: selectedTemplate.id,
-        target_email: assignEmail,
+        target_email: selectedUser.email,
         program_id: programId
       });
 
       toast({
         title: "Mall määratud",
-        description: `Mall "${selectedTemplate.title}" on määratud kasutajale ${assignEmail}`,
+        description: `Mall "${selectedTemplate.title}" on määratud kasutajale ${selectedUser.email}`,
       });
 
       setShowAssignModal(false);
       setSelectedTemplate(null);
-      setAssignEmail("");
+      setSelectedUserId("");
       loadData();
     } catch (error: unknown) {
       // Track assignment failure
       trackFeatureUsage('program_assignment', 'failed', {
         template_id: selectedTemplate?.id,
-        target_email: assignEmail,
+        target_email: selectedUser?.email,
         error_message: (error as Error).message
       });
 
@@ -468,70 +503,7 @@ export default function PersonalTraining() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 sm:gap-3">
-                <Dialog open={showNewTemplate} onOpenChange={setShowNewTemplate}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 sm:flex-initial"
-                      onClick={() => trackButtonClick('new_template_modal', 'template_creation', 'admin_dashboard')}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      <span className="hidden xs:inline">Uus </span>mall
-                    </Button>
-                  </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Loo uus mall</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Malli pealkiri</label>
-                      <input
-                        type="text"
-                        value={newTemplate.title}
-                        onChange={(e) => setNewTemplate(s => ({ ...s, title: e.target.value }))}
-                        placeholder="nt. Algaja jõutreening"
-                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Eesmärk (valikuline)</label>
-                      <input
-                        type="text"
-                        value={newTemplate.goal}
-                        onChange={(e) => setNewTemplate(s => ({ ...s, goal: e.target.value }))}
-                        placeholder="nt. Jõu ja vastupidavuse arendamine"
-                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      />
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                      <Button 
-                        onClick={() => {
-                          trackButtonClick('cancel_template_creation', 'template_creation', 'admin_dashboard');
-                          setShowNewTemplate(false);
-                        }} 
-                        variant="outline" 
-                        className="flex-1"
-                      >
-                        Tühista
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          trackButtonClick('create_template', 'template_creation', 'admin_dashboard');
-                          handleCreateTemplate();
-                        }}
-                        disabled={creating || !newTemplate.title.trim()}
-                        className="flex-1"
-                      >
-                        {creating ? "Loob..." : "Loo mall"}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Button
+                <Button
                 onClick={() => {
                   trackButtonClick('smart_program_creator', 'smart_program', 'admin_dashboard');
                   setShowEnhancedCreator(true);
@@ -579,14 +551,19 @@ export default function PersonalTraining() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Kliendi email</label>
-                      <input
-                        type="email"
-                        value={assignEmail}
-                        onChange={(e) => setAssignEmail(e.target.value)}
-                        placeholder="klient@email.com"
+                      <label className="block text-sm font-medium mb-2">Vali klient</label>
+                      <select
+                        value={selectedUserId}
+                        onChange={(e) => setSelectedUserId(e.target.value)}
                         className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      />
+                      >
+                        <option value="">Vali klient...</option>
+                        {users.map(user => (
+                          <option key={user.id} value={user.id}>
+                            {user.email} {user.full_name ? `(${user.full_name})` : ''}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">Alguskuupäev</label>
@@ -613,7 +590,7 @@ export default function PersonalTraining() {
                           trackButtonClick('assign_program', 'program_assignment', 'admin_dashboard');
                           handleQuickAssign();
                         }}
-                        disabled={assigning || !selectedTemplate || !assignEmail.trim()}
+                        disabled={assigning || !selectedTemplate || !selectedUserId}
                         className="flex-1"
                       >
                         {assigning ? "Määran..." : "Määra programm"}
@@ -633,15 +610,15 @@ export default function PersonalTraining() {
         />
 
         {/* Stats Cards - Improved and Clear */}
-        <div className="grid gap-3 mb-6 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 mb-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="border-0 shadow-soft bg-gradient-to-br from-purple-500/10 to-purple-600/5">
             <CardContent className="p-3 lg:p-6">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <Target className="h-5 w-5 lg:h-6 lg:w-6 text-purple-600" />
-                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Kokku Programme</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Kokku Programme</p>
                 </div>
-                <p className="text-xl lg:text-2xl font-bold text-purple-600">
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">
                   {stats.totalPrograms}
                 </p>
               </div>
@@ -653,9 +630,9 @@ export default function PersonalTraining() {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <Activity className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
-                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Aktiivsed Programme</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Aktiivsed Programme</p>
                 </div>
-                <p className="text-xl lg:text-2xl font-bold text-green-600">
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
                   {stats.activePrograms}
                 </p>
               </div>
@@ -667,9 +644,9 @@ export default function PersonalTraining() {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <Users className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
-                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Aktiivsed Kliendid</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Aktiivsed Kliendid</p>
                 </div>
-                <p className="text-xl lg:text-2xl font-bold text-primary">
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
                   {stats.totalClients}
                 </p>
               </div>
@@ -681,15 +658,92 @@ export default function PersonalTraining() {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />
-                  <p className="text-xs lg:text-sm font-medium text-muted-foreground">Lõpetatud Sessioone</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Lõpetatud Sessioone</p>
                 </div>
-                <p className="text-xl lg:text-2xl font-bold text-blue-600">
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
                   {stats.completedSessions}
                 </p>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Template Management Section */}
+        <Card className="border-0 shadow-soft bg-card/50 backdrop-blur-sm mb-6">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-lg font-semibold">Mallide Haldus</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Halda treeningmalle ja vaata nende kasutamist
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {templates.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-2">Malle pole veel loodud</p>
+                <p className="text-sm">Loo esimene mall, et hakata määrama programme klientidele</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {templates.map((template) => (
+                  <div key={template.id} className="p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-base mb-1">{template.title}</h3>
+                        <p className="text-sm text-muted-foreground">{template.goal || "Eesmärk määramata"}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {template.is_active ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Aktiivne
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Mitteaktiivne
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Loodud: {new Date(template.inserted_at).toLocaleDateString('et-EE')}</span>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => {
+                            // TODO: Add template editing functionality
+                            console.log('Edit template:', template.id);
+                          }}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Muuda
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => {
+                            // TODO: Add template assignment functionality
+                            setSelectedTemplate(template);
+                            setShowAssignModal(true);
+                          }}
+                        >
+                          <UserPlus className="h-3 w-3 mr-1" />
+                          Määra
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Programs List - Cleaner Interface */}
         <Card className="border-0 shadow-soft bg-card/50 backdrop-blur-sm">
