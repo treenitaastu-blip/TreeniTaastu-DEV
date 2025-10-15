@@ -778,15 +778,15 @@ export default function PersonalTraining() {
                           <div className="flex items-center justify-end gap-2 flex-shrink-0">
                             <Button
                               onClick={() => {
-                                trackButtonClick('view_program', `/admin/programs/${program.id}`, 'admin_dashboard');
-                                window.open(`/admin/programs/${program.id}`, '_blank');
+                                trackButtonClick('view_program', `/admin/programs/${program.id}/edit`, 'admin_dashboard');
+                                window.location.href = `/admin/programs/${program.id}/edit`;
                               }}
                               size="sm"
                               variant="outline"
                               className="h-8 text-xs"
                             >
                               <Edit className="h-3 w-3 mr-1" />
-                              <span className="hidden sm:inline">Vaata</span>
+                              <span className="hidden sm:inline">Muuda</span>
                             </Button>
                             
                             <DropdownMenu>

@@ -57,45 +57,45 @@ export default function ProgramEdit() {
     updateProgramSettings 
   } = useSmartProgression(id);
 
+  const loadProgram = async () => {
+    if (!id) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Load program data
+      const { data: programData, error: programError } = await supabase
+        .from("client_programs")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (programError) throw programError;
+
+      // Load user profile
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .eq("id", programData.assigned_to)
+        .single();
+
+      if (profileError) throw profileError;
+
+      setProgram(programData);
+      setUserProfile(profileData);
+      setTitleOverride(programData.title_override || "");
+      setStartDate(programData.start_date || "");
+      setIsActive(programData.is_active !== false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Viga programmi laadimisel";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadProgram = async () => {
-      if (!id) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Load program data
-        const { data: programData, error: programError } = await supabase
-          .from("client_programs")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (programError) throw programError;
-
-        // Load user profile
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, email")
-          .eq("id", programData.assigned_to)
-          .single();
-
-        if (profileError) throw profileError;
-
-        setProgram(programData);
-        setUserProfile(profileData);
-        setTitleOverride(programData.title_override || "");
-        setStartDate(programData.start_date || "");
-        setIsActive(programData.is_active !== false);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Viga programmi laadimisel";
-        setError(message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadProgram();
   }, [id]);
 
