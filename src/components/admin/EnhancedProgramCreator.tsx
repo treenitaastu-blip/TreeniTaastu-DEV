@@ -53,6 +53,16 @@ type Client = {
   created_at: string;
 };
 
+type ExerciseAlternative = {
+  id?: string;
+  alternative_name: string;
+  alternative_description?: string;
+  alternative_video_url?: string;
+  difficulty_level: 'easier' | 'same' | 'harder';
+  equipment_required?: string[];
+  muscle_groups?: string[];
+};
+
 type Exercise = {
   id?: string;
   exercise_name: string;
@@ -66,6 +76,7 @@ type Exercise = {
   is_unilateral?: boolean;
   reps_per_side?: number | null;
   total_reps?: number | null;
+  alternatives?: ExerciseAlternative[];
 };
 
 type TrainingDay = {
@@ -160,11 +171,77 @@ export default function EnhancedProgramCreator({
       is_unilateral: false,
       reps_per_side: null,
       total_reps: null,
+      alternatives: [],
     };
 
     setTrainingDays(prev => prev.map((day, idx) => 
       idx === dayIndex 
         ? { ...day, exercises: [...day.exercises, newExercise] }
+        : day
+    ));
+  };
+
+  const addAlternative = (dayIndex: number, exerciseIndex: number) => {
+    const newAlternative: ExerciseAlternative = {
+      alternative_name: "Alternatiivne harjutus",
+      alternative_description: "",
+      alternative_video_url: "",
+      difficulty_level: "same",
+      equipment_required: [],
+      muscle_groups: [],
+    };
+
+    setTrainingDays(prev => prev.map((day, dayIdx) => 
+      dayIdx === dayIndex 
+        ? {
+            ...day,
+            exercises: day.exercises.map((exercise, exIdx) => 
+              exIdx === exerciseIndex 
+                ? {
+                    ...exercise,
+                    alternatives: [...(exercise.alternatives || []), newAlternative]
+                  }
+                : exercise
+            )
+          }
+        : day
+    ));
+  };
+
+  const updateAlternative = (dayIndex: number, exerciseIndex: number, altIndex: number, field: keyof ExerciseAlternative, value: any) => {
+    setTrainingDays(prev => prev.map((day, dayIdx) => 
+      dayIdx === dayIndex 
+        ? {
+            ...day,
+            exercises: day.exercises.map((exercise, exIdx) => 
+              exIdx === exerciseIndex 
+                ? {
+                    ...exercise,
+                    alternatives: exercise.alternatives?.map((alt, idx) => 
+                      idx === altIndex ? { ...alt, [field]: value } : alt
+                    ) || []
+                  }
+                : exercise
+            )
+          }
+        : day
+    ));
+  };
+
+  const removeAlternative = (dayIndex: number, exerciseIndex: number, altIndex: number) => {
+    setTrainingDays(prev => prev.map((day, dayIdx) => 
+      dayIdx === dayIndex 
+        ? {
+            ...day,
+            exercises: day.exercises.map((exercise, exIdx) => 
+              exIdx === exerciseIndex 
+                ? {
+                    ...exercise,
+                    alternatives: exercise.alternatives?.filter((_, idx) => idx !== altIndex) || []
+                  }
+                : exercise
+            )
+          }
         : day
     ));
   };
@@ -311,11 +388,39 @@ export default function EnhancedProgramCreator({
             total_reps: exercise.total_reps || null
           }));
 
-          const { error: exercisesError } = await supabase
+          const { data: insertedExercises, error: exercisesError } = await supabase
             .from("template_items")
-            .insert(exercisesData);
+            .insert(exercisesData)
+            .select("id");
 
           if (exercisesError) throw exercisesError;
+
+          // Add alternatives for each exercise
+          for (let i = 0; i < day.exercises.length; i++) {
+            const exercise = day.exercises[i];
+            const templateItemId = insertedExercises[i].id;
+            
+            if (exercise.alternatives && exercise.alternatives.length > 0) {
+              const alternativesData = exercise.alternatives.map(alt => ({
+                primary_exercise_id: templateItemId,
+                alternative_name: alt.alternative_name,
+                alternative_description: alt.alternative_description || null,
+                alternative_video_url: alt.alternative_video_url || null,
+                difficulty_level: alt.difficulty_level,
+                equipment_required: alt.equipment_required || null,
+                muscle_groups: alt.muscle_groups || null
+              }));
+
+              const { error: alternativesError } = await supabase
+                .from("template_alternatives")
+                .insert(alternativesData);
+
+              if (alternativesError) {
+                console.error("Error inserting alternatives:", alternativesError);
+                // Don't throw here, just log the error as alternatives are optional
+              }
+            }
+          }
         }
       }
 
@@ -367,6 +472,69 @@ export default function EnhancedProgramCreator({
         console.warn("Program verification warning:", checkError);
       } else if (!programCheck || programCheck.length === 0) {
         throw new Error("Programm loodi, kuid sellel pole päevi. Palun kontrolli malli sisu.");
+      }
+
+      // 7. Copy alternatives from template to client program
+      try {
+        // Get all template items with their alternatives
+        const { data: templateItems, error: templateItemsError } = await supabase
+          .from("template_items")
+          .select(`
+            id,
+            template_alternatives (
+              alternative_name,
+              alternative_description,
+              alternative_video_url,
+              difficulty_level,
+              equipment_required,
+              muscle_groups
+            )
+          `)
+          .eq("template_day_id", templateData.id);
+
+        if (templateItemsError) {
+          console.warn("Error fetching template alternatives:", templateItemsError);
+        } else if (templateItems && templateItems.length > 0) {
+          // Get corresponding client items
+          const { data: clientItems, error: clientItemsError } = await supabase
+            .from("client_items")
+            .select("id, exercise_name")
+            .eq("client_day_id", programCheck[0].id);
+
+          if (!clientItemsError && clientItems && clientItems.length > 0) {
+            // Match template items with client items by exercise name and copy alternatives
+            for (const templateItem of templateItems) {
+              if (templateItem.template_alternatives && templateItem.template_alternatives.length > 0) {
+                const matchingClientItem = clientItems.find(ci => 
+                  ci.exercise_name === templateItem.exercise_name
+                );
+                
+                if (matchingClientItem) {
+                  const alternativesData = templateItem.template_alternatives.map(alt => ({
+                    primary_exercise_id: matchingClientItem.id,
+                    alternative_name: alt.alternative_name,
+                    alternative_description: alt.alternative_description,
+                    alternative_video_url: alt.alternative_video_url,
+                    difficulty_level: alt.difficulty_level,
+                    equipment_required: alt.equipment_required,
+                    muscle_groups: alt.muscle_groups
+                  }));
+
+                  const { error: alternativesError } = await supabase
+                    .from("exercise_alternatives")
+                    .insert(alternativesData);
+
+                  if (alternativesError) {
+                    console.warn("Error copying alternatives:", alternativesError);
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (altError) {
+        console.warn("Error in alternatives copying process:", altError);
+        // Don't fail the entire process for alternatives
       }
 
       toast({
@@ -703,6 +871,92 @@ export default function EnhancedProgramCreator({
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
                                 />
                               </div>
+                            </div>
+
+                            {/* Alternatives Section */}
+                            <div className="mt-4 p-4 border rounded-lg bg-muted/30">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="font-medium text-sm">Alternatiivsed harjutused</h4>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addAlternative(dayIndex, exerciseIndex)}
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Lisa alternatiiv
+                                </Button>
+                              </div>
+                              
+                              {exercise.alternatives && exercise.alternatives.length > 0 ? (
+                                <div className="space-y-3">
+                                  {exercise.alternatives.map((alt, altIndex) => (
+                                    <div key={altIndex} className="p-3 border rounded-lg bg-background">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                          <label className="block text-xs font-medium mb-1">Alternatiivne harjutus</label>
+                                          <input
+                                            type="text"
+                                            value={alt.alternative_name}
+                                            onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'alternative_name', e.target.value)}
+                                            placeholder="nt. Kükk ilma raskuseta"
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-xs font-medium mb-1">Raskusaste</label>
+                                          <select
+                                            value={alt.difficulty_level}
+                                            onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'difficulty_level', e.target.value)}
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                          >
+                                            <option value="easier">Lihtsam</option>
+                                            <option value="same">Sama raskus</option>
+                                            <option value="harder">Raskem</option>
+                                          </select>
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                                        <div>
+                                          <label className="block text-xs font-medium mb-1">Kirjeldus (valikuline)</label>
+                                          <input
+                                            type="text"
+                                            value={alt.alternative_description || ""}
+                                            onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'alternative_description', e.target.value)}
+                                            placeholder="Lühike kirjeldus..."
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-xs font-medium mb-1">Video URL (valikuline)</label>
+                                          <input
+                                            type="url"
+                                            value={alt.alternative_video_url || ""}
+                                            onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'alternative_video_url', e.target.value)}
+                                            placeholder="https://youtube.com/..."
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-end mt-3">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => removeAlternative(dayIndex, exerciseIndex, altIndex)}
+                                        >
+                                          <Trash2 className="h-3 w-3 mr-1" />
+                                          Eemalda
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground text-center py-4">
+                                  Alternatiivseid harjutusi pole veel lisatud
+                                </p>
+                              )}
                             </div>
                           </div>
                         ))}

@@ -23,6 +23,16 @@ type ClientDay = {
   items: ClientItem[];
 };
 
+type ExerciseAlternative = {
+  id: string;
+  alternative_name: string;
+  alternative_description?: string;
+  alternative_video_url?: string;
+  difficulty_level: 'easier' | 'same' | 'harder';
+  equipment_required?: string[];
+  muscle_groups?: string[];
+};
+
 type ClientItem = {
   id: string;
   exercise_name: string;
@@ -37,6 +47,7 @@ type ClientItem = {
   is_unilateral?: boolean;
   reps_per_side?: number | null;
   total_reps?: number | null;
+  alternatives?: ExerciseAlternative[];
 };
 
 /** Rows for meta */
@@ -188,6 +199,15 @@ export default function ProgramDetail() {
                 is_unilateral,
                 reps_per_side,
                 total_reps,
+                exercise_alternatives (
+                  id,
+                  alternative_name,
+                  alternative_description,
+                  alternative_video_url,
+                  difficulty_level,
+                  equipment_required,
+                  muscle_groups
+                ),
                 client_days!inner(
                   id,
                   client_programs!inner(assigned_to)
@@ -216,6 +236,18 @@ export default function ProgramDetail() {
               coach_notes: string | null;
               video_url: string | null;
               order_in_day: number;
+              is_unilateral?: boolean;
+              reps_per_side?: number | null;
+              total_reps?: number | null;
+              exercise_alternatives?: Array<{
+                id: string;
+                alternative_name: string;
+                alternative_description?: string;
+                alternative_video_url?: string;
+                difficulty_level: 'easier' | 'same' | 'harder';
+                equipment_required?: string[];
+                muscle_groups?: string[];
+              }>;
             }>) ?? [];
 
           itemsByDay = itemsData.reduce((acc, row) => {
@@ -231,6 +263,10 @@ export default function ProgramDetail() {
               coach_notes: row.coach_notes ?? null,
               video_url: row.video_url ?? null,
               order_in_day: row.order_in_day,
+              is_unilateral: row.is_unilateral ?? false,
+              reps_per_side: row.reps_per_side ?? null,
+              total_reps: row.total_reps ?? null,
+              alternatives: row.exercise_alternatives ?? [],
             });
             acc[row.client_day_id] = arr;
             return acc;
@@ -469,6 +505,9 @@ export default function ProgramDetail() {
 
                           <div className="mb-4 text-xs text-muted-foreground">
                             {day.items.length} harjutust
+                            {day.items.some(item => item.alternatives && item.alternatives.length > 0) && (
+                              <span className="ml-2 text-blue-600">• Alternatiivid saadaval</span>
+                            )}
                           </div>
 
                           <Button 

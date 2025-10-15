@@ -26,6 +26,16 @@ type ClientDay = {
   day_order: number | null;
 };
 
+type ExerciseAlternative = {
+  id: string;
+  alternative_name: string;
+  alternative_description?: string;
+  alternative_video_url?: string;
+  difficulty_level: 'easier' | 'same' | 'harder';
+  equipment_required?: string[];
+  muscle_groups?: string[];
+};
+
 type ClientItem = {
   id: UUID;
   client_day_id: UUID;
@@ -41,6 +51,7 @@ type ClientItem = {
   is_unilateral?: boolean;
   reps_per_side?: number | null;
   total_reps?: number | null;
+  alternatives?: ExerciseAlternative[];
 };
 
 type WorkoutSession = {
@@ -124,6 +135,41 @@ export default function WorkoutSessionPage() {
 
   // inline video toggles
   const [openVideoFor, setOpenVideoFor] = useState<Record<string, boolean>>({});
+  
+  // alternatives management
+  const [openAlternativesFor, setOpenAlternativesFor] = useState<Record<string, boolean>>({});
+  const [selectedAlternative, setSelectedAlternative] = useState<Record<string, string>>({});
+
+  // Function to switch to an alternative exercise
+  const switchToAlternative = async (exerciseId: string, alternativeName: string) => {
+    try {
+      // Update the exercise name in the database
+      const { error } = await supabase
+        .from("client_items")
+        .update({ exercise_name: alternativeName })
+        .eq("id", exerciseId);
+
+      if (error) {
+        console.error("Error switching exercise:", error);
+        return;
+      }
+
+      // Update local state
+      setItems(prev => prev.map(item => 
+        item.id === exerciseId 
+          ? { ...item, exercise_name: alternativeName }
+          : item
+      ));
+
+      // Close alternatives panel
+      setOpenAlternativesFor(prev => ({ ...prev, [exerciseId]: false }));
+      
+      // Show success message
+      console.log(`Switched to alternative: ${alternativeName}`);
+    } catch (error) {
+      console.error("Error switching exercise:", error);
+    }
+  };
   const orderedItems = useMemo(
     () => [...items].sort((a, b) => a.order_in_day - b.order_in_day),
     [items]
@@ -240,6 +286,15 @@ export default function WorkoutSessionPage() {
               is_unilateral,
               reps_per_side,
               total_reps,
+              exercise_alternatives (
+                id,
+                alternative_name,
+                alternative_description,
+                alternative_video_url,
+                difficulty_level,
+                equipment_required,
+                muscle_groups
+              ),
               client_days!inner(
                 id,
                 client_programs!inner(assigned_to)
@@ -266,6 +321,18 @@ export default function WorkoutSessionPage() {
             coach_notes: string | null;
             rest_seconds: number | null;
             video_url: string | null;
+            is_unilateral?: boolean;
+            reps_per_side?: number | null;
+            total_reps?: number | null;
+            exercise_alternatives?: Array<{
+              id: string;
+              alternative_name: string;
+              alternative_description?: string;
+              alternative_video_url?: string;
+              difficulty_level: 'easier' | 'same' | 'harder';
+              equipment_required?: string[];
+              muscle_groups?: string[];
+            }>;
           }>)?.map((row) => ({
             id: row.id,
             client_day_id: row.client_day_id,
@@ -278,6 +345,10 @@ export default function WorkoutSessionPage() {
             coach_notes: row.coach_notes ?? null,
             rest_seconds: row.rest_seconds ?? null,
             video_url: row.video_url ?? null,
+            is_unilateral: row.is_unilateral ?? false,
+            reps_per_side: row.reps_per_side ?? null,
+            total_reps: row.total_reps ?? null,
+            alternatives: row.exercise_alternatives ?? [],
           })) ?? [];
 
         setItems(mappedItems);
@@ -859,12 +930,67 @@ export default function WorkoutSessionPage() {
                           {openVideoFor[it.id] ? "Peida video" : "📹 Video"}
                         </button>
                       )}
+                      {it.alternatives && it.alternatives.length > 0 && (
+                        <button
+                          className="rounded-lg border bg-background px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                          onClick={() => setOpenAlternativesFor((m) => ({ ...m, [it.id]: !m[it.id] }))}
+                        >
+                          🔄 Alternatiivid ({it.alternatives.length})
+                        </button>
+                      )}
                     </div>
                   </div>
 
                   {it.video_url && openVideoFor[it.id] && (
                     <div className="rounded-xl overflow-hidden border">
                       <VideoPlayer src={it.video_url} title={it.exercise_name} />
+                    </div>
+                  )}
+
+                  {/* Alternatives Section */}
+                  {it.alternatives && it.alternatives.length > 0 && openAlternativesFor[it.id] && (
+                    <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                      <h4 className="font-medium mb-3 text-sm">Alternatiivsed harjutused:</h4>
+                      <div className="space-y-2">
+                        {it.alternatives.map((alt, altIndex) => (
+                          <div key={altIndex} className="flex items-center justify-between p-3 border rounded-lg bg-background">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">{alt.alternative_name}</span>
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  alt.difficulty_level === 'easier' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : alt.difficulty_level === 'harder'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {alt.difficulty_level === 'easier' ? 'Lihtsam' : 
+                                   alt.difficulty_level === 'harder' ? 'Raskem' : 'Sama raskus'}
+                                </span>
+                              </div>
+                              {alt.alternative_description && (
+                                <p className="text-xs text-muted-foreground">{alt.alternative_description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {alt.alternative_video_url && (
+                                <button
+                                  className="text-xs text-blue-600 hover:text-blue-800"
+                                  onClick={() => setOpenVideoFor((m) => ({ ...m, [it.id]: true }))}
+                                >
+                                  📹 Video
+                                </button>
+                              )}
+                              <button
+                                className="px-3 py-1 bg-primary text-primary-foreground text-xs rounded hover:bg-primary/90 transition-colors"
+                                onClick={() => switchToAlternative(it.id, alt.alternative_name)}
+                              >
+                                Vali see
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
