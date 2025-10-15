@@ -2,12 +2,19 @@ import { Link } from "react-router-dom";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Clock, AlertCircle, Sparkles } from "lucide-react";
+import { useTrialPopupManager } from "@/hooks/useTrialPopupManager";
 
 interface GracePeriodBannerProps {
   hoursRemaining: number;
 }
 
 export function GracePeriodBanner({ hoursRemaining }: GracePeriodBannerProps) {
+  const popupManager = useTrialPopupManager();
+
+  // Don't show if popup manager says we shouldn't
+  if (!popupManager.shouldShow) {
+    return null;
+  }
   const daysRemaining = Math.floor(hoursRemaining / 24);
   const hoursOnly = hoursRemaining % 24;
   
@@ -64,6 +71,15 @@ export function GracePeriodBanner({ hoursRemaining }: GracePeriodBannerProps) {
                 <Link to="/konto">
                   Vaata oma kontot
                 </Link>
+              </Button>
+
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={() => popupManager.dismissPopup('upgrade_later')}
+                className="text-orange-600 hover:text-orange-800"
+              >
+                Hiljem
               </Button>
             </div>
 

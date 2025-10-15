@@ -25,7 +25,9 @@ import { LevelUpToast } from "@/components/LevelUpToast";
 import { TrialStatusBanner } from "@/components/TrialStatusBanner";
 import { TrialWarningBanner } from "@/components/TrialWarningBanner";
 import { GracePeriodBanner } from "@/components/GracePeriodBanner";
+import { TrialModal } from "@/components/TrialModal";
 import { useTrialStatus } from "@/hooks/useTrialStatus";
+import { useTrialPopupManager } from "@/hooks/useTrialPopupManager";
 import { 
   Trophy, 
   TrendingUp, 
@@ -81,6 +83,16 @@ export default function Home() {
   
   // Trial status using new hook
   const trialStatus = useTrialStatus();
+  const popupManager = useTrialPopupManager();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const [stats, setStats] = useState<Stats>({
     completedDays: 0,
@@ -334,33 +346,53 @@ export default function Home() {
       <LevelUpToast />
       <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
         
-        {/* Grace Period Banner (trial expired but within 48h grace period) */}
-        {trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (
-          <div className="pt-6">
-            <GracePeriodBanner hoursRemaining={trialStatus.hoursRemainingInGrace} />
-          </div>
+        {/* Smart Trial Popup System */}
+        {popupManager.shouldShow && (
+          <>
+            {/* Grace Period Banner (trial expired but within 48h grace period) */}
+            {trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (
+              <div className="pt-6">
+                <GracePeriodBanner hoursRemaining={trialStatus.hoursRemainingInGrace} />
+              </div>
+            )}
+
+            {/* Trial Warning Banner (≤3 days, dismissible) - only if NOT in grace period */}
+            {!trialStatus.isInGracePeriod && trialStatus.isWarningPeriod && trialStatus.trialEndsAt && trialStatus.daysRemaining !== null && (
+              <div className="pt-6">
+                <TrialWarningBanner 
+                  daysRemaining={trialStatus.daysRemaining}
+                  trialEndsAt={trialStatus.trialEndsAt}
+                  isUrgent={trialStatus.isUrgent}
+                />
+              </div>
+            )}
+
+            {/* Trial Status Banner (regular, always visible for trial users) - only if NOT in grace or warning period */}
+            {!trialStatus.isInGracePeriod && trialStatus.isOnTrial && trialStatus.trialEndsAt && !trialStatus.isWarningPeriod && (
+              <div className="pt-6">
+                <TrialStatusBanner 
+                  trialEndsAt={trialStatus.trialEndsAt}
+                  product={trialStatus.product || 'Static'}
+                />
+              </div>
+            )}
+          </>
         )}
 
-        {/* Trial Warning Banner (≤3 days, dismissible) - only if NOT in grace period */}
-        {!trialStatus.isInGracePeriod && trialStatus.isWarningPeriod && trialStatus.trialEndsAt && trialStatus.daysRemaining !== null && (
-          <div className="pt-6">
-            <TrialWarningBanner 
-              daysRemaining={trialStatus.daysRemaining}
-              trialEndsAt={trialStatus.trialEndsAt}
-              isUrgent={trialStatus.isUrgent}
-            />
-          </div>
-        )}
-
-        {/* Trial Status Banner (regular, always visible for trial users) - only if NOT in grace or warning period */}
-        {!trialStatus.isInGracePeriod && trialStatus.isOnTrial && trialStatus.trialEndsAt && !trialStatus.isWarningPeriod && (
-          <div className="pt-6">
-            <TrialStatusBanner 
-              trialEndsAt={trialStatus.trialEndsAt}
-              product={trialStatus.product || 'Static'}
-            />
-          </div>
-        )}
+        {/* Mobile Trial Modal */}
+        <TrialModal
+          isOpen={popupManager.shouldShow && isMobile}
+          onClose={() => popupManager.dismissPopup('close')}
+          onDismiss={popupManager.dismissPopup}
+          type={
+            trialStatus.isInGracePeriod ? 'grace' :
+            trialStatus.isUrgent ? 'urgent' : 'warning'
+          }
+          daysRemaining={trialStatus.daysRemaining || 0}
+          hoursRemaining={trialStatus.hoursRemainingInGrace || 0}
+          trialEndsAt={trialStatus.trialEndsAt || ''}
+          isFirstShow={popupManager.isFirstShow}
+        />
 
         {/* Welcome Header - Clean and Warm */}
         <div className="text-center space-y-6 pt-8">

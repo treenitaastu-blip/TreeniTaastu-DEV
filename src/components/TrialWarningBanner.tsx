@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { X, Clock, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { et } from "date-fns/locale";
+import { useTrialPopupManager } from "@/hooks/useTrialPopupManager";
 
 interface TrialWarningBannerProps {
   daysRemaining: number;
@@ -17,6 +18,7 @@ export function TrialWarningBanner({
   trialEndsAt,
   isUrgent = false 
 }: TrialWarningBannerProps) {
+  const popupManager = useTrialPopupManager();
   const [isDismissed, setIsDismissed] = useState(false);
   
   // Check if banner was dismissed today
@@ -29,9 +31,8 @@ export function TrialWarningBanner({
     }
   }, []);
 
-  const handleDismiss = () => {
-    const today = new Date().toDateString();
-    localStorage.setItem("trial_warning_dismissed", today);
+  const handleDismiss = (reason: 'remind_tomorrow' | 'dont_show_again' | 'upgrade_later' | 'close') => {
+    popupManager.dismissPopup(reason);
     setIsDismissed(true);
   };
 
@@ -39,6 +40,10 @@ export function TrialWarningBanner({
   if (isDismissed || daysRemaining > 3) {
     return null;
   }
+
+  // Don't show if popup manager says we shouldn't
+  if (!popupManager.shouldShow) {
+    return null;
 
   const endDate = new Date(trialEndsAt);
   
@@ -113,10 +118,24 @@ export function TrialWarningBanner({
               </Button>
               
               {!isUrgent && (
-                <Button size="sm" variant="outline" onClick={handleDismiss}>
-                  Meenuta homme
-                </Button>
+                <>
+                  <Button size="sm" variant="outline" onClick={() => handleDismiss('remind_tomorrow')}>
+                    Meenuta homme
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleDismiss('upgrade_later')}>
+                    Hiljem
+                  </Button>
+                </>
               )}
+              
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={() => handleDismiss('close')}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3 w-3" />
+              </Button>
             </div>
           </AlertDescription>
         </div>
