@@ -314,6 +314,8 @@ export default function EnhancedProgramCreator({
   };
 
   const handleCreateProgram = async () => {
+    console.log("handleCreateProgram called", { selectedClientId, trainingDays });
+    
     if (!selectedClientId) {
       toast({
         title: "Viga",
@@ -564,7 +566,7 @@ export default function EnhancedProgramCreator({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto p-2 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Target className="h-5 w-5 text-primary" />
@@ -572,14 +574,14 @@ export default function EnhancedProgramCreator({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-3 sm:space-y-6">
           {/* Program Settings */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base sm:text-lg">Programmi seaded</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Users className="inline mr-1 h-4 w-4" />
@@ -623,7 +625,7 @@ export default function EnhancedProgramCreator({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Calendar className="inline mr-1 h-4 w-4" />
@@ -735,17 +737,17 @@ export default function EnhancedProgramCreator({
                     </CollapsibleTrigger>
                     
                     <CollapsibleContent>
-                      <CardContent className="pt-0 space-y-3">
+                      <CardContent className="pt-0 space-y-2 sm:space-y-3">
                         {day.exercises.map((exercise, exerciseIndex) => (
-                          <div key={exerciseIndex} className="p-4 border rounded-lg bg-muted/30">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-start">
+                          <div key={exerciseIndex} className="p-2 sm:p-4 border rounded-lg bg-muted/30">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2 sm:gap-3 items-start">
                               <div className="sm:col-span-2 lg:col-span-3">
                                 <label className="block text-xs font-medium mb-1">Harjutus</label>
                                 <input
                                   type="text"
                                   value={exercise.exercise_name}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { exercise_name: e.target.value })}
-                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                               </div>
                               <div className="sm:col-span-1 lg:col-span-2">
@@ -756,7 +758,7 @@ export default function EnhancedProgramCreator({
                                   max="10"
                                   value={exercise.sets}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { sets: Number(e.target.value) })}
-                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                               </div>
                               <div className="sm:col-span-1 lg:col-span-2">
@@ -768,7 +770,7 @@ export default function EnhancedProgramCreator({
                                   value={exercise.reps}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { reps: e.target.value })}
                                   placeholder={exercise.is_unilateral ? "8" : "8-12"}
-                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                                 {exercise.is_unilateral && (
                                   <p className="text-xs text-muted-foreground mt-1">
@@ -785,7 +787,7 @@ export default function EnhancedProgramCreator({
                                   step="15"
                                   value={exercise.rest_seconds}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { rest_seconds: Number(e.target.value) })}
-                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                               </div>
                               <div className="sm:col-span-1 lg:col-span-2">
@@ -796,7 +798,7 @@ export default function EnhancedProgramCreator({
                                   step="0.5"
                                   value={exercise.weight_kg || ""}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { weight_kg: e.target.value ? Number(e.target.value) : undefined })}
-                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                               </div>
                               <div className="sm:col-span-2 lg:col-span-1 flex items-end">
@@ -858,7 +860,7 @@ export default function EnhancedProgramCreator({
                                   value={exercise.coach_notes || ""}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { coach_notes: e.target.value })}
                                   placeholder="Tehnika vihjed..."
-                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                               </div>
                               <div>
@@ -868,7 +870,7 @@ export default function EnhancedProgramCreator({
                                   value={exercise.video_url || ""}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { video_url: e.target.value })}
                                   placeholder="https://youtube.com/..."
-                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                               </div>
                             </div>
@@ -900,7 +902,7 @@ export default function EnhancedProgramCreator({
                                             value={alt.alternative_name}
                                             onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'alternative_name', e.target.value)}
                                             placeholder="nt. Kükk ilma raskuseta"
-                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                           />
                                         </div>
                                         <div>
@@ -908,7 +910,7 @@ export default function EnhancedProgramCreator({
                                           <select
                                             value={alt.difficulty_level}
                                             onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'difficulty_level', e.target.value)}
-                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                           >
                                             <option value="easier">Lihtsam</option>
                                             <option value="same">Sama raskus</option>
@@ -924,7 +926,7 @@ export default function EnhancedProgramCreator({
                                             value={alt.alternative_description || ""}
                                             onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'alternative_description', e.target.value)}
                                             placeholder="Lühike kirjeldus..."
-                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                           />
                                         </div>
                                         <div>
@@ -934,7 +936,7 @@ export default function EnhancedProgramCreator({
                                             value={alt.alternative_video_url || ""}
                                             onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'alternative_video_url', e.target.value)}
                                             placeholder="https://youtube.com/..."
-                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                           />
                                         </div>
                                       </div>
@@ -979,7 +981,7 @@ export default function EnhancedProgramCreator({
           </Card>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4">
             <Button
               onClick={() => onOpenChange(false)}
               variant="outline"
@@ -989,12 +991,29 @@ export default function EnhancedProgramCreator({
               Tühista
             </Button>
             <Button
-              onClick={handleCreateProgram}
+              onClick={() => {
+                console.log("Button clicked", { 
+                  creating, 
+                  selectedClientId, 
+                  hasEmptyDays: trainingDays.some(day => day.exercises.length === 0),
+                  trainingDays 
+                });
+                handleCreateProgram();
+              }}
               disabled={creating || !selectedClientId || trainingDays.some(day => day.exercises.length === 0)}
               className="flex-1 bg-gradient-to-r from-primary to-accent"
             >
               {creating ? "Loon programmi..." : "Loo programm"}
             </Button>
+            
+            {/* Debug info */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="text-xs text-muted-foreground mt-2">
+                Debug: {!selectedClientId ? "No client selected" : ""} 
+                {trainingDays.some(day => day.exercises.length === 0) ? " | Empty days exist" : ""}
+                {creating ? " | Creating..." : ""}
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
