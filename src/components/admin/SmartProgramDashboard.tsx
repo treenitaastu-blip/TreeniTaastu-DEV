@@ -67,7 +67,7 @@ export default function SmartProgramDashboard() {
           id,
           is_active,
           assigned_to,
-          profiles!inner(email)
+          profiles!client_programs_assigned_to_fkey(email)
         `);
 
       const totalClients = new Set(programs?.map(p => p.assigned_to)).size;
@@ -104,7 +104,7 @@ export default function SmartProgramDashboard() {
       // Identify at-risk clients (haven't completed a workout in 7+ days)
       const { data: lastActivities } = await supabase
         .from("workout_sessions")
-        .select("user_id, ended_at, profiles!inner(email)")
+        .select("user_id, ended_at, profiles!workout_sessions_user_id_fkey(email)")
         .not("ended_at", "is", null)
         .order("ended_at", { ascending: false });
 
@@ -140,7 +140,7 @@ export default function SmartProgramDashboard() {
           started_at,
           ended_at,
           client_programs!inner(title_override, workout_templates(title)),
-          profiles!inner(email)
+          profiles!workout_sessions_user_id_fkey(email)
         `)
         .order("started_at", { ascending: false })
         .limit(10);
