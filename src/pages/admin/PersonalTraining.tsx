@@ -218,19 +218,6 @@ export default function PersonalTraining() {
         completedSessions,
       });
 
-      // Load templates
-      const { data: templatesData, error: templatesError } = await supabase
-        .from("workout_templates")
-        .select("id, title, goal, is_active")
-        .eq("is_active", true)
-        .order("title");
-
-      if (templatesError) {
-        console.error("Templates error:", templatesError);
-        throw templatesError;
-      }
-
-      setTemplates(templatesData || []);
 
     } catch (error: unknown) {
       console.error("Error loading data:", error);

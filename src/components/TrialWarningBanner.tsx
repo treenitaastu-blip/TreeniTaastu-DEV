@@ -44,6 +44,7 @@ export function TrialWarningBanner({
   // Don't show if popup manager says we shouldn't
   if (!popupManager.shouldShow) {
     return null;
+  }
 
   const endDate = new Date(trialEndsAt);
   
