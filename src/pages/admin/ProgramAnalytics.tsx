@@ -36,7 +36,6 @@ type ProgramInfo = {
   start_date: string | null;
   is_active: boolean | null;
   assigned_to: string;
-  profiles: { email: string | null; }[] | null;
   workout_templates: { title: string } | null;
 };
 
@@ -67,7 +66,6 @@ export default function ProgramAnalytics() {
             start_date,
             is_active,
             assigned_to,
-            profiles!client_programs_assigned_to_fkey(email),
             workout_templates!client_programs_template_id_fkey(title)
           `)
           .eq("id", programId)
@@ -179,7 +177,7 @@ export default function ProgramAnalytics() {
                     {programInfo.title_override || programInfo.workout_templates?.title || "Nimetu programm"}
                   </div>
                   <div className="text-xs sm:text-sm text-muted-foreground">
-                    <div>Määratud: {programInfo.profiles?.[0]?.email || "Tundmatu kasutaja"}</div>
+                    <div>Määratud: {programInfo.assigned_to || "Tundmatu kasutaja"}</div>
                     <div className="flex flex-col sm:flex-row sm:gap-4">
                       {programInfo.start_date && (
                         <span>Alates: {new Date(programInfo.start_date).toLocaleDateString("et-EE")}</span>
