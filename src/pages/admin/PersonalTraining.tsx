@@ -112,6 +112,7 @@ export default function PersonalTraining() {
   }, []);
 
   const loadData = async () => {
+    console.log("loadData called");
     setLoading(true);
     try {
       // Load all client programs with template info
@@ -132,6 +133,8 @@ export default function PersonalTraining() {
         `)
         .order("inserted_at", { ascending: false });
 
+      console.log("Programs loaded:", { programsData, programsError });
+      
       if (programsError) {
         console.error("Programs list error:", programsError);
         throw programsError;
@@ -178,6 +181,7 @@ export default function PersonalTraining() {
         throw usersError;
       }
 
+      console.log("Setting programs:", formattedPrograms);
       setPrograms(formattedPrograms);
       setTemplates(templatesData || []);
       setUsers(usersData || []);
@@ -314,6 +318,8 @@ export default function PersonalTraining() {
   };
 
   const handleDeleteProgram = async (programId: string, programName: string) => {
+    console.log("handleDeleteProgram called", { programId, programName });
+    
     if (!confirm(`Kas oled kindel, et soovid programmi "${programName}" kustutada? See kustutab ka kõik seotud andmed (päevad, harjutused, sessioonid).`)) return;
 
     try {
@@ -322,9 +328,13 @@ export default function PersonalTraining() {
         program_id: programId
       });
 
-      const { error } = await supabase.rpc("admin_delete_client_program_cascade", {
+      console.log("Calling admin_delete_client_program_cascade with:", { p_program_id: programId });
+      
+      const { data, error } = await supabase.rpc("admin_delete_client_program_cascade", {
         p_program_id: programId,
       });
+
+      console.log("Deletion result:", { data, error });
 
       if (error) throw error;
 
