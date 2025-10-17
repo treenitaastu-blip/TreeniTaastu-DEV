@@ -254,14 +254,16 @@ export default function EnhancedProgramCreator({
     let display_reps: string;
 
     if (is_unilateral) {
-      const repsNumber = parseInt(reps.replace(/[^\d]/g, ''));
+      // For unilateral, extract the first number from reps (e.g., "8" from "8-12")
+      const repsNumber = parseInt(reps.match(/\d+/)?.[0] || '0');
       reps_per_side = repsNumber;
       total_reps = repsNumber * 2;
       display_reps = `${repsNumber} per side`;
     } else {
-      const repsNumber = parseInt(reps.replace(/[^\d]/g, ''));
+      // For regular exercises, keep the original reps string
+      const repsNumber = parseInt(reps.match(/\d+/)?.[0] || '0');
       total_reps = repsNumber;
-      display_reps = repsNumber.toString();
+      display_reps = reps; // Keep original format like "8-12"
     }
 
     return {
@@ -280,7 +282,11 @@ export default function EnhancedProgramCreator({
             exercises: day.exercises.map((exercise, exIdx) => {
               if (exIdx === exerciseIndex) {
                 const updatedExercise = { ...exercise, ...updates };
-                return processExerciseInput(updatedExercise);
+                // Only process exercise input if reps or is_unilateral changed
+                if (updates.reps !== undefined || updates.is_unilateral !== undefined) {
+                  return processExerciseInput(updatedExercise);
+                }
+                return updatedExercise;
               }
               return exercise;
             })
