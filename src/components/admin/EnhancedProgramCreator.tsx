@@ -426,28 +426,7 @@ export default function EnhancedProgramCreator({
         }
       }
 
-      // 4. Create client program
-      const currentUser = await supabase.auth.getUser();
-      const { data: programData, error: programError } = await supabase
-        .from("client_programs")
-        .insert({
-          template_id: templateData.id,
-          assigned_to: userData.id,
-          assigned_by: currentUser.data.user?.id || userData.id,
-          start_date: startDate,
-          duration_weeks: durationWeeks,
-          training_days_per_week: trainingDaysPerWeek,
-          auto_progression_enabled: autoProgressionEnabled,
-          status: 'active',
-          title_override: programTitle || null,
-          is_active: true
-        })
-        .select("id")
-        .single();
-
-      if (programError) throw programError;
-
-      // 5. Copy template structure to client structure
+      // 4. Copy template structure to client structure using RPC
       const { data: programId, error: copyError } = await supabase.rpc("assign_template_to_user_v2", {
         p_template_id: templateData.id,
         p_target_email: userData.email ?? "",
@@ -463,7 +442,7 @@ export default function EnhancedProgramCreator({
         throw new Error("Programm loodi, kuid ID-d ei saadud tagasi");
       }
 
-      // 6. Verify the program was created with content
+      // 5. Verify the program was created with content
       const { data: programCheck, error: checkError } = await supabase
         .from("client_days")
         .select("id")
@@ -476,7 +455,7 @@ export default function EnhancedProgramCreator({
         throw new Error("Programm loodi, kuid sellel pole päevi. Palun kontrolli malli sisu.");
       }
 
-      // 7. Copy alternatives from template to client program
+      // 6. Copy alternatives from template to client program
       try {
         // Get all template items with their alternatives
         const { data: templateItems, error: templateItemsError } = await supabase
