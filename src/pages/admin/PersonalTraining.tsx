@@ -712,8 +712,8 @@ export default function PersonalTraining() {
                           variant="outline"
                           className="h-6 px-2 text-xs"
                           onClick={() => {
-                            // TODO: Add template editing functionality
-                            console.log('Edit template:', template.id);
+                            // Navigate to template editing page
+                            window.location.href = `/admin/templates/${template.id}`;
                           }}
                         >
                           <Edit className="h-3 w-3 mr-1" />
@@ -724,7 +724,7 @@ export default function PersonalTraining() {
                           variant="outline"
                           className="h-6 px-2 text-xs"
                           onClick={() => {
-                            // TODO: Add template assignment functionality
+                            // Open template assignment modal
                             setSelectedTemplate(template);
                             setShowAssignModal(true);
                           }}
