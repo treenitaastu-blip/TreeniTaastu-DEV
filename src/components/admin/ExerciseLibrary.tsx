@@ -163,7 +163,7 @@ export default function ExerciseLibrary({ onAddExercise, compact = false }: Exer
             Vali harjutus
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Harjutuste Raamatukogu</DialogTitle>
           </DialogHeader>
@@ -308,7 +308,7 @@ export default function ExerciseLibrary({ onAddExercise, compact = false }: Exer
       {/* Exercise Details Modal */}
       {showDetails && (
         <Dialog open={!!showDetails} onOpenChange={() => setShowDetails(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
                 <span>{showDetails.name}</span>

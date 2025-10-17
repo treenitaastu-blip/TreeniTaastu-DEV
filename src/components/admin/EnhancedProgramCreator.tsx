@@ -566,7 +566,7 @@ export default function EnhancedProgramCreator({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto p-2 sm:p-6">
+      <DialogContent className="w-[95vw] h-[95vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto p-2 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Target className="h-5 w-5 text-primary" />
