@@ -25,6 +25,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
@@ -436,7 +437,8 @@ export default function EnhancedProgramCreator({
       const { data: programId, error: copyError } = await supabase.rpc("assign_template_to_user_v2", {
         p_template_id: templateData.id,
         p_target_email: userData.email ?? "",
-        p_start_date: startDate
+        p_start_date: startDate,
+        p_assigned_by: userData.id
       });
 
       if (copyError) {
@@ -551,12 +553,18 @@ export default function EnhancedProgramCreator({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] h-[95vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto p-2 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg">
+      <DialogContent 
+        className="w-[95vw] h-[95vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto p-2 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg"
+        aria-describedby="program-creator-description"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Target className="h-5 w-5 text-primary" />
             Loo Smart Personaalprogramm
           </DialogTitle>
+          <DialogDescription id="program-creator-description">
+            Loo personaalne treeningprogramm klientidele. Vali klient, määra programmi parameetrid ja lisa harjutused.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 sm:space-y-6">
