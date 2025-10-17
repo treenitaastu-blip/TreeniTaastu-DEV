@@ -34,7 +34,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import SmartProgramDashboard from "@/components/admin/SmartProgramDashboard";
 import EnhancedProgramCreator from "@/components/admin/EnhancedProgramCreator";
 import PTAccessValidator from "@/components/PTAccessValidator";
 
@@ -873,10 +872,6 @@ export default function PersonalTraining() {
           </CardContent>
          </Card>
 
-         {/* Smart Program Dashboard */}
-         <div className="mt-8">
-           <SmartProgramDashboard />
-         </div>
          </div>
          </div>
        </div>
