@@ -1,62 +1,88 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 interface UsePullToRefreshOptions {
+  onRefresh: () => Promise<void>;
   threshold?: number;
-  onRefresh: () => Promise<void> | void;
   disabled?: boolean;
 }
 
-export const usePullToRefresh = ({
-  threshold = 80,
-  onRefresh,
-  disabled = false
-}: UsePullToRefreshOptions) => {
+export function usePullToRefresh({ 
+  onRefresh, 
+  threshold = 80, 
+  disabled = false 
+}: UsePullToRefreshOptions) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
-  const touchStartY = useRef<number>(0);
-  const touchCurrentY = useRef<number>(0);
-  const isPulling = useRef<boolean>(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const [canRefresh, setCanRefresh] = useState(false);
+  const [isTriggered, setIsTriggered] = useState(false);
+
+  const startY = useRef(0);
+  const currentY = useRef(0);
+  const isAtTop = useRef(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (disabled || isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    } finally {
+      setIsRefreshing(false);
+      setPullDistance(0);
+      setIsPulling(false);
+      setCanRefresh(false);
+      setIsTriggered(false);
+    }
+  }, [onRefresh, disabled, isRefreshing]);
+
+  const resetPullState = useCallback(() => {
+    setPullDistance(0);
+    setIsPulling(false);
+    setCanRefresh(false);
+    setIsTriggered(false);
+  }, []);
 
   useEffect(() => {
-    if (disabled) return;
-
     const handleTouchStart = (e: TouchEvent) => {
-      // Only trigger if we're at the top of the page
-      if (window.scrollY > 0) return;
+      if (disabled || isRefreshing) return;
       
-      touchStartY.current = e.touches[0].clientY;
-      isPulling.current = true;
+      startY.current = e.touches[0].clientY;
+      currentY.current = e.touches[0].clientY;
+      
+      // Check if we're at the top of the page
+      isAtTop.current = window.scrollY === 0;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!isPulling.current || window.scrollY > 0) return;
-
-      touchCurrentY.current = e.touches[0].clientY;
-      const pullDistance = Math.max(0, touchCurrentY.current - touchStartY.current);
+      if (disabled || isRefreshing || !isAtTop.current) return;
       
-      if (pullDistance > 0) {
-        e.preventDefault(); // Prevent default scroll behavior
-        setPullDistance(pullDistance);
+      currentY.current = e.touches[0].clientY;
+      const distance = currentY.current - startY.current;
+      
+      if (distance > 0) {
+        e.preventDefault(); // Prevent default pull-to-refresh
+        setPullDistance(Math.min(distance, threshold * 1.5));
+        setIsPulling(true);
+        const shouldTrigger = distance >= threshold;
+        setCanRefresh(shouldTrigger);
+        setIsTriggered(shouldTrigger);
       }
     };
 
     const handleTouchEnd = async () => {
-      if (!isPulling.current) return;
-
-      isPulling.current = false;
-
-      if (pullDistance >= threshold && !isRefreshing) {
-        setIsRefreshing(true);
-        try {
-          await onRefresh();
-        } finally {
-          setIsRefreshing(false);
-        }
+      if (disabled || isRefreshing || !isPulling) return;
+      
+      if (canRefresh && !isRefreshing) {
+        await handleRefresh();
+      } else {
+        resetPullState();
       }
-
-      setPullDistance(0);
     };
 
+    // Add event listeners
     document.addEventListener('touchstart', handleTouchStart, { passive: false });
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd);
@@ -66,11 +92,18 @@ export const usePullToRefresh = ({
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [threshold, onRefresh, disabled, pullDistance, isRefreshing]);
+  }, [disabled, isRefreshing, isPulling, canRefresh, threshold, handleRefresh, resetPullState]);
 
   return {
     isRefreshing,
     pullDistance,
-    isTriggered: pullDistance >= threshold
+    isPulling,
+    canRefresh,
+    isTriggered,
+    handleRefresh,
+    resetPullState,
+    setPullDistance,
+    setIsPulling,
+    setCanRefresh,
   };
-};
+}
