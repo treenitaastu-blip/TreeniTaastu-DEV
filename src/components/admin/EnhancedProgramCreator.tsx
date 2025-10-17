@@ -554,7 +554,7 @@ export default function EnhancedProgramCreator({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="w-[95vw] h-[95vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto p-2 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg"
+        className="w-[98vw] h-[98vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[98vh] overflow-y-auto p-1 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg"
         aria-describedby="program-creator-description"
       >
         <DialogHeader>
@@ -567,13 +567,13 @@ export default function EnhancedProgramCreator({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 sm:space-y-6">
+        <div className="space-y-2 sm:space-y-6">
           {/* Program Settings */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base sm:text-lg">Programmi seaded</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
+            <CardContent className="space-y-2 sm:space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -732,9 +732,9 @@ export default function EnhancedProgramCreator({
                     <CollapsibleContent>
                       <CardContent className="pt-0 space-y-2 sm:space-y-3">
                         {day.exercises.map((exercise, exerciseIndex) => (
-                          <div key={exerciseIndex} className="p-2 sm:p-4 border rounded-lg bg-muted/30">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2 sm:gap-3 items-start">
-                              <div className="sm:col-span-2 lg:col-span-3">
+                          <div key={exerciseIndex} className="p-1 sm:p-4 border rounded-lg bg-muted/30">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3 items-start">
+                              <div className="sm:col-span-2 lg:col-span-2">
                                 <label className="block text-xs font-medium mb-1">Harjutus</label>
                                 <input
                                   type="text"
@@ -743,7 +743,7 @@ export default function EnhancedProgramCreator({
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                               </div>
-                              <div className="sm:col-span-1 lg:col-span-2">
+                              <div className="sm:col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-medium mb-1">Seeriad</label>
                                 <input
                                   type="number"
@@ -754,7 +754,7 @@ export default function EnhancedProgramCreator({
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                               </div>
-                              <div className="sm:col-span-1 lg:col-span-2">
+                              <div className="sm:col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-medium mb-1">
                                   Kordused {exercise.is_unilateral ? "(per side)" : ""}
                                 </label>
@@ -771,7 +771,7 @@ export default function EnhancedProgramCreator({
                                   </p>
                                 )}
                               </div>
-                              <div className="sm:col-span-1 lg:col-span-2">
+                              <div className="sm:col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-medium mb-1">Paus (s)</label>
                                 <input
                                   type="number"
@@ -783,7 +783,7 @@ export default function EnhancedProgramCreator({
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm"
                                 />
                               </div>
-                              <div className="sm:col-span-1 lg:col-span-2">
+                              <div className="sm:col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-medium mb-1">Kaal (kg)</label>
                                 <input
                                   type="number"
