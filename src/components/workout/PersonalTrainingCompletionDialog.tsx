@@ -44,7 +44,7 @@ export default function PersonalTrainingCompletionDialog({
             <CheckCircle className="h-8 w-8 text-success" />
           </div>
           <DialogTitle className="text-xl font-bold">
-            Suurepärane! Treening lõpetatud! 🎉
+            Suurepärane! Treening lõpetatud!
           </DialogTitle>
           <DialogDescription className="text-center">
             Hästi tehtud! Mida soovid edasi teha?
@@ -79,6 +79,7 @@ export default function PersonalTrainingCompletionDialog({
           <Button 
             onClick={handleGoHome}
             className="w-full h-12 text-left justify-start"
+            variant="outline"
           >
             <Home className="mr-3 h-5 w-5" />
             <div className="text-left">
