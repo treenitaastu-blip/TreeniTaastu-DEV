@@ -707,18 +707,39 @@ export default function PersonalTraining() {
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>Loodud: {new Date(template.inserted_at).toLocaleDateString('et-EE')}</span>
                       <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 px-2 text-xs"
-                          onClick={() => {
-                            // Navigate to template editing page
-                            window.location.href = `/admin/templates/${template.id}`;
-                          }}
-                        >
-                          <Edit className="h-3 w-3 mr-1" />
-                          Muuda
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-xs"
+                            >
+                              <MoreHorizontal className="h-3 w-3 mr-1" />
+                              Muuda
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                // Navigate to template editing page
+                                window.location.href = `/admin/templates/${template.id}`;
+                              }}
+                            >
+                              <Edit className="h-3 w-3 mr-2" />
+                              Muuda malli
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                // Delete template
+                                handleDeleteTemplate(template.id, template.title);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3 mr-2" />
+                              Kustuta mall
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button
                           size="sm"
                           variant="outline"
