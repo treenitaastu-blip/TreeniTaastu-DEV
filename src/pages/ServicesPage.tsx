@@ -75,29 +75,19 @@ export default function ServicesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleServiceToggle = (serviceId: string) => {
-    try {
-      setFormData(prev => ({
-        ...prev,
-        selectedServices: prev.selectedServices.includes(serviceId)
-          ? prev.selectedServices.filter(id => id !== serviceId)
-          : [...prev.selectedServices, serviceId]
-      }));
-    } catch (err) {
-      console.error('Error toggling service:', err);
-      setError('Error selecting service. Please try again.');
-    }
+    setFormData(prev => ({
+      ...prev,
+      selectedServices: prev.selectedServices.includes(serviceId)
+        ? prev.selectedServices.filter(id => id !== serviceId)
+        : [...prev.selectedServices, serviceId]
+    }));
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    try {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }));
-    } catch (err) {
-      console.error('Error updating form field:', err);
-      setError('Error updating form. Please try again.');
-    }
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const getSelectedServicesInfo = () => {
@@ -240,11 +230,10 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
     );
   }
 
-  try {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-2 sm:p-4">
-        <div className="max-w-4xl mx-auto">
-          <Card className="mt-4 sm:mt-20">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-2 sm:p-4">
+      <div className="max-w-4xl mx-auto">
+        <Card className="mt-4 sm:mt-20">
           <CardHeader className="text-center p-4 sm:p-6">
             <CardTitle className="text-2xl sm:text-3xl font-bold">Meie teenused</CardTitle>
             <p className="text-muted-foreground text-sm sm:text-base">
@@ -283,15 +272,19 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start space-x-3">
-                          <Checkbox
-                            checked={formData.selectedServices.includes(service.id)}
-                            readOnly
-                            className="mt-1 pointer-events-none w-3 h-3 sm:w-4 sm:h-4"
-                            style={{ 
-                              transform: 'scale(0.8)',
-                              transformOrigin: 'center'
-                            }}
-                          />
+                          <div className="mt-1">
+                            <Checkbox
+                              checked={formData.selectedServices.includes(service.id)}
+                              readOnly
+                              className="pointer-events-none !w-3 !h-3 !min-w-3 !min-h-3"
+                              style={{ 
+                                width: '12px !important',
+                                height: '12px !important',
+                                minWidth: '12px !important',
+                                minHeight: '12px !important'
+                              }}
+                            />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
                               <div className="flex items-center space-x-2">
@@ -440,21 +433,4 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
       </div>
     </div>
   );
-  } catch (err) {
-    console.error('ServicesPage rendering error:', err);
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-        <div className="max-w-4xl mx-auto">
-          <Card className="mt-20">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-red-600">Viga</CardTitle>
-              <p className="text-muted-foreground">
-                Tekkis viga lehe laadimisel. Palun värskenda lehte.
-              </p>
-            </CardHeader>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 }
