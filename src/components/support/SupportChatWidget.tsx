@@ -123,7 +123,7 @@ export function SupportChatWidget() {
           >
             <MessageCircle className="h-6 w-6" />
             {notification.hasUnreadAdminMessages && (
-              <div className="absolute -top-2 -right-2 h-6 w-6 bg-red-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
+              <div className="absolute -top-2 -right-2 h-6 w-6 bg-red-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
                 <span className="text-xs text-white font-bold">
                   {notification.unreadCount > 9 ? '9+' : notification.unreadCount}
                 </span>
