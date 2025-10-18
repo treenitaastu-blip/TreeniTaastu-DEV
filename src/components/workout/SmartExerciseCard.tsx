@@ -335,9 +335,128 @@ export default function SmartExerciseCard({
         </div>
       </div>
 
-      {/* Current Set */}
+      {/* Sets Grid - Hevy Style */}
       <div className="p-4">
-        {renderCurrentSet()}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Array.from({ length: exercise.sets }, (_, i) => i + 1).map((setNumber) => {
+            const isCompleted = setNumber <= completedSets;
+            const isCurrent = setNumber === currentSet;
+            const inputs = getCurrentSetInputs(setNumber);
+            
+            return (
+              <Card 
+                key={setNumber}
+                className={cn(
+                  "transition-all duration-200",
+                  isCompleted && "bg-green-50 border-green-200",
+                  isCurrent && !isCompleted && "bg-blue-50 border-blue-200 shadow-md",
+                  !isCurrent && !isCompleted && "bg-muted/30"
+                )}
+              >
+                <CardContent className="p-3">
+                  {/* Set Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={isCompleted ? "default" : "outline"} className="text-xs">
+                        {setNumber}
+                      </Badge>
+                      {isCompleted && <Check className="h-4 w-4 text-green-600" />}
+                      {isCurrent && !isCompleted && <Target className="h-4 w-4 text-blue-600" />}
+                    </div>
+                    
+                    {isCurrent && !isCompleted && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleSetComplete(setNumber)}
+                        className="h-7 px-2 text-xs"
+                        disabled={!inputs.reps && !parseRepsToNumber(exercise.reps)}
+                      >
+                        <Check className="h-3 w-3 mr-1" />
+                        Tehtud
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Input Fields */}
+                  <div className="space-y-2">
+                    {/* Reps Input */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                        <Repeat className="h-3 w-3" />
+                        Kordused
+                        {exercise.is_unilateral && (
+                          <Badge variant="secondary" className="text-xs">mõlemal poolel</Badge>
+                        )}
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          placeholder={exercise.reps}
+                          value={inputs.reps !== undefined ? inputs.reps : suggestedReps || parseRepsToNumber(exercise.reps) || ""}
+                          onChange={(e) => handleSetInputChangeWithSuggestion(setNumber, "reps", Number(e.target.value))}
+                          className={cn(
+                            "text-center h-8 text-sm",
+                            suggestedReps && !inputs.reps && "border-accent/50 bg-accent/5"
+                          )}
+                          disabled={isCompleted}
+                        />
+                        {suggestedReps && !inputs.reps && (
+                          <Zap className="h-3 w-3 text-accent absolute right-2 top-1/2 -translate-y-1/2" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Weight/Time Input */}
+                    {(exercise.weight_kg && exercise.weight_kg > 0) ? (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          <Weight className="h-3 w-3" />
+                          Kaal (kg)
+                        </label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            step="0.5"
+                            placeholder={exercise.weight_kg.toString()}
+                            value={inputs.kg !== undefined ? inputs.kg : suggestedWeight || exercise.weight_kg || ""}
+                            onChange={(e) => handleSetInputChangeWithSuggestion(setNumber, "kg", Number(e.target.value))}
+                            className={cn(
+                              "text-center h-8 text-sm",
+                              suggestedWeight && !inputs.kg && "border-accent/50 bg-accent/5"
+                            )}
+                            disabled={isCompleted}
+                          />
+                          {suggestedWeight && !inputs.kg && (
+                            <Zap className="h-3 w-3 text-accent absolute right-2 top-1/2 -translate-y-1/2" />
+                          )}
+                        </div>
+                      </div>
+                    ) : exercise.seconds && exercise.seconds > 0 ? (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          <Timer className="h-3 w-3" />
+                          Aeg (sek)
+                        </label>
+                        <Input
+                          type="number"
+                          placeholder={exercise.seconds.toString()}
+                          value={inputs.seconds !== undefined ? inputs.seconds : exercise.seconds || ""}
+                          onChange={(e) => handleSetInputChangeWithSuggestion(setNumber, "seconds", Number(e.target.value))}
+                          className="text-center h-8 text-sm"
+                          disabled={isCompleted}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-center py-1 text-xs text-muted-foreground">
+                        Ilma lisaraskuseta
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
       {/* Notes & RPE */}
