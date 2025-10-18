@@ -26,7 +26,8 @@ import {
   Send,
   Eye,
   UserPlus,
-  Target
+  Target,
+  Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -45,6 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import EnhancedProgramCreator from "@/components/admin/EnhancedProgramCreator";
+import UltimateProgramCreator from "@/components/admin/UltimateProgramCreator";
 import PTAccessValidator from "@/components/PTAccessValidator";
 
 type UUID = string;
@@ -107,6 +109,7 @@ export default function PersonalTraining() {
 
   // Enhanced program creator
   const [showEnhancedCreator, setShowEnhancedCreator] = useState(false);
+  const [showUltimateCreator, setShowUltimateCreator] = useState(false);
 
   // Track page view
   useEffect(() => {
@@ -473,6 +476,18 @@ export default function PersonalTraining() {
                 <Target className="mr-2 h-4 w-4" />
                 <span className="hidden xs:inline">Smart </span>Program
               </Button>
+              
+              <Button
+                onClick={() => {
+                  trackButtonClick('ultimate_program_creator', 'ultimate_program', 'admin_dashboard');
+                  setShowUltimateCreator(true);
+                }}
+                size="sm"
+                className="flex-1 sm:flex-initial bg-gradient-to-r from-purple-600 to-blue-600"
+              >
+                <Brain className="mr-2 h-4 w-4" />
+                <span className="hidden xs:inline">Ultimate </span>Hub
+              </Button>
 
               <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
                 <DialogTrigger asChild>
@@ -565,6 +580,13 @@ export default function PersonalTraining() {
         <EnhancedProgramCreator
           isOpen={showEnhancedCreator}
           onOpenChange={setShowEnhancedCreator}
+          onSuccess={loadData}
+        />
+
+        {/* Ultimate Program Creator */}
+        <UltimateProgramCreator
+          isOpen={showUltimateCreator}
+          onOpenChange={setShowUltimateCreator}
           onSuccess={loadData}
         />
 
