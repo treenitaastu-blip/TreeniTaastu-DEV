@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,32 +18,6 @@ interface ServiceOption {
   duration?: string;
 }
 
-const serviceOptions: ServiceOption[] = [
-  {
-    id: 'online-consultation',
-    name: 'Online konsultatsioonid',
-    description: 'Individuaalne konsultatsioon videokõne kaudu. Analüüsin sinu eesmärke, toitumist ja treeningplaani.',
-    icon: <Users className="h-6 w-6" />,
-    price: '40€',
-    duration: '60 min'
-  },
-  {
-    id: 'personal-training-gym',
-    name: '1:1 personaaltreening jõusaalis',
-    description: 'Individuaalne treening jõusaalis minu juhendamisel. Kohandatud harjutused ja tehnikaõpetus.',
-    icon: <Dumbbell className="h-6 w-6" />,
-    price: '50€',
-    duration: '60 min'
-  },
-  {
-    id: 'training-plan-creation',
-    name: 'Personaaltreeningu plaan (1 kuu)',
-    description: 'Täielik treeningplaan sinu eesmärkide ja võimaluste järgi. Sisaldab harjutusi, kordusi ja edenemist.',
-    icon: <FileText className="h-6 w-6" />,
-    price: '80€',
-    duration: '1 kuu'
-  }
-];
 
 interface FormData {
   selectedServices: string[];
@@ -70,6 +44,34 @@ export default function ServicesPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Memoize service options to prevent re-creation of icon components
+  const serviceOptions = useMemo(() => [
+    {
+      id: 'online-consultation',
+      name: 'Online konsultatsioonid',
+      description: 'Individuaalne konsultatsioon videokõne kaudu. Analüüsin sinu eesmärke, toitumist ja treeningplaani.',
+      icon: <Users className="h-6 w-6" />,
+      price: '40€',
+      duration: '60 min'
+    },
+    {
+      id: 'personal-training-gym',
+      name: '1:1 personaaltreening jõusaalis',
+      description: 'Individuaalne treening jõusaalis minu juhendamisel. Kohandatud harjutused ja tehnikaõpetus.',
+      icon: <Dumbbell className="h-6 w-6" />,
+      price: '50€',
+      duration: '60 min'
+    },
+    {
+      id: 'training-plan-creation',
+      name: 'Personaaltreeningu plaan (1 kuu)',
+      description: 'Täielik treeningplaan sinu eesmärkide ja võimaluste järgi. Sisaldab harjutusi, kordusi ja edenemist.',
+      icon: <FileText className="h-6 w-6" />,
+      price: '80€',
+      duration: '1 kuu'
+    }
+  ], []);
 
   const handleServiceToggle = (serviceId: string) => {
     setFormData(prev => ({
