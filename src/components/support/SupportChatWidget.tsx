@@ -33,10 +33,15 @@ export function SupportChatWidget() {
     messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages, user]);
 
-  // Mark messages as read when chat is opened
+  // Mark messages as read when user actually interacts with the chat
   useEffect(() => {
     if (isOpen && notification.hasUnreadAdminMessages) {
-      markAsRead();
+      // Add a small delay to ensure user sees the notification before clearing it
+      const timer = setTimeout(() => {
+        markAsRead();
+      }, 2000); // 2 second delay
+      
+      return () => clearTimeout(timer);
     }
   }, [isOpen, notification.hasUnreadAdminMessages, markAsRead]);
 

@@ -28,6 +28,9 @@ export const useSupportNotifications = () => {
       const lastSeen = localStorage.getItem(lastSeenKey);
       const lastSeenDate = lastSeen ? new Date(lastSeen) : new Date(0);
 
+      console.log('Checking unread messages for user:', user.id);
+      console.log('Last seen:', lastSeenDate.toISOString());
+
       // Get admin messages after last seen
       const { data: adminMessages, error } = await supabase
         .from('support_messages')
@@ -41,6 +44,8 @@ export const useSupportNotifications = () => {
       const unreadCount = adminMessages?.length || 0;
       const hasUnread = unreadCount > 0;
       const lastAdminMessage = adminMessages?.[0]?.created_at || null;
+
+      console.log('Found unread messages:', unreadCount, 'hasUnread:', hasUnread);
 
       setNotification({
         hasUnreadAdminMessages: hasUnread,
@@ -59,6 +64,8 @@ export const useSupportNotifications = () => {
   const markAsRead = useCallback(() => {
     if (!user) return;
 
+    console.log('Marking messages as read for user:', user.id);
+    
     const lastSeenKey = `support_last_seen_${user.id}`;
     localStorage.setItem(lastSeenKey, new Date().toISOString());
 
