@@ -381,21 +381,29 @@ export default function EnhancedProgramCreator({
 
         // Add exercises for this day
         if (day.exercises.length > 0) {
-          const exercisesData = day.exercises.map(exercise => ({
-            template_day_id: dayData.id,
-            exercise_name: exercise.exercise_name,
-            sets: exercise.sets,
-            reps: exercise.reps,
-            rest_seconds: exercise.rest_seconds,
-            seconds: null,
-            weight_kg: exercise.weight_kg || null,
-            coach_notes: exercise.coach_notes || null,
-            video_url: exercise.video_url || null,
-            order_in_day: exercise.order_in_day,
-            is_unilateral: exercise.is_unilateral || false,
-            reps_per_side: exercise.reps_per_side || null,
-            total_reps: exercise.total_reps || null
-          }));
+          const exercisesData = day.exercises.map(exercise => {
+            // Determine if this is a time-based or weight-based exercise
+            const hasWeight = exercise.weight_kg !== null && exercise.weight_kg !== undefined && exercise.weight_kg > 0;
+            const isTimeBased = !hasWeight && (exercise.exercise_name?.toLowerCase().includes('kardio') || 
+                                               exercise.exercise_name?.toLowerCase().includes('jooks') ||
+                                               exercise.exercise_name?.toLowerCase().includes('jõutreening') === false);
+            
+            return {
+              template_day_id: dayData.id,
+              exercise_name: exercise.exercise_name,
+              sets: exercise.sets,
+              reps: exercise.reps,
+              rest_seconds: exercise.rest_seconds,
+              seconds: isTimeBased ? 60 : null, // Default 60 seconds for time-based exercises
+              weight_kg: hasWeight ? exercise.weight_kg : null,
+              coach_notes: exercise.coach_notes || null,
+              video_url: exercise.video_url || null,
+              order_in_day: exercise.order_in_day,
+              is_unilateral: exercise.is_unilateral || false,
+              reps_per_side: exercise.reps_per_side || null,
+              total_reps: exercise.total_reps || null
+            };
+          });
 
           const { data: insertedExercises, error: exercisesError } = await supabase
             .from("template_items")
