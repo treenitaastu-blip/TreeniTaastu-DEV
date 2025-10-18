@@ -11,6 +11,7 @@ import { useLoadingState, LOADING_KEYS, getLoadingMessage } from '@/hooks/useLoa
 import { LoadingIndicator, LoadingOverlay } from '@/components/ui/LoadingIndicator';
 import { logWorkoutError, logProgressionError, logDatabaseError, ErrorCategory } from '@/utils/errorLogger';
 import { trackSessionEndFailure, trackProgressionFailure, trackDataSaveFailure, WorkoutFailureType } from '@/utils/workoutFailureTracker';
+import { trackFeatureUsage, trackTaskCompletion, trackMobileInteraction, trackAPIResponseTime } from '@/utils/uxMetricsTracker';
 
 import ModernWorkoutHeader from "@/components/workout/ModernWorkoutHeader";
 import SmartExerciseCard from "@/components/workout/SmartExerciseCard";
@@ -891,6 +892,19 @@ export default function ModernWorkoutSession() {
         completed_exercises: completedExerciseIds.size
       });
 
+      // Track task completion for UX metrics
+      trackTaskCompletion('workout_completion', true, {
+        userId: user?.id,
+        sessionId: session?.id,
+        programId: programId,
+        dayId: dayId,
+        additionalData: {
+          exerciseCount: exercises.length,
+          completedExercises: completedExerciseIds.size,
+          durationMinutes: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)
+        }
+      });
+
       // Show success message immediately
       toast.success("Treening lõpetatud!");
       setShowCompletionDialog(true);
@@ -990,6 +1004,19 @@ export default function ModernWorkoutSession() {
 
       // Close alternatives panel
       setOpenAlternativesFor(prev => ({ ...prev, [exerciseId]: false }));
+      
+      // Track mobile interaction for UX metrics
+      trackMobileInteraction('alternative_exercise_switch', {
+        userId: user?.id,
+        sessionId: session?.id,
+        programId: programId,
+        dayId: dayId,
+        exerciseId: exerciseId,
+        additionalData: {
+          alternativeName,
+          originalExerciseName: exercises.find(e => e.id === exerciseId)?.exercise_name
+        }
+      });
       
       // Show success message
       toast.success(`Harjutus vahetatud: ${alternativeName}`);
