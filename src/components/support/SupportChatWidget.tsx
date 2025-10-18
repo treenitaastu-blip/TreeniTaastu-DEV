@@ -203,29 +203,29 @@ export function SupportChatWidget() {
                  <div ref={messagesEndRef} />
                </div>
              </ScrollArea>
-
-            {/* Message Input */}
-            <form onSubmit={handleSendMessage} className="p-4 border-t">
-              <div className="flex gap-2">
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Kirjutage oma sõnum..."
-                  disabled={sending}
-                  className="flex-1"
-                  autoFocus={isOpen}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={!newMessage.trim() || sending}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </form>
           </CardContent>
+
+          {/* Message Input */}
+          <form onSubmit={handleSendMessage} className="p-4 border-t">
+            <div className="flex gap-2">
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Kirjutage oma sõnum..."
+                disabled={sending}
+                className="flex-1"
+                autoFocus={isOpen}
+              />
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!newMessage.trim() || sending}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </form>
         </Card>
       )}
     </>
