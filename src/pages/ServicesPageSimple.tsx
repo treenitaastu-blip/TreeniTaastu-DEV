@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import useWeb3Forms from '@web3forms/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,13 +12,33 @@ import { Loader2, Send, CheckCircle } from 'lucide-react';
 
 export default function ServicesPageSimple() {
   const { toast } = useToast();
+  const { register, handleSubmit, reset, watch } = useForm();
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || 'your-access-key-here';
+
+  const { submit: onSubmit, isSubmitting } = useWeb3Forms({
+    access_key: accessKey,
+    settings: {
+      from_name: "TreeniTaastu Teenused",
+      subject: "Uus teenuse päring",
+    },
+    onSuccess: (msg) => {
+      setIsSubmitted(true);
+      toast({
+        title: "Edukalt saadetud!",
+        description: "Sinu päring on saadetud. Võtame sinuga ühendust 24 tunni jooksul.",
+      });
+    },
+    onError: (msg) => {
+      toast({
+        title: "Viga",
+        description: "Päringu saatmine ebaõnnestus. Palun proovi uuesti.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const services = [
     {
@@ -50,9 +72,7 @@ export default function ServicesPageSimple() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleFormSubmit = (data: any) => {
     if (selectedServices.length === 0) {
       toast({
         title: "Viga",
@@ -62,73 +82,35 @@ export default function ServicesPageSimple() {
       return;
     }
 
-    if (!name || !email) {
-      toast({
-        title: "Viga",
-        description: "Palun täida nõutud väljad.",
-        variant: "destructive",
-      });
-      return;
-    }
+    const selectedServicesInfo = services.filter(service => 
+      selectedServices.includes(service.id)
+    );
 
-    setIsSubmitting(true);
-
-    try {
-      const selectedServicesInfo = services.filter(service => 
-        selectedServices.includes(service.id)
-      );
-
-      const formPayload = {
-        access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || 'your-access-key-here',
-        name: name,
-        email: email,
-        message: `
+    const message = `
 Uus teenuse päring:
 
 Valitud teenused:
 ${selectedServicesInfo.map(service => `- ${service.name} (${service.price}, ${service.duration})`).join('\n')}
 
 Kontaktandmed:
-Nimi: ${name}
-E-post: ${email}
-Telefon: ${phone || 'Määramata'}
+Nimi: ${data.name}
+E-post: ${data.email}
+Telefon: ${data.phone || 'Määramata'}
 
 Lisainfo:
-${message || 'Puudub'}
+${data.message || 'Puudub'}
 
 ---
 Saadetud: ${new Date().toLocaleString('et-EE')}
-        `,
-        from_name: name,
-        reply_to: email
-      };
+    `;
 
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formPayload)
-      });
-
-      if (response.ok) {
-        setIsSubmitted(true);
-        toast({
-          title: "Edukalt saadetud!",
-          description: "Sinu päring on saadetud. Võtame sinuga ühendust 24 tunni jooksul.",
-        });
-      } else {
-        throw new Error('Form submission failed');
-      }
-    } catch (error) {
-      toast({
-        title: "Viga",
-        description: "Päringu saatmine ebaõnnestus. Palun proovi uuesti.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    onSubmit({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      message: message,
+      selected_services: selectedServicesInfo.map(s => s.name).join(', ')
+    });
   };
 
   if (isSubmitted) {
@@ -145,10 +127,7 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
               onClick={() => {
                 setIsSubmitted(false);
                 setSelectedServices([]);
-                setName('');
-                setEmail('');
-                setPhone('');
-                setMessage('');
+                reset();
               }}
               className="w-full"
             >
@@ -171,7 +150,7 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
             </p>
           </CardHeader>
           <CardContent className="p-4 sm:p-6">
-            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+            <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 sm:space-y-8">
               {/* Service Selection */}
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Vali teenused</Label>
@@ -223,10 +202,8 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                     <Label htmlFor="name">Nimi *</Label>
                     <Input
                       id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      {...register("name", { required: true })}
                       placeholder="Sinu nimi"
-                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -234,10 +211,8 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                     <Input
                       id="email"
                       type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      {...register("email", { required: true })}
                       placeholder="sinu@email.com"
-                      required
                     />
                   </div>
                 </div>
@@ -246,8 +221,7 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                   <Input
                     id="phone"
                     type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    {...register("phone")}
                     placeholder="+372 5xxx xxxx"
                   />
                 </div>
@@ -260,8 +234,7 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                   <Label htmlFor="message">Sõnum</Label>
                   <Textarea
                     id="message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    {...register("message")}
                     placeholder="Kirjelda oma eesmärke, kogemust või küsimusi..."
                     rows={4}
                   />
