@@ -1,6 +1,7 @@
 // src/components/Header.tsx
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
+import { debugRenders, debugUseEffect } from "@/utils/debugRenders";
 import {
   Menu,
   X,
@@ -29,6 +30,8 @@ const HIDE_ON_PATHS = ["/login", "/signup"];
 type NavItem = { to: string; label: string; show?: boolean };
 
 export default function Header() {
+  debugRenders('Header');
+  
   const { user } = useAuth();
   const { loading: accessLoading, isAdmin, canStatic, canPT } = useAccess();
   const { closeAllDropdowns } = useDropdownManager();
@@ -45,6 +48,7 @@ export default function Header() {
 
   // Close menus on route change
   useEffect(() => {
+    debugUseEffect('Header-route-change', [loc.pathname, closeAllDropdowns]);
     setOpen(false);
     setAdminOpen(false);
     setPtOpen(false);

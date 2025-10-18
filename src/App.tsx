@@ -12,8 +12,11 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
 // import { trackPageView, trackLoadTime, uxMetricsTracker } from "@/utils/uxMetricsTracker";
 import { useEffect } from "react";
+import { debugRenders } from "@/utils/debugRenders";
 
 export default function App({ children }: { children?: React.ReactNode }) {
+  debugRenders('App');
+  
   const { user } = useAuth();
   const { subscribe } = useSubscription();
   const navigate = useNavigate();

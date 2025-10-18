@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Send, CheckCircle } from 'lucide-react';
+import { debugRenders, getRenderSummary, clearDebugCounters } from '@/utils/debugRenders';
 
 // Move services array outside component to prevent recreation on every render
 const services = [
@@ -33,6 +34,8 @@ const services = [
 ];
 
 export default function ServicesPageMinimal() {
+  debugRenders('ServicesPageMinimal');
+  
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -157,6 +160,22 @@ Saadetud: ${timestamp}
             <p className="text-muted-foreground text-sm sm:text-base">
               Vali teenused, millest soovid rohkem teada saada
             </p>
+            {/* Debug section - remove in production */}
+            <div className="mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+              <p className="text-yellow-800">🐛 Debug Mode Active</p>
+              <button 
+                onClick={() => getRenderSummary()} 
+                className="mr-2 px-2 py-1 bg-yellow-200 rounded text-xs"
+              >
+                Show Render Count
+              </button>
+              <button 
+                onClick={() => clearDebugCounters()} 
+                className="px-2 py-1 bg-yellow-200 rounded text-xs"
+              >
+                Clear Counters
+              </button>
+            </div>
           </CardHeader>
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
