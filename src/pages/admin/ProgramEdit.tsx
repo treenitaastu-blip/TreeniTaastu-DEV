@@ -326,19 +326,11 @@ export default function ProgramEdit() {
         </AdminCard>
       )}
 
-      {/* Smart Progression Card */}
+      {/* Program Progress Card */}
       {programProgress && (
         <ProgramProgressCard 
           programProgress={programProgress}
-          onAutoProgress={autoProgressProgram}
           onComplete={completeDuePrograms}
-          onSettings={() => {
-            // Could open a settings modal in future
-            toast({
-              title: "Settings",
-              description: "Progression settings coming soon!",
-            });
-          }}
         />
       )}
 

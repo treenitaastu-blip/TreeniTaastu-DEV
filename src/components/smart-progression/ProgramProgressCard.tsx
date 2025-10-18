@@ -2,24 +2,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, TrendingUp, Settings, CheckCircle } from "lucide-react";
+import { Calendar, Clock, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ProgramProgress } from "@/hooks/useSmartProgression";
 
 interface ProgramProgressCardProps {
   programProgress: ProgramProgress;
-  onAutoProgress?: () => void;
-  onSettings?: () => void;
   onComplete?: () => void;
-  isAutoProgressing?: boolean;
 }
 
 export const ProgramProgressCard = ({
   programProgress,
-  onAutoProgress,
-  onSettings,
   onComplete,
-  isAutoProgressing = false,
 }: ProgramProgressCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -86,12 +80,12 @@ export const ProgramProgressCard = ({
           </div>
           
           <div className="flex items-center space-x-2">
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <Clock className="h-4 w-4 text-muted-foreground" />
             <div className="text-sm">
               <div className="font-medium">
-                {programProgress.auto_progression_enabled ? 'Smart AI' : 'Manual'}
+                {programProgress.workouts_completed ?? 0} workouts
               </div>
-              <div className="text-muted-foreground">Progression Mode</div>
+              <div className="text-muted-foreground">Completed</div>
             </div>
           </div>
         </div>
@@ -128,28 +122,6 @@ export const ProgramProgressCard = ({
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
-          {programProgress.status === 'active' && (programProgress.auto_progression_enabled ?? false) && (
-            <Button
-              onClick={onAutoProgress}
-              disabled={isAutoProgressing}
-              className="flex-1"
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              {isAutoProgressing ? 'Updating...' : 'Auto-Progress'}
-            </Button>
-          )}
-          
-          {programProgress.status === 'active' && (
-            <Button
-              variant="outline"
-              onClick={onSettings}
-              size="sm"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-          )}
-          
           {(programProgress.is_due_for_completion ?? false) && programProgress.status === 'active' && onComplete && (
             <Button
               onClick={onComplete}
