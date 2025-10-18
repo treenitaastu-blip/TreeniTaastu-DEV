@@ -554,7 +554,7 @@ export default function EnhancedProgramCreator({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="w-[95vw] h-[95vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto p-2 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg"
+        className="w-[95vw] h-[95vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto p-1 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg"
         aria-describedby="program-creator-description"
       >
         <DialogHeader>
@@ -567,17 +567,17 @@ export default function EnhancedProgramCreator({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 sm:space-y-6">
+        <div className="space-y-3 sm:space-y-6">
           {/* Program Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Programmi seaded</CardTitle>
+          <Card className="p-2 sm:p-4">
+            <CardHeader className="p-2 sm:p-4">
+              <CardTitle className="text-sm sm:text-lg">Programmi seaded</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 sm:space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+            <CardContent className="space-y-3 sm:space-y-4 p-2 sm:p-4">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    <Users className="inline mr-1 h-4 w-4" />
+                  <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                    <Users className="inline mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                     Vali klient
                   </label>
                   <Select 
@@ -589,12 +589,12 @@ export default function EnhancedProgramCreator({
                     }}
                     disabled={loadingClients}
                   >
-                    <SelectTrigger className="w-full text-sm">
+                    <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
                       <SelectValue placeholder={loadingClients ? "Laen kliente..." : "Vali klient dropdownist"} />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
                       {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id} className="text-sm">
+                        <SelectItem key={client.id} value={client.id} className="text-xs sm:text-sm">
                           <div className="flex flex-col">
                             <span className="font-medium">{client.email}</span>
                             <span className="text-xs text-muted-foreground">
@@ -607,39 +607,39 @@ export default function EnhancedProgramCreator({
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Programmi pealkiri (valikuline)</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2">Programmi pealkiri (valikuline)</label>
                   <input
                     type="text"
                     value={programTitle}
                     onChange={(e) => setProgramTitle(e.target.value)}
                     placeholder="nt. Jõuprogramm algajale"
-                    className="w-full max-w-full rounded-lg border border-input bg-background px-2 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm h-8 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    <Calendar className="inline mr-1 h-4 w-4" />
+                  <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                    <Calendar className="inline mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                     Alguskuupäev
                   </label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full max-w-full rounded-lg border border-input bg-background px-2 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm h-8 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    <Clock className="inline mr-1 h-4 w-4" />
+                  <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                    <Clock className="inline mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                     Kestus nädalates
                   </label>
                   <select
                     value={durationWeeks}
                     onChange={(e) => setDurationWeeks(Number(e.target.value))}
-                    className="w-full max-w-full rounded-lg border border-input bg-background px-2 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm h-8 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   >
                     {[2, 4, 6, 8, 10, 12, 16, 20, 24].map(weeks => (
                       <option key={weeks} value={weeks}>
@@ -649,14 +649,14 @@ export default function EnhancedProgramCreator({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    <Dumbbell className="inline mr-1 h-4 w-4" />
+                  <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                    <Dumbbell className="inline mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                     Treeninguid nädalas
                   </label>
                   <select
                     value={trainingDaysPerWeek}
                     onChange={(e) => setTrainingDaysPerWeek(Number(e.target.value))}
-                    className="w-full max-w-full rounded-lg border border-input bg-background px-2 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm h-8 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   >
                     {[1, 2, 3, 4, 5].map(days => (
                       <option key={days} value={days}>
@@ -667,10 +667,10 @@ export default function EnhancedProgramCreator({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-lg border border-input p-4">
+              <div className="flex items-center justify-between rounded-lg border border-input p-2 sm:p-4">
                 <div>
-                  <h4 className="font-medium">Smart Progression</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <h4 className="font-medium text-xs sm:text-sm">Smart Progression</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Automaatne raskusastme reguleerimine RPE põhjal
                   </p>
                 </div>
@@ -681,21 +681,21 @@ export default function EnhancedProgramCreator({
                     onChange={(e) => setAutoProgressionEnabled(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="relative w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  <div className="relative w-9 h-5 sm:w-11 sm:h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
             </CardContent>
           </Card>
 
           {/* Training Days */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Treeningpäevad</CardTitle>
-              <p className="text-sm text-muted-foreground">
+          <Card className="p-2 sm:p-4">
+            <CardHeader className="p-2 sm:p-4">
+              <CardTitle className="text-sm sm:text-lg">Treeningpäevad</CardTitle>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Loo igaks päevaks treening{trainingDaysPerWeek > 1 ? 'uid' : ''}. Kokku {trainingDaysPerWeek} päeva nädalas.
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4 p-2 sm:p-4">
               {trainingDays.map((day, dayIndex) => (
                 <Collapsible key={day.day_number} open={day.is_open} onOpenChange={() => toggleDay(dayIndex)}>
                   <Card className="border-l-4 border-l-primary">
@@ -974,11 +974,11 @@ export default function EnhancedProgramCreator({
           </Card>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4">
             <Button
               onClick={() => onOpenChange(false)}
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-10 sm:h-11 text-sm"
               disabled={creating}
             >
               Tühista
@@ -994,7 +994,7 @@ export default function EnhancedProgramCreator({
                 handleCreateProgram();
               }}
               disabled={creating || !selectedClientId || trainingDays.some(day => day.exercises.length === 0)}
-              className="flex-1 bg-gradient-to-r from-primary to-accent"
+              className="flex-1 h-10 sm:h-11 text-sm bg-gradient-to-r from-primary to-accent"
             >
               {creating ? "Loon programmi..." : "Loo programm"}
             </Button>
