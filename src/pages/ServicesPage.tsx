@@ -75,12 +75,21 @@ export default function ServicesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleServiceToggle = (serviceId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedServices: prev.selectedServices.includes(serviceId)
+    console.log('Toggling service:', serviceId);
+    console.log('Current selectedServices:', formData.selectedServices);
+    
+    setFormData(prev => {
+      const newSelectedServices = prev.selectedServices.includes(serviceId)
         ? prev.selectedServices.filter(id => id !== serviceId)
-        : [...prev.selectedServices, serviceId]
-    }));
+        : [...prev.selectedServices, serviceId];
+      
+      console.log('New selectedServices:', newSelectedServices);
+      
+      return {
+        ...prev,
+        selectedServices: newSelectedServices
+      };
+    });
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
@@ -257,7 +266,9 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Vali teenused</Label>
                 <div className="grid gap-4">
-                  {serviceOptions.map((service) => (
+                  {serviceOptions.map((service) => {
+                    console.log('Rendering service:', service.id, service.name);
+                    return (
                     <Card 
                       key={service.id}
                       className={`cursor-pointer transition-all select-none ${
@@ -267,6 +278,7 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                       }`}
                       onClick={(e) => {
                         e.preventDefault();
+                        console.log('Card clicked for service:', service.id);
                         handleServiceToggle(service.id);
                       }}
                     >
@@ -275,7 +287,6 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                           <div className="mt-1">
                             <Checkbox
                               checked={formData.selectedServices.includes(service.id)}
-                              readOnly
                               className="pointer-events-none !w-3 !h-3 !min-w-3 !min-h-3"
                               style={{ 
                                 width: '12px !important',
@@ -308,7 +319,8 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
