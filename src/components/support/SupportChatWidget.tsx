@@ -45,6 +45,13 @@ export function SupportChatWidget() {
     }
   }, [isOpen, notification.hasUnreadAdminMessages, markAsRead]);
 
+  // Debug: Log when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('Chat opened, form should be visible');
+    }
+  }, [isOpen]);
+
   if (!user) {
     if (isAnnounced) {
       return null;
@@ -159,9 +166,9 @@ export function SupportChatWidget() {
             </Button>
           </CardHeader>
 
-          <CardContent className="flex-1 flex flex-col p-0">
+          <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
             {/* Messages Area */}
-            <ScrollArea className="flex-1 px-4 py-2">
+            <ScrollArea className="flex-1 px-4 py-2 min-h-0">
               {loading && (
                 <div className="text-center text-muted-foreground py-4">
                   Laadin sõnumeid...
@@ -211,26 +218,29 @@ export function SupportChatWidget() {
           </CardContent>
 
           {/* Message Input */}
-          <form onSubmit={handleSendMessage} className="p-4 border-t">
-            <div className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Kirjutage oma sõnum..."
-                disabled={sending}
-                className="flex-1"
-                autoFocus={isOpen}
-              />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={!newMessage.trim() || sending}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </form>
+          <div className="p-4 border-t bg-background flex-shrink-0">
+            <form onSubmit={handleSendMessage} className="w-full">
+              <div className="flex gap-2 w-full">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Kirjutage oma sõnum..."
+                  disabled={sending}
+                  className="flex-1 min-w-0"
+                  autoFocus={isOpen}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={!newMessage.trim() || sending}
+                  className="flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </form>
+          </div>
         </Card>
       )}
     </>
