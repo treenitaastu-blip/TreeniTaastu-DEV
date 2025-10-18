@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,6 @@ interface ServiceOption {
   id: string;
   name: string;
   description: string;
-  iconType: string;
   price?: string;
   duration?: string;
 }
@@ -45,13 +44,12 @@ export default function ServicesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Service options with string identifiers for icons
+  // Service options without icons to eliminate JSX issues
   const serviceOptions = useMemo(() => [
     {
       id: 'online-consultation',
       name: 'Online konsultatsioonid',
       description: 'Individuaalne konsultatsioon videokõne kaudu. Analüüsin sinu eesmärke, toitumist ja treeningplaani.',
-      iconType: 'users',
       price: '40€',
       duration: '60 min'
     },
@@ -59,7 +57,6 @@ export default function ServicesPage() {
       id: 'personal-training-gym',
       name: '1:1 personaaltreening jõusaalis',
       description: 'Individuaalne treening jõusaalis minu juhendamisel. Kohandatud harjutused ja tehnikaõpetus.',
-      iconType: 'dumbbell',
       price: '50€',
       duration: '60 min'
     },
@@ -67,25 +64,10 @@ export default function ServicesPage() {
       id: 'training-plan-creation',
       name: 'Personaaltreeningu plaan (1 kuu)',
       description: 'Täielik treeningplaan sinu eesmärkide ja võimaluste järgi. Sisaldab harjutusi, kordusi ja edenemist.',
-      iconType: 'file-text',
       price: '80€',
       duration: '1 kuu'
     }
   ], []);
-
-  // Function to render icon based on type
-  const renderIcon = (iconType: string) => {
-    switch (iconType) {
-      case 'users':
-        return <Users className="h-6 w-6" />;
-      case 'dumbbell':
-        return <Dumbbell className="h-6 w-6" />;
-      case 'file-text':
-        return <FileText className="h-6 w-6" />;
-      default:
-        return <Users className="h-6 w-6" />;
-    }
-  };
 
   const handleServiceToggle = (serviceId: string) => {
     setFormData(prev => ({
@@ -289,7 +271,6 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
                               <div className="flex items-center space-x-2">
-                                {renderIcon(service.iconType)}
                                 <h3 className="text-base sm:text-lg font-semibold">{service.name}</h3>
                               </div>
                               {service.price && (
