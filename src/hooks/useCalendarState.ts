@@ -87,6 +87,12 @@ export const useCalendarState = () => {
     if (!user?.id) return days;
 
     try {
+      // Check if user is authenticated
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        console.warn('User not authenticated, skipping completion status fetch');
+        return days;
+      }
       // Get completed weekdays
       const { data: weekdayCompletions, error: weekdayError } = await supabase
         .from('user_analytics_events')
@@ -126,8 +132,17 @@ export const useCalendarState = () => {
         isCompleted: completedDays.has(day.dayNumber)
       }));
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching completion status:', error);
+      
+      // If it's a permission error, log it but don't break the app
+      if (error?.code === '42501' || error?.message?.includes('permission denied')) {
+        console.warn('Permission denied for analytics events - user may not be authenticated or RLS policy issue');
+        // Return days without completion status - app will still work
+        return days;
+      }
+      
+      // For other errors, also return days to keep app functional
       return days;
     }
   }, [user?.id]);
