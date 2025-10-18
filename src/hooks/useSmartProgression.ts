@@ -62,7 +62,7 @@ export interface AutoProgressionResult {
   }>;
 }
 
-export const useSmartProgression = (programId?: string) => {
+export const useSmartProgression = (programId?: string, userId?: string) => {
   const [programProgress, setProgramProgress] = useState<ProgramProgress | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,9 +80,7 @@ export const useSmartProgression = (programId?: string) => {
 
     try {
       const { data, error } = await supabase
-        .from('v_program_progress')
-        .select('*')
-        .eq('program_id', programId)
+        .rpc('get_program_progress', { p_program_id: programId })
         .maybeSingle();
 
       if (error) throw error;
@@ -196,7 +194,6 @@ export const useSmartProgression = (programId?: string) => {
     }
     
     const sessionId = `auto_progress_${Date.now()}`;
-    const userId = user?.id;
     
     try {
       // Try optimized auto-progression first

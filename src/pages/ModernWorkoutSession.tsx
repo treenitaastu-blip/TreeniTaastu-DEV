@@ -245,7 +245,7 @@ export default function ModernWorkoutSession() {
           .eq("user_id", user.id)
           .eq("client_day_id", dayId)
           .is("ended_at", null)
-          .single();
+          .maybeSingle();
 
         if (existingSession) {
           sessionData = existingSession;
@@ -713,7 +713,7 @@ export default function ModernWorkoutSession() {
   }, [exercises, trackFeatureUsage]);
 
   // Get the smart progression hook at component level
-  const { autoProgressProgram } = useSmartProgression(programId);
+  const { autoProgressProgram } = useSmartProgression(programId, user?.id);
 
   // Automatic progression based on RPE/RIR data using optimized algorithm
   const applyAutomaticProgression = useCallback(async () => {
