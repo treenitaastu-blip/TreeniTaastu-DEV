@@ -1,185 +1,201 @@
-import React, { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useRef, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { 
   Bold, 
-  Heading1, 
-  Heading2, 
-  Heading3, 
-  Minus,
-  List,
-  ListOrdered
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+  Italic, 
+  Underline, 
+  List, 
+  ListOrdered, 
+  Quote, 
+  Undo, 
+  Redo,
+  Type,
+  AlignLeft,
+  AlignCenter,
+  AlignRight
+} from 'lucide-react';
 
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
-  required?: boolean;
+  disabled?: boolean;
 }
 
-export const RichTextEditor = ({ 
+export function RichTextEditor({ 
   value, 
   onChange, 
-  placeholder,
-  className,
-  required 
-}: RichTextEditorProps) => {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  placeholder = "Sisesta tekst...", 
+  className = "",
+  disabled = false 
+}: RichTextEditorProps) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
-  const insertMarkdown = (before: string, after: string = "", placeholder: string = "tekst") => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value;
+    }
+  }, [value]);
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = value.substring(start, end);
-    
-    const replacement = selectedText || placeholder;
-    const newText = value.substring(0, start) + before + replacement + after + value.substring(end);
-    
-    onChange(newText);
-    
-    // Restore focus and selection
-    setTimeout(() => {
-      textarea.focus();
-      const newStart = start + before.length;
-      const newEnd = newStart + replacement.length;
-      textarea.setSelectionRange(newStart, newEnd);
-    }, 0);
+  const handleInput = () => {
+    if (editorRef.current) {
+      const content = editorRef.current.innerHTML;
+      onChange(content);
+    }
   };
 
-  const insertAtCursor = (text: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  const execCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    editorRef.current?.focus();
+    handleInput();
+  };
 
-    const start = textarea.selectionStart;
-    const newText = value.substring(0, start) + text + value.substring(start);
-    
-    onChange(newText);
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + text.length, start + text.length);
-    }, 0);
+  const insertText = (text: string) => {
+    document.execCommand('insertText', false, text);
+    editorRef.current?.focus();
+    handleInput();
   };
 
   const formatButtons = [
-    {
-      icon: Bold,
-      label: "Paks kiri",
-      action: () => insertMarkdown("**", "**", "paks tekst")
-    },
-    {
-      icon: Heading1,
-      label: "Pealkiri 1",
-      action: () => insertMarkdown("# ", "", "Suur pealkiri")
-    },
-    {
-      icon: Heading2,
-      label: "Pealkiri 2", 
-      action: () => insertMarkdown("## ", "", "Keskmine pealkiri")
-    },
-    {
-      icon: Heading3,
-      label: "Pealkiri 3",
-      action: () => insertMarkdown("### ", "", "Väike pealkiri")
-    },
-    {
-      icon: List,
-      label: "Täppide loend",
-      action: () => insertAtCursor("- Loendi punkt\n")
-    },
-    {
-      icon: ListOrdered,
-      label: "Nummerdatud loend",
-      action: () => insertAtCursor("1. Esimene punkt\n")
-    },
-    {
-      icon: Minus,
-      label: "Eraldaja joon",
-      action: () => insertAtCursor("\n---\n\n")
-    }
+    { command: 'bold', icon: Bold, label: 'Bold' },
+    { command: 'italic', icon: Italic, label: 'Italic' },
+    { command: 'underline', icon: Underline, label: 'Underline' },
   ];
 
-  const renderPreview = (text: string) => {
-    // Simple markdown-like rendering for preview
-    return text
-      .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mb-4">$1</h1>')
-      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold mb-3">$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold mb-2">$1</h3>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
-      .replace(/^- (.*$)/gm, '<li class="ml-4">• $1</li>')
-      .replace(/^\d+\. (.*$)/gm, '<li class="ml-4">$1</li>')
-      .replace(/^---$/gm, '<hr class="my-4 border-border">')
-      .replace(/\n/g, '<br>');
-  };
+  const listButtons = [
+    { command: 'insertUnorderedList', icon: List, label: 'Bullet List' },
+    { command: 'insertOrderedList', icon: ListOrdered, label: 'Numbered List' },
+  ];
+
+  const alignmentButtons = [
+    { command: 'justifyLeft', icon: AlignLeft, label: 'Align Left' },
+    { command: 'justifyCenter', icon: AlignCenter, label: 'Align Center' },
+    { command: 'justifyRight', icon: AlignRight, label: 'Align Right' },
+  ];
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <Card className={`border-2 transition-colors ${isFocused ? 'border-primary' : 'border-border'} ${className}`}>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 border border-border rounded-md bg-muted/30">
-        {formatButtons.map((button, index) => (
+      <div className="border-b p-2 flex flex-wrap gap-1">
+        {/* Format buttons */}
+        <div className="flex gap-1">
+          {formatButtons.map(({ command, icon: Icon, label }) => (
+            <Button
+              key={command}
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => execCommand(command)}
+              title={label}
+              disabled={disabled}
+              className="h-8 w-8 p-0"
+            >
+              <Icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        {/* List buttons */}
+        <div className="flex gap-1">
+          {listButtons.map(({ command, icon: Icon, label }) => (
+            <Button
+              key={command}
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => execCommand(command)}
+              title={label}
+              disabled={disabled}
+              className="h-8 w-8 p-0"
+            >
+              <Icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        {/* Alignment buttons */}
+        <div className="flex gap-1">
+          {alignmentButtons.map(({ command, icon: Icon, label }) => (
+            <Button
+              key={command}
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => execCommand(command)}
+              title={label}
+              disabled={disabled}
+              className="h-8 w-8 p-0"
+            >
+              <Icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        {/* Quote button */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => execCommand('formatBlock', 'blockquote')}
+          title="Quote"
+          disabled={disabled}
+          className="h-8 w-8 p-0"
+        >
+          <Quote className="h-4 w-4" />
+        </Button>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        {/* Undo/Redo */}
+        <div className="flex gap-1">
           <Button
-            key={index}
             type="button"
             variant="ghost"
             size="sm"
-            onClick={button.action}
+            onClick={() => execCommand('undo')}
+            title="Undo"
+            disabled={disabled}
             className="h-8 w-8 p-0"
-            title={button.label}
           >
-            <button.icon className="h-4 w-4" />
-          </Button>
-        ))}
-        
-        <div className="ml-auto flex gap-1">
-          <Button
-            type="button"
-            variant={!isPreviewMode ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setIsPreviewMode(false)}
-            className="text-xs"
-          >
-            Kirjuta
+            <Undo className="h-4 w-4" />
           </Button>
           <Button
             type="button"
-            variant={isPreviewMode ? "secondary" : "ghost"}
+            variant="ghost"
             size="sm"
-            onClick={() => setIsPreviewMode(true)}
-            className="text-xs"
+            onClick={() => execCommand('redo')}
+            title="Redo"
+            disabled={disabled}
+            className="h-8 w-8 p-0"
           >
-            Eelvaade
+            <Redo className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Editor/Preview */}
-      {isPreviewMode ? (
-        <div 
-          className="min-h-[300px] p-4 border border-border rounded-md bg-background prose prose-sm max-w-none"
-          dangerouslySetInnerHTML={{ __html: renderPreview(value) }}
+      {/* Editor */}
+      <CardContent className="p-0">
+        <div
+          ref={editorRef}
+          contentEditable={!disabled}
+          onInput={handleInput}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          className="min-h-[200px] p-4 focus:outline-none"
+          style={{ whiteSpace: 'pre-wrap' }}
+          data-placeholder={placeholder}
+          suppressContentEditableWarning={true}
         />
-      ) : (
-        <Textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="min-h-[300px] font-mono text-sm"
-          required={required}
-        />
-      )}
-
-      {/* Help text */}
-      <div className="text-xs text-muted-foreground space-y-1">
-        <p><strong>Kiirklahvid:</strong> Vali tekst ja klõpsa nuppu vormindamiseks</p>
-        <p><strong>Markdown:</strong> **paks**, # Pealkiri 1, ## Pealkiri 2, - loend</p>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
-};
+}

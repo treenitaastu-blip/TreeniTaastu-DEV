@@ -1,415 +1,162 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, Edit2, Trash2, BookOpen, Smile, Battery, Target } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, Activity, Target } from "lucide-react";
 
 type JournalEntry = {
   id: string;
-  title: string;
-  content: string;
-  mood: number | null;
-  energy_level: number | null;
-  motivation: number | null;
-  created_at: string;
-  updated_at: string;
-  session_id: string | null;
+  date: string;
+  program_title: string;
+  day_title: string;
+  duration_minutes: number;
+  exercises_completed: number;
+  total_sets: number;
+  avg_rpe: number;
+  notes?: string;
 };
-
-const MOOD_ICONS = ["😞", "😕", "😐", "😊", "😁"];
-const ENERGY_ICONS = ["🪫", "🔋", "⚡", "🔥", "💪"];
-const MOTIVATION_ICONS = ["😴", "😑", "🤔", "💪", "🚀"];
 
 export default function TrainingJournal() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
-  
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    mood: "",
-    energy_level: "",
-    motivation: ""
-  });
 
   useEffect(() => {
-    loadEntries();
-  }, [user]);
+    const loadJournal = async () => {
+      if (!user) return;
 
-  const loadEntries = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("training_journal")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from("workout_sessions")
+          .select(`
+            id,
+            started_at,
+            ended_at,
+            duration_minutes,
+            avg_rpe,
+            notes,
+            client_programs!inner (
+              title_override,
+              client_days!inner (
+                title,
+                client_items!inner (
+                  id
+                )
+              )
+            )
+          `)
+          .eq("user_id", user.id)
+          .not("ended_at", "is", null)
+          .order("started_at", { ascending: false })
+          .limit(50);
 
-      if (error) throw error;
-      setEntries(data || []);
-    } catch (error) {
-      console.error("Error loading journal entries:", error);
-      toast({ 
-        title: "Viga", 
-        description: "Märkmiku laadimise viga", 
-        variant: "destructive" 
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (error) throw error;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
+        const journalEntries: JournalEntry[] = (data || []).map(session => ({
+          id: session.id,
+          date: session.started_at,
+          program_title: session.client_programs?.title_override || "Unknown Program",
+          day_title: session.client_programs?.client_days?.[0]?.title || "Unknown Day",
+          duration_minutes: session.duration_minutes || 0,
+          exercises_completed: session.client_programs?.client_days?.[0]?.client_items?.length || 0,
+          total_sets: 0, // Would need to calculate from set_logs
+          avg_rpe: session.avg_rpe || 0,
+          notes: session.notes
+        }));
 
-    const payload = {
-      user_id: user.id,
-      title: formData.title || "Märge",
-      content: formData.content,
-      mood: formData.mood ? parseInt(formData.mood) : null,
-      energy_level: formData.energy_level ? parseInt(formData.energy_level) : null,
-      motivation: formData.motivation ? parseInt(formData.motivation) : null,
+        setEntries(journalEntries);
+      } catch (error) {
+        console.error("Error loading training journal:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    try {
-      if (editingEntry) {
-        const { error } = await supabase
-          .from("training_journal")
-          .update(payload)
-          .eq("id", editingEntry.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("training_journal")
-          .insert([payload]);
-        if (error) throw error;
-      }
-
-      toast({ 
-        title: "Salvestatud!", 
-        description: editingEntry ? "Märge uuendatud" : "Uus märge lisatud" 
-      });
-      
-      setDialogOpen(false);
-      resetForm();
-      loadEntries();
-    } catch (error) {
-      console.error("Error saving entry:", error);
-      toast({ 
-        title: "Viga", 
-        description: "Salvestamise viga", 
-        variant: "destructive" 
-      });
-    }
-  };
-
-  const handleEdit = (entry: JournalEntry) => {
-    setEditingEntry(entry);
-    setFormData({
-      title: entry.title,
-      content: entry.content,
-      mood: entry.mood?.toString() || "",
-      energy_level: entry.energy_level?.toString() || "",
-      motivation: entry.motivation?.toString() || ""
-    });
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Kas oled kindel, et soovid kustutada?")) return;
-
-    try {
-      const { error } = await supabase
-        .from("training_journal")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      
-      toast({ title: "Kustutatud!", description: "Märge eemaldatud" });
-      loadEntries();
-    } catch (error) {
-      console.error("Error deleting entry:", error);
-      toast({ 
-        title: "Viga", 
-        description: "Kustutamise viga", 
-        variant: "destructive" 
-      });
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      content: "",
-      mood: "",
-      energy_level: "",
-      motivation: ""
-    });
-    setEditingEntry(null);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("et-EE", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  };
+    loadJournal();
+  }, [user]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
-        <div className="mx-auto max-w-4xl px-4 py-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 w-48 rounded-lg bg-muted"></div>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border bg-card p-6 shadow-soft space-y-4">
-                <div className="h-6 w-32 rounded bg-muted"></div>
-                <div className="h-20 w-full rounded bg-muted"></div>
-              </div>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+        <div className="max-w-4xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>Treeningu päevik</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Laadin päevikut...</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <div className="mb-8">
-          <Button onClick={() => navigate("/programs")} variant="ghost" className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Tagasi programmide juurde
-          </Button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Treeningu märkmik
-              </h1>
-              <p className="mt-2 text-muted-foreground">
-                Jälgi oma treeningu kogemusi ja mõtteid
-              </p>
-            </div>
-            <Dialog open={dialogOpen} onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (!open) resetForm();
-            }}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Uus märge
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5" />
-                    {editingEntry ? "Muuda märget" : "Uus märge"}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Pealkiri</label>
-                    <Input
-                      value={formData.title}
-                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Treeningu märge..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Sisu</label>
-                    <Textarea
-                      value={formData.content}
-                      onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                      placeholder="Kirjuta oma mõtted ja kogemused..."
-                      rows={6}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                        <Smile className="h-4 w-4" />
-                        Meeleolu
-                      </label>
-                      <Select value={formData.mood} onValueChange={(value) => setFormData(prev => ({ ...prev, mood: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Vali..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MOOD_ICONS.map((icon, index) => (
-                            <SelectItem key={index + 1} value={(index + 1).toString()}>
-                              <span className="flex items-center gap-2">
-                                {icon} {index + 1}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                        <Battery className="h-4 w-4" />
-                        Energia
-                      </label>
-                      <Select value={formData.energy_level} onValueChange={(value) => setFormData(prev => ({ ...prev, energy_level: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Vali..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ENERGY_ICONS.map((icon, index) => (
-                            <SelectItem key={index + 1} value={(index + 1).toString()}>
-                              <span className="flex items-center gap-2">
-                                {icon} {index + 1}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        Motivatsioon
-                      </label>
-                      <Select value={formData.motivation} onValueChange={(value) => setFormData(prev => ({ ...prev, motivation: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Vali..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MOTIVATION_ICONS.map((icon, index) => (
-                            <SelectItem key={index + 1} value={(index + 1).toString()}>
-                              <span className="flex items-center gap-2">
-                                {icon} {index + 1}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-3">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setDialogOpen(false)}
-                    >
-                      Tühista
-                    </Button>
-                    <Button type="submit">
-                      {editingEntry ? "Uenda" : "Salvesta"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-
-        {entries.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="rounded-full bg-primary/10 w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Pole veel märkmeid</h3>
-            <p className="text-muted-foreground mb-6">
-              Alusta oma treeningu märkmiku pidamist
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {entries.map((entry) => (
-              <Card key={entry.id} className="rounded-2xl shadow-soft">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{entry.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {formatDate(entry.created_at)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(entry)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(entry.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                    <p className="text-foreground whitespace-pre-wrap">{entry.content}</p>
-                  </div>
-                  
-                  {(entry.mood || entry.energy_level || entry.motivation) && (
-                    <div className="flex items-center gap-6 pt-4 border-t">
-                      {entry.mood && (
-                        <div className="flex items-center gap-2">
-                          <Smile className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            {MOOD_ICONS[entry.mood - 1]} Meeleolu: {entry.mood}/5
-                          </span>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Treeningu päevik
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {entries.length === 0 ? (
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Päevik on tühi</h3>
+                <p className="text-muted-foreground">
+                  Alusta oma esimest treeningut, et näha siin oma edusammud!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {entries.map((entry) => (
+                  <Card key={entry.id} className="border-l-4 border-l-primary">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{entry.program_title}</h3>
+                            <Badge variant="outline">{entry.day_title}</Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {new Date(entry.date).toLocaleDateString('et-EE')}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Activity className="h-4 w-4" />
+                              {entry.duration_minutes} min
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Target className="h-4 w-4" />
+                              {entry.exercises_completed} harjutust
+                            </div>
+                            {entry.avg_rpe > 0 && (
+                              <Badge variant="secondary">
+                                RPE {entry.avg_rpe}
+                              </Badge>
+                            )}
+                          </div>
+                          {entry.notes && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {entry.notes}
+                            </p>
+                          )}
                         </div>
-                      )}
-                      {entry.energy_level && (
-                        <div className="flex items-center gap-2">
-                          <Battery className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            {ENERGY_ICONS[entry.energy_level - 1]} Energia: {entry.energy_level}/5
-                          </span>
-                        </div>
-                      )}
-                      {entry.motivation && (
-                        <div className="flex items-center gap-2">
-                          <Target className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            {MOTIVATION_ICONS[entry.motivation - 1]} Motivatsioon: {entry.motivation}/5
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

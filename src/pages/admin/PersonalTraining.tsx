@@ -6,6 +6,13 @@ import { handleProgramAccessError, handleTemplateAccessError, isPermissionError 
 import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { MobileOptimizedCard, MobileStatsCard, MobileFilterBar } from "@/components/admin/MobileOptimizedCard";
 import { 
+  getClientProgramsOptimized, 
+  getTemplatesOptimized, 
+  getUsersOptimized, 
+  getPTStatsOptimized,
+  clearPTCache 
+} from "@/utils/optimizedQueries";
+import { 
   Users, 
   TrendingUp, 
   Activity,
@@ -118,109 +125,20 @@ export default function PersonalTraining() {
     console.log("loadData called");
     setLoading(true);
     try {
-      // Load all client programs with template info
-      const { data: programsData, error: programsError } = await supabase
-        .from("client_programs")
-        .select(`
-          id,
-          title_override,
-          start_date,
-          is_active,
-          assigned_to,
-          template_id,
-          inserted_at,
-          templates:template_id (
-            title,
-            goal
-          )
-        `)
-        .order("inserted_at", { ascending: false });
+      // Use optimized queries for better performance
+      const [programsData, templatesData, usersData, statsData] = await Promise.all([
+        getClientProgramsOptimized(),
+        getTemplatesOptimized(),
+        getUsersOptimized(),
+        getPTStatsOptimized()
+      ]);
 
-      console.log("Programs loaded:", { programsData, programsError });
+      console.log("Optimized data loaded:", { programsData, templatesData, usersData, statsData });
       
-      if (programsError) {
-        console.error("Programs list error:", programsError);
-        throw programsError;
-      }
-
-      // Load all templates separately
-      const { data: templatesData, error: templatesError } = await supabase
-        .from("workout_templates")
-        .select(`
-          id,
-          title,
-          goal,
-          is_active,
-          created_by,
-          inserted_at
-        `)
-        .order("inserted_at", { ascending: false });
-
-      if (templatesError) {
-        console.error("Templates list error:", templatesError);
-        throw templatesError;
-      }
-
-      // Get emails for assigned users
-      const userIds = [...new Set(programsData?.map(p => p.assigned_to).filter(Boolean))];
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .in("id", userIds);
-
-      const profilesMap = new Map(profilesData?.map(p => [p.id, p.email]) || []);
-
-      const formattedPrograms = (programsData || []).map((program: any) => ({
-        ...program,
-        user_email: profilesMap.get(program.assigned_to) || "Tundmatu kasutaja",
-        template_title: program.templates?.title || "Mall kustutatud",
-      }));
-
-      // Load all users for dropdown
-      const { data: usersData, error: usersError } = await supabase.rpc("get_all_users");
-
-      if (usersError) {
-        console.error("Users list error:", usersError);
-        throw usersError;
-      }
-
-      console.log("Setting programs:", formattedPrograms);
-      setPrograms(formattedPrograms);
-      setTemplates(templatesData || []);
-      setUsers(usersData || []);
-
-      // Calculate accurate stats
-      const activePrograms = formattedPrograms.filter(p => p.is_active !== false);
-      const totalPrograms = formattedPrograms.length;
-      
-      // Count unique clients with active programs only
-      const activeClients = new Set(activePrograms.map(p => p.assigned_to)).size;
-
-      // Load completed sessions count for active programs only
-      const activeProgramIds = activePrograms.map(p => p.id);
-      let completedSessions = 0;
-      
-      if (activeProgramIds.length > 0) {
-        const { count: completedCount, error: sessionsError } = await supabase
-          .from("workout_sessions")
-          .select("id", { count: "exact" })
-          .in("client_program_id", activeProgramIds)
-          .not("ended_at", "is", null);
-
-        if (sessionsError) {
-          console.error("Sessions count error:", sessionsError);
-        } else {
-          completedSessions = completedCount || 0;
-        }
-      }
-
-      setStats({
-        totalPrograms,
-        activePrograms: activePrograms.length,
-        totalClients: activeClients,
-        completedSessions,
-      });
-
+      setPrograms(programsData);
+      setTemplates(templatesData);
+      setUsers(usersData);
+      setStats(statsData);
 
     } catch (error: unknown) {
       console.error("Error loading data:", error);

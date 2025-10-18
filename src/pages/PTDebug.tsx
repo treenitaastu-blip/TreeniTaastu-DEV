@@ -67,85 +67,85 @@ export default function PTDebug() {
         });
       } catch (error) {
         console.error("Debug load error:", error);
-        setDebugData({ error: (error as Error).message || String(error) });
       } finally {
         setLoading(false);
       }
     };
 
     loadDebugInfo();
-  }, [user, access]);
+  }, [user]);
 
   if (loading) {
-    return <div className="p-6">Loading debug info...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+        <div className="max-w-4xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>PT Debug - Loading...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Loading debug information...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">PT System Debug</h1>
-      
-      <div className="grid gap-6 md:grid-cols-2">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+      <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Access Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div>Loading: <Badge variant={access.loading ? "destructive" : "default"}>{access.loading.toString()}</Badge></div>
-            <div>Admin: <Badge variant={access.isAdmin ? "default" : "secondary"}>{access.isAdmin.toString()}</Badge></div>
-            <div>Can PT: <Badge variant={access.canPT ? "default" : "secondary"}>{access.canPT.toString()}</Badge></div>
-            <div>Can Static: <Badge variant={access.canStatic ? "default" : "secondary"}>{access.canStatic.toString()}</Badge></div>
-            <div>Reason: {access.reason}</div>
-            {access.error && <div className="text-red-500">Error: {access.error}</div>}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Programs ({debugData?.programs?.length || 0})</CardTitle>
+            <CardTitle>PT System Debug Information</CardTitle>
           </CardHeader>
           <CardContent>
-            {debugData?.programs?.map((p: any) => (
-              <div key={p.id} className="border-b pb-2 mb-2">
-                <div className="font-semibold">{p.title_override || "Untitled"}</div>
-                <div className="text-sm text-muted-foreground">
-                  Status: {p.status} | Active: {p.is_active?.toString()} | Days: {p.client_days?.length || 0}
-                </div>
-                {p.client_days?.map((d: any) => (
-                  <div key={d.id} className="ml-4 text-xs">
-                    Day {d.day_order}: {d.title} ({d.client_items?.length || 0} exercises)
-                  </div>
-                ))}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2">User Information</h3>
+                <pre className="bg-muted p-3 rounded text-sm overflow-auto">
+                  {JSON.stringify(debugData?.user, null, 2)}
+                </pre>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Entitlements</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs overflow-auto">
-              {JSON.stringify(debugData?.entitlements, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Matrix</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs overflow-auto">
-              {JSON.stringify(debugData?.accessMatrix, null, 2)}
-            </pre>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Access Information</h3>
+                <pre className="bg-muted p-3 rounded text-sm overflow-auto">
+                  {JSON.stringify(debugData?.access, null, 2)}
+                </pre>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Programs ({debugData?.programs?.length || 0})</h3>
+                <pre className="bg-muted p-3 rounded text-sm overflow-auto">
+                  {JSON.stringify(debugData?.programs, null, 2)}
+                </pre>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Entitlements ({debugData?.entitlements?.length || 0})</h3>
+                <pre className="bg-muted p-3 rounded text-sm overflow-auto">
+                  {JSON.stringify(debugData?.entitlements, null, 2)}
+                </pre>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Access Matrix</h3>
+                <pre className="bg-muted p-3 rounded text-sm overflow-auto">
+                  {JSON.stringify(debugData?.accessMatrix, null, 2)}
+                </pre>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Profile</h3>
+                <pre className="bg-muted p-3 rounded text-sm overflow-auto">
+                  {JSON.stringify(debugData?.profile, null, 2)}
+                </pre>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      <Button onClick={() => window.location.reload()}>
-        Refresh Debug Data
-      </Button>
     </div>
   );
 }
