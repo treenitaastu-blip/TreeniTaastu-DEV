@@ -65,7 +65,7 @@ export default function DayTile({ day, onClick, className = "" }: DayTileProps) 
       return "Nädalavahetus";
     }
     if (day.isUnlocked && !day.isCompleted) {
-      return "Mitte tehtud";
+      return "Tegemata";
     }
     return "Lukustatud";
   };

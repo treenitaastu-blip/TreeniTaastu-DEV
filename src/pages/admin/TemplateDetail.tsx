@@ -15,6 +15,10 @@ type ItemRow  = Database["public"]["Tables"]["template_items"]["Row"];
 type ItemIns  = Database["public"]["Tables"]["template_items"]["Insert"];
 type ItemUpd  = Database["public"]["Tables"]["template_items"]["Update"];
 
+// Alternative exercise types
+type AlternativeRow = Database["public"]["Tables"]["template_alternatives"]["Row"];
+type AlternativeIns = Database["public"]["Tables"]["template_alternatives"]["Insert"];
+
 /** ----- Small helpers ----- */
 const toErr = (e: unknown, fallback = "Tundmatu viga") =>
   e && typeof e === "object" && "message" in e && typeof (e as any).message === "string"
@@ -55,6 +59,34 @@ const strOrUndef = (v: unknown) => {
   return result === null ? undefined : result;
 };
 
+// Helper function to process unilateral exercise input
+const processExerciseInput = (exercise: Partial<ItemRow>) => {
+  const { reps, is_unilateral, weight_kg } = exercise;
+
+  let reps_per_side: number | null = null;
+  let total_reps: number | null = null;
+  let display_reps: string = reps || "";
+
+  if (is_unilateral && reps) {
+    // For unilateral, extract the first number from reps (e.g., "8" from "8-12")
+    const repsNumber = parseInt(reps.match(/\d+/)?.[0] || '0');
+    reps_per_side = repsNumber;
+    total_reps = repsNumber * 2;
+    display_reps = `${repsNumber} mõlemal poolel`;
+  } else if (reps) {
+    // For regular exercises, keep the original reps string
+    const repsNumber = parseInt(reps.match(/\d+/)?.[0] || '0');
+    total_reps = repsNumber;
+  }
+
+  return {
+    ...exercise,
+    reps: display_reps,
+    reps_per_side,
+    total_reps,
+  };
+};
+
 export default function TemplateDetail() {
   const { id } = useParams<{ id: string }>(); // template id
   const navigate = useNavigate();
@@ -62,8 +94,9 @@ export default function TemplateDetail() {
   const [tpl, setTpl] = useState<Pick<TplRow, "id"|"title"|"goal"|"is_active"|"inserted_at"> | null>(null);
   const [days, setDays] = useState<Array<Pick<DayRow,"id"|"template_id"|"day_order"|"title"|"note"|"inserted_at">>>([]);
   const [itemsByDay, setItemsByDay] = useState<Record<string, Array<Pick<ItemRow,
-    "id"|"template_day_id"|"exercise_name"|"sets"|"reps"|"rest_seconds"|"seconds"|"weight_kg"|"coach_notes"|"order_in_day"|"video_url"|"inserted_at"
+    "id"|"template_day_id"|"exercise_name"|"sets"|"reps"|"rest_seconds"|"seconds"|"weight_kg"|"coach_notes"|"order_in_day"|"video_url"|"inserted_at"|"is_unilateral"|"reps_per_side"|"total_reps"
   >>>>({});
+  const [alternativesByItem, setAlternativesByItem] = useState<Record<string, AlternativeRow[]>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +143,7 @@ export default function TemplateDetail() {
           const { data: idata, error: ierr } = await supabase
             .from("template_items")
             .select(
-              "id, template_day_id, exercise_name, sets, reps, rest_seconds, seconds, weight_kg, coach_notes, order_in_day, video_url, inserted_at"
+              "id, template_day_id, exercise_name, sets, reps, rest_seconds, seconds, weight_kg, coach_notes, order_in_day, video_url, inserted_at, is_unilateral, reps_per_side, total_reps"
             )
             .in("template_day_id", dayIds)
             .order("order_in_day", { ascending: true });
@@ -121,8 +154,27 @@ export default function TemplateDetail() {
             (map[it.template_day_id] = map[it.template_day_id] || []).push(it);
           });
           setItemsByDay(map);
+
+          // 4) Load alternatives for all items
+          const itemIds = (idata as ItemRow[]).map(item => item.id);
+          if (itemIds.length > 0) {
+            const { data: altData, error: altErr } = await supabase
+              .from("template_alternatives")
+              .select("*")
+              .in("primary_exercise_id", itemIds)
+              .order("created_at", { ascending: true });
+            
+            if (!altErr && altData) {
+              const altMap: Record<string, AlternativeRow[]> = {};
+              altData.forEach((alt) => {
+                (altMap[alt.primary_exercise_id] = altMap[alt.primary_exercise_id] || []).push(alt);
+              });
+              setAlternativesByItem(altMap);
+            }
+          }
         } else {
           setItemsByDay({});
+          setAlternativesByItem({});
         }
       } catch (e) {
         setError(toErr(e, "Viga andmete laadimisel."));
@@ -137,7 +189,7 @@ export default function TemplateDetail() {
     const { data, error } = await supabase
       .from("template_items")
       .select(
-        "id, template_day_id, exercise_name, sets, reps, rest_seconds, seconds, weight_kg, coach_notes, order_in_day, video_url, inserted_at"
+        "id, template_day_id, exercise_name, sets, reps, rest_seconds, seconds, weight_kg, coach_notes, order_in_day, video_url, inserted_at, is_unilateral, reps_per_side, total_reps"
       )
       .eq("template_day_id", templateDayId)
       .order("order_in_day", { ascending: true });
@@ -146,6 +198,26 @@ export default function TemplateDetail() {
       return;
     }
     setItemsByDay((prev) => ({ ...prev, [templateDayId]: (data ?? []) as ItemRow[] }));
+
+    // Also refresh alternatives for this day's items
+    const itemIds = (data ?? []).map(item => item.id);
+    if (itemIds.length > 0) {
+      const { data: altData, error: altErr } = await supabase
+        .from("template_alternatives")
+        .select("*")
+        .in("primary_exercise_id", itemIds)
+        .order("created_at", { ascending: true });
+      
+      if (!altErr && altData) {
+        setAlternativesByItem((prev) => {
+          const newMap = { ...prev };
+          itemIds.forEach(itemId => {
+            newMap[itemId] = altData.filter(alt => alt.primary_exercise_id === itemId);
+          });
+          return newMap;
+        });
+      }
+    }
   };
 
   /** --------- Days: CRUD + reorder --------- */
@@ -270,20 +342,122 @@ export default function TemplateDetail() {
     }
   };
 
+  /** --------- Alternatives: CRUD --------- */
+  const addAlternative = async (itemId: string, alternative: Partial<AlternativeIns>) => {
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const ins: AlternativeIns = {
+        primary_exercise_id: itemId,
+        alternative_name: alternative.alternative_name || "",
+        alternative_description: alternative.alternative_description || null,
+        alternative_video_url: alternative.alternative_video_url || null,
+        difficulty_level: alternative.difficulty_level || null,
+        equipment_required: alternative.equipment_required || null,
+        muscle_groups: alternative.muscle_groups || null,
+      };
+
+      const { data, error } = await supabase
+        .from("template_alternatives")
+        .insert(ins)
+        .select("*")
+        .single();
+      if (error) throw error;
+
+      setAlternativesByItem((prev) => ({
+        ...prev,
+        [itemId]: [...(prev[itemId] || []), data as AlternativeRow],
+      }));
+      setNotice("Alternatiiv lisatud.");
+    } catch (e) {
+      setError(toErr(e, "Alternatiivi lisamine ebaõnnestus."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateAlternative = async (altId: string, patch: Partial<AlternativeRow>) => {
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const upd = {
+        alternative_name: patch.alternative_name !== undefined ? strOrUndef(patch.alternative_name) : undefined,
+        alternative_description: patch.alternative_description !== undefined ? strOrUndef(patch.alternative_description) : undefined,
+        alternative_video_url: patch.alternative_video_url !== undefined ? strOrUndef(patch.alternative_video_url) : undefined,
+        difficulty_level: patch.difficulty_level !== undefined ? strOrUndef(patch.difficulty_level) : undefined,
+        equipment_required: patch.equipment_required !== undefined ? patch.equipment_required : undefined,
+        muscle_groups: patch.muscle_groups !== undefined ? patch.muscle_groups : undefined,
+      };
+
+      const { error } = await supabase.from("template_alternatives").update(upd).eq("id", altId);
+      if (error) throw error;
+
+      // Update local state
+      setAlternativesByItem((prev) => {
+        const newMap = { ...prev };
+        Object.keys(newMap).forEach((itemId) => {
+          newMap[itemId] = newMap[itemId].map((alt) =>
+            alt.id === altId ? { ...alt, ...patch } : alt
+          );
+        });
+        return newMap;
+      });
+      setNotice("Alternatiiv uuendatud.");
+    } catch (e) {
+      setError(toErr(e, "Alternatiivi uuendamine ebaõnnestus."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteAlternative = async (altId: string) => {
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const { error } = await supabase.from("template_alternatives").delete().eq("id", altId);
+      if (error) throw error;
+
+      // Update local state
+      setAlternativesByItem((prev) => {
+        const newMap = { ...prev };
+        Object.keys(newMap).forEach((itemId) => {
+          newMap[itemId] = newMap[itemId].filter((alt) => alt.id !== altId);
+        });
+        return newMap;
+      });
+      setNotice("Alternatiiv kustutatud.");
+    } catch (e) {
+      setError(toErr(e, "Alternatiivi kustutamine ebaõnnestus."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   /** --------- Items: CRUD + reorder --------- */
   const addItem = async (dayId: UUID) => {
     const base = newItem[dayId] || {};
 
+    // Process unilateral exercise input if needed
+    const processedBase = (base.reps !== undefined || base.is_unilateral !== undefined) 
+      ? processExerciseInput(base) 
+      : base;
+
     const ins: ItemIns = {
       template_day_id: dayId,
-      exercise_name: strOrNull(base.exercise_name) ?? "Uus harjutus",
-      sets: intOrUndef(base.sets as any) ?? 1,
-      reps: strOrNull(base.reps) ?? "8-12",
-      rest_seconds: intOrUndef(base.rest_seconds as any),
-      seconds: intOrUndef(base.seconds as any),
-      weight_kg: floatOrUndef(base.weight_kg as any),
-      coach_notes: strOrUndef(base.coach_notes),
-      video_url: strOrUndef(base.video_url),
+      exercise_name: strOrNull(processedBase.exercise_name) ?? "Uus harjutus",
+      sets: intOrUndef(processedBase.sets as any) ?? 1,
+      reps: strOrNull(processedBase.reps) ?? "8-12",
+      rest_seconds: intOrUndef(processedBase.rest_seconds as any),
+      seconds: intOrUndef(processedBase.seconds as any),
+      weight_kg: floatOrUndef(processedBase.weight_kg as any),
+      coach_notes: strOrUndef(processedBase.coach_notes),
+      video_url: strOrUndef(processedBase.video_url),
+      is_unilateral: processedBase.is_unilateral || false,
+      reps_per_side: processedBase.reps_per_side || null,
+      total_reps: processedBase.total_reps || null,
       // order_in_day is NOT in Insert type if DB defaults it; calculate manually if needed
       order_in_day: 1, // will be overwritten below
     };
@@ -321,16 +495,24 @@ export default function TemplateDetail() {
     setError(null);
     setNotice(null);
     try {
+      // Process unilateral exercise input if needed
+      const processedPatch = (patch.reps !== undefined || patch.is_unilateral !== undefined) 
+        ? processExerciseInput(patch) 
+        : patch;
+
       const upd: ItemUpd = {
-        exercise_name: patch.exercise_name !== undefined ? strOrUndef(patch.exercise_name) : undefined,
-        sets:          patch.sets          !== undefined ? intOrUndef(patch.sets as any) : undefined,
-        reps:          patch.reps          !== undefined ? strOrUndef(patch.reps) : undefined,
-        rest_seconds:  patch.rest_seconds  !== undefined ? intOrUndef(patch.rest_seconds as any) : undefined,
-        seconds:       patch.seconds       !== undefined ? intOrUndef(patch.seconds as any) : undefined,
-        weight_kg:     patch.weight_kg     !== undefined ? floatOrUndef(patch.weight_kg as any) : undefined,
-        coach_notes:   patch.coach_notes   !== undefined ? strOrUndef(patch.coach_notes) : undefined,
-        video_url:     patch.video_url     !== undefined ? strOrUndef(patch.video_url) : undefined,
-        order_in_day:  patch.order_in_day  as number | undefined, // rarely changed here
+        exercise_name: processedPatch.exercise_name !== undefined ? strOrUndef(processedPatch.exercise_name) : undefined,
+        sets:          processedPatch.sets          !== undefined ? intOrUndef(processedPatch.sets as any) : undefined,
+        reps:          processedPatch.reps          !== undefined ? strOrUndef(processedPatch.reps) : undefined,
+        rest_seconds:  processedPatch.rest_seconds  !== undefined ? intOrUndef(processedPatch.rest_seconds as any) : undefined,
+        seconds:       processedPatch.seconds       !== undefined ? intOrUndef(processedPatch.seconds as any) : undefined,
+        weight_kg:     processedPatch.weight_kg     !== undefined ? floatOrUndef(processedPatch.weight_kg as any) : undefined,
+        coach_notes:   processedPatch.coach_notes   !== undefined ? strOrUndef(processedPatch.coach_notes) : undefined,
+        video_url:     processedPatch.video_url     !== undefined ? strOrUndef(processedPatch.video_url) : undefined,
+        order_in_day:  processedPatch.order_in_day  as number | undefined, // rarely changed here
+        is_unilateral: processedPatch.is_unilateral !== undefined ? processedPatch.is_unilateral : undefined,
+        reps_per_side: processedPatch.reps_per_side !== undefined ? processedPatch.reps_per_side : undefined,
+        total_reps:    processedPatch.total_reps    !== undefined ? processedPatch.total_reps : undefined,
       };
 
       const { error } = await supabase.from("template_items").update(upd).eq("id", itemId);
@@ -621,7 +803,9 @@ export default function TemplateDetail() {
                             />
                           </div>
                           <div className="sm:col-span-1">
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Kordused</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Kordused {it.is_unilateral ? "(mõlemal poolel)" : ""}
+                            </label>
                             <input
                               className="w-full rounded-md border px-3 py-2 text-sm"
                               value={it.reps ?? ""}
@@ -633,8 +817,13 @@ export default function TemplateDetail() {
                                   ),
                                 }))
                               }
-                              placeholder="8-12"
+                              placeholder={it.is_unilateral ? "8" : "8-12"}
                             />
+                            {it.is_unilateral && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Sisesta ainult number (nt. 8), süsteem näitab "8 mõlemal poolel"
+                              </p>
+                            )}
                           </div>
                           <div className="sm:col-span-1">
                             <label className="block text-xs font-medium text-gray-600 mb-1">Paus (s)</label>
@@ -769,6 +958,28 @@ export default function TemplateDetail() {
                               })()}
                             </button>
                           </div>
+                          <div className="sm:col-span-1">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Ühepoolne</label>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`unilateral-${it.id}`}
+                                checked={it.is_unilateral || false}
+                                onChange={(e) =>
+                                  setItemsByDay((prev) => ({
+                                    ...prev,
+                                    [day.id]: (prev[day.id] || []).map((row) =>
+                                      row.id === it.id ? { ...row, is_unilateral: e.target.checked } : row
+                                    ),
+                                  }))
+                                }
+                                className="rounded border-gray-300"
+                              />
+                              <label htmlFor={`unilateral-${it.id}`} className="text-xs text-gray-600">
+                                Ühepoolne
+                              </label>
+                            </div>
+                          </div>
                             <input
                               className="sm:col-span-3 rounded-md border px-3 py-2 text-sm"
                               value={it.coach_notes ?? ""}
@@ -807,6 +1018,9 @@ export default function TemplateDetail() {
                                     weight_kg: it.weight_kg,
                                     coach_notes: it.coach_notes,
                                     video_url: it.video_url,
+                                    is_unilateral: it.is_unilateral,
+                                    reps_per_side: it.reps_per_side,
+                                    total_reps: it.total_reps,
                                   })
                                 }
                                 className="rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
@@ -840,6 +1054,100 @@ export default function TemplateDetail() {
                               <div className="text-xs text-gray-500">Jrk: {it.order_in_day}</div>
                             </div>
                           </div>
+
+                          {/* Alternatives Section */}
+                        <div className="mt-4 border-t pt-4">
+                          <div className="mb-2 flex items-center justify-between">
+                            <h4 className="text-sm font-medium text-gray-700">Alternatiivsed harjutused</h4>
+                            <button
+                              onClick={() => {
+                                const newAlt = {
+                                  alternative_name: "",
+                                  alternative_description: "",
+                                  alternative_video_url: "",
+                                  difficulty_level: "",
+                                  equipment_required: null,
+                                  muscle_groups: null,
+                                };
+                                addAlternative(it.id, newAlt);
+                              }}
+                              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                              disabled={saving}
+                            >
+                              + Lisa alternatiiv
+                            </button>
+                          </div>
+                          
+                          {alternativesByItem[it.id] && alternativesByItem[it.id].length > 0 ? (
+                            <div className="space-y-2">
+                              {alternativesByItem[it.id].map((alt, altIdx) => (
+                                <div key={alt.id} className="rounded-lg border bg-gray-50 p-3">
+                                  <div className="grid gap-2 sm:grid-cols-12">
+                                    <div className="sm:col-span-3">
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Nimi</label>
+                                      <input
+                                        className="w-full rounded-md border px-3 py-2 text-sm"
+                                        value={alt.alternative_name || ""}
+                                        onChange={(e) =>
+                                          updateAlternative(alt.id, { alternative_name: e.target.value })
+                                        }
+                                        placeholder="Alternatiivne harjutus"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-3">
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Kirjeldus</label>
+                                      <input
+                                        className="w-full rounded-md border px-3 py-2 text-sm"
+                                        value={alt.alternative_description || ""}
+                                        onChange={(e) =>
+                                          updateAlternative(alt.id, { alternative_description: e.target.value })
+                                        }
+                                        placeholder="Lühike kirjeldus"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-3">
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Video URL</label>
+                                      <input
+                                        className="w-full rounded-md border px-3 py-2 text-sm"
+                                        value={alt.alternative_video_url || ""}
+                                        onChange={(e) =>
+                                          updateAlternative(alt.id, { alternative_video_url: e.target.value })
+                                        }
+                                        placeholder="https://..."
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Raskus</label>
+                                      <select
+                                        className="w-full rounded-md border px-3 py-2 text-sm"
+                                        value={alt.difficulty_level || ""}
+                                        onChange={(e) =>
+                                          updateAlternative(alt.id, { difficulty_level: e.target.value })
+                                        }
+                                      >
+                                        <option value="">Vali raskus</option>
+                                        <option value="beginner">Algaja</option>
+                                        <option value="intermediate">Keskmine</option>
+                                        <option value="advanced">Edasijõudnud</option>
+                                      </select>
+                                    </div>
+                                    <div className="sm:col-span-1 flex items-end">
+                                      <button
+                                        onClick={() => deleteAlternative(alt.id)}
+                                        className="rounded-md border border-red-300 px-3 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-60"
+                                        disabled={saving}
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-500 italic">Pole alternatiivseid harjutusi</div>
+                          )}
+                        </div>
                         </div>
                       );
                     })}
@@ -1022,6 +1330,26 @@ export default function TemplateDetail() {
                         return "→ Kaal";
                       })()}
                     </button>
+                  </div>
+                  <div className="sm:col-span-1">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Ühepoolne</label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`new-unilateral-${day.id}`}
+                        checked={newItem[day.id]?.is_unilateral || false}
+                        onChange={(e) =>
+                          setNewItem((prev) => ({
+                            ...prev,
+                            [day.id]: { ...(prev[day.id] || {}), is_unilateral: e.target.checked },
+                          }))
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <label htmlFor={`new-unilateral-${day.id}`} className="text-xs text-gray-600">
+                        Ühepoolne
+                      </label>
+                    </div>
                   </div>
                   <input
                     className="sm:col-span-3 rounded-md border px-3 py-2 text-sm"

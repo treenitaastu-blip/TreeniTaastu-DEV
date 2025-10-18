@@ -259,7 +259,7 @@ export default function EnhancedProgramCreator({
       const repsNumber = parseInt(reps.match(/\d+/)?.[0] || '0');
       reps_per_side = repsNumber;
       total_reps = repsNumber * 2;
-      display_reps = `${repsNumber} per side`;
+      display_reps = `${repsNumber} mõlemal poolel`;
     } else {
       // For regular exercises, keep the original reps string
       const repsNumber = parseInt(reps.match(/\d+/)?.[0] || '0');
@@ -774,7 +774,7 @@ export default function EnhancedProgramCreator({
                               </div>
                               <div className="sm:col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-medium mb-1">
-                                  Kordused {exercise.is_unilateral ? "(per side)" : ""}
+                                  Kordused {exercise.is_unilateral ? "(mõlemal poolel)" : ""}
                                 </label>
                                 <input
                                   type="text"
@@ -785,7 +785,7 @@ export default function EnhancedProgramCreator({
                                 />
                                 {exercise.is_unilateral && (
                                   <p className="text-xs text-muted-foreground mt-1">
-                                    Sisesta ainult number (nt. 8), süsteem näitab "8 per side"
+                                    Sisesta ainult number (nt. 8), süsteem näitab "8 mõlemal poolel"
                                   </p>
                                 )}
                               </div>
@@ -846,7 +846,7 @@ export default function EnhancedProgramCreator({
                                 <div className="space-y-1 text-sm">
                                   <p><strong>Harjutus:</strong> {exercise.exercise_name}</p>
                                   <p><strong>Seeriat:</strong> {exercise.sets}</p>
-                                  <p><strong>Kordusi:</strong> {exercise.is_unilateral ? `${exercise.reps} per side` : exercise.reps}</p>
+                                  <p><strong>Kordusi:</strong> {exercise.is_unilateral ? `${exercise.reps} mõlemal poolel` : exercise.reps}</p>
                                   <p><strong>Kaal:</strong> {exercise.weight_kg === 0 || exercise.weight_kg === null ? "ilma lisaraskuseta" : `${exercise.weight_kg}kg`}</p>
                                   {exercise.is_unilateral && exercise.total_reps && (
                                     <p><strong>Kokku kordusi:</strong> {exercise.total_reps}</p>

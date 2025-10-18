@@ -9,7 +9,7 @@
     "evidenceStrength": "kõrge",
     "updatedAt": "2025-01-04T00:00:00Z",
     "tldr": [
-      "20–30 g kvaliteetset valku 2–3 korda päevas",
+      "20–30 g kvaliteetset valku päevas 2–3 korda",
       "Kaasaegsed täiskasvanud saavad liiga vähe valku",
       "Lihasmass väheneb peale 30. eluaastat 3–8% kümnendi kohta"
     ],
@@ -28,7 +28,7 @@
       },
       {
         "heading": "Millal pöörduda spetsialisti poole?",
-        "text": "Kui kaalulangus jätkub vaatamata piisavale valgutarbele või tekivad seedimisprobleemid, konsulteeri arstiga. Neerude või maksa haiguse korral vaja arsti nõuannet valgu koguse kohta."
+        "text": "Kui kaalulangus jätkub vaatamata piisavale valgutarbele või tekivad seedimisprobleemid, konsulteeri arstiga. Neerude või maksa haiguse korral on vaja arsti nõuannet valgu koguse kohta."
       }
     ],
     "references": [
@@ -59,7 +59,7 @@
     "evidenceStrength": "kõrge",
     "updatedAt": "2025-01-04T00:00:00Z",
     "tldr": [
-      "10 minutit kerget liikumist 2–3 tundi enne magamaminekut",
+      "10 minutit kerget liikumist 2–3 tunni enne magamaminekut",
       "Vähendab südamepekslemist ja pingeid",
       "Liiga intensiivne treening õhtul häirib und"
     ],
@@ -120,7 +120,7 @@
       },
       {
         "heading": "Mida uuringud ütlevad?",
-        "text": "Sinise valguse blokeerimine 1–2 tundi enne magamaminekut suurendab melatoniini taset 58% võrra. Isegi madalal eredusel ekraanid mõjutavad aju sisemist kella ja une-ärkveloleku tsüklit."
+        "text": "Sinise valguse blokeerimine 1–2 tunni enne magamaminekut suurendab melatoniini taset 58% võrra. Isegi madalal eredusel ekraanid mõjutavad aju sisemist kella ja une-ärkveloleku tsüklit."
       },
       {
         "heading": "Proovi täna",
@@ -227,7 +227,7 @@
       },
       {
         "heading": "Millal pöörduda spetsialisti poole?",
-        "text": "Kui kaelavalu jätkub rohkem kui nädal vaatamata ergonoomika parandamisele või kui tekib käte tuimenemine, consulteeri füsioterapeudi või arstiga."
+        "text": "Kui kaelavalu jätkub rohkem kui nädal vaatamata ergonoomika parandamisele või kui tekib käte tuimenemine, konsulteeri füsioterapeudi või arstiga."
       }
     ],
     "references": [
@@ -257,7 +257,7 @@
     "evidenceStrength": "kõrge",
     "updatedAt": "2025-01-04T00:00:00Z",
     "tldr": [
-      "Õrnad liigutused aitavad paranemist",
+      "Õrnad liigutused aitavad paranemisele",
       "Täielik liikumatus halvendab olukorda",
       "Valu korral ära tee järske liigutusi"
     ],
@@ -321,11 +321,11 @@
       },
       {
         "heading": "Proovi täna", 
-        "text": "Kõnni iga 2 tunni järel 5-10 minutit. Võid kõndida kontoris, trepis või väljas. Keskenduda sirge hoiakule ja rahulikule tempole. Ära sunni, kui on valu."
+        "text": "Kõnni iga 2 tunni järel 5-10 minutit. Võid kõndida kontoris, trepis või väljas. Keskendu sirge hoiakule ja rahulikule tempole. Ära sunni, kui on valu."
       },
       {
         "heading": "Millal pöörduda spetsialisti poole?",
-        "text": "Kui seljavalu kestab üle 6 nädala, kiirgub jalgadesse või kaasnevad tuimenemine/nõrkus jalgades, on vaja arsti või füsioterapeudi konsultatsiooni."
+        "text": "Kui seljavalu kestab üle 6 nädala, kiirgub jalgadesse või kaasnevad tuimenemine ja nõrkus jalgades, on vaja arsti või füsioterapeudi konsultatsiooni."
       }
     ],
     "references": [
@@ -349,7 +349,7 @@
     "slug": "kaks-lihtsat-jouharjutust-kodus",
     "title": "Kaks lihtsat jõuharjutust kodus",
     "summary": "Kükk ja lükked säilitavad lihasmassi ilma jõusaalita.",
-    "category": "Lihasmassi vähenemine",
+    "category": "Jõutreening",
     "format": "Steps",
     "readTimeMinutes": 3, 
     "evidenceStrength": "kõrge",

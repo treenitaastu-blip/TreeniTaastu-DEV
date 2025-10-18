@@ -95,7 +95,7 @@ export default function ModernExerciseCard({
 
   const getRepsDisplay = () => {
     if (exercise.is_unilateral && exercise.reps_per_side) {
-      return `${exercise.reps_per_side} per side`;
+      return `${exercise.reps_per_side} mõlemal poolel`;
     }
     return exercise.reps;
   };

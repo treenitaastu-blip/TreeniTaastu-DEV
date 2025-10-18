@@ -42,7 +42,7 @@ export default function Programm() {
     if (!day || !day.isUnlocked) {
       toast({
         title: "Päev pole saadaval",
-        description: "See päev on veel lukustatud või pole saadaval",
+        description: "See päev on veel lukustatud või pole veel saadaval",
         variant: "destructive",
       });
       return;
@@ -171,7 +171,7 @@ export default function Programm() {
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold">1</div>
                 <div>
-                  <p className="font-medium">Uued päevad avaneb</p>
+                  <p className="font-medium">Uued päevad avanevad</p>
                   <p className="text-muted-foreground">
                     Igal nädalapäeval kell 15:00 avaneb uus treeningpäev
                   </p>

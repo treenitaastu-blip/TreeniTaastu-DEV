@@ -79,7 +79,7 @@ export default function CalendarGrid({
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-primary/20 border-2 border-primary"></div>
-              <span>Saadaval</span>
+              <span>Avatud</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-success border-2 border-success"></div>
