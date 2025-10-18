@@ -19,6 +19,8 @@ export default function MindfulnessPage() {
   const [timeLeft, setTimeLeft] = useState(5000); // 5 seconds in ms
   const [prepBreaths, setPrepBreaths] = useState(0);
   const [showInstructions, setShowInstructions] = useState(true);
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [countdownNumber, setCountdownNumber] = useState(3);
   
   // Check if coming from calendar
   const fromCalendar = location.state?.fromCalendar;
@@ -289,12 +291,26 @@ export default function MindfulnessPage() {
     }
     
     setShowInstructions(false);
-    setIsActive(true);
-    setIsCompleted(false);
-    setCurrentCycle(0);
-    setPhase('prep');
-    setPrepBreaths(0);
-    setTimeLeft(cycleDuration);
+    setShowCountdown(true);
+    setCountdownNumber(3);
+    
+    // Start countdown
+    const countdownInterval = setInterval(() => {
+      setCountdownNumber(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          setShowCountdown(false);
+          setIsActive(true);
+          setIsCompleted(false);
+          setCurrentCycle(0);
+          setPhase('prep');
+          setPrepBreaths(0);
+          setTimeLeft(cycleDuration);
+          return 3;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     
     // Start first breath sound after a longer delay for iOS
     const delay = isIOS() ? 1000 : 500;
@@ -312,6 +328,8 @@ export default function MindfulnessPage() {
     setPrepBreaths(0);
     setTimeLeft(cycleDuration);
     setShowInstructions(true);
+    setShowCountdown(false);
+    setCountdownNumber(3);
   };
 
   const getCircleScale = () => {
@@ -404,8 +422,44 @@ export default function MindfulnessPage() {
             </div>
           )}
 
+          {/* Countdown Display */}
+          {showCountdown && (
+            <div className="flex flex-col items-center justify-center py-16 space-y-6">
+              <div className="text-6xl font-bold text-primary animate-pulse">
+                {countdownNumber}
+              </div>
+              <div className="text-lg text-muted-foreground">
+                Hingamisharjutus algab...
+              </div>
+              {!audioSupported && (
+                <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 max-w-md">
+                  <div className="flex items-center gap-2 text-yellow-800">
+                    <div className="w-2 h-2 bg-yellow-600 rounded-full animate-pulse"></div>
+                    <span className="font-medium">Lülita telefonist vaikimisrežiim välja</span>
+                  </div>
+                  <p className="text-sm text-yellow-700 mt-2">
+                    Et kuulda hingamise juhendamist, lülita telefonist vaikimisrežiim välja
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Silent Mode Indicator */}
+          {!showInstructions && !showCountdown && !isCompleted && audioSupported && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+              <div className="flex items-center gap-2 text-blue-800">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                <span className="font-medium">Vaikimisrežiim</span>
+              </div>
+              <p className="text-sm text-blue-700 mt-1">
+                Lülita telefonist vaikimisrežiim välja, et kuulda hingamise juhendamist
+              </p>
+            </div>
+          )}
+
           {/* Breathing Circle */}
-          {!showInstructions && (
+          {!showInstructions && !showCountdown && (
             <div className="flex justify-center items-center py-12">
               <div
                 className="relative transition-transform duration-[5000ms] ease-in-out"
@@ -439,7 +493,7 @@ export default function MindfulnessPage() {
           )}
 
           {/* Progress */}
-          {!isCompleted && !showInstructions && phase !== 'prep' && (
+          {!isCompleted && !showInstructions && !showCountdown && phase !== 'prep' && (
             <div className="space-y-3">
               <div className="text-center text-xl font-semibold">
                 Tsükkel {Math.min(currentCycle + 1, totalCycles)} / {totalCycles}
@@ -454,7 +508,7 @@ export default function MindfulnessPage() {
           )}
 
           {/* Preparation Progress */}
-          {!isCompleted && !showInstructions && phase === 'prep' && (
+          {!isCompleted && !showInstructions && !showCountdown && phase === 'prep' && (
             <div className="space-y-3">
               <div className="text-center text-xl font-semibold text-primary">
                 Ettevalmistus
@@ -493,14 +547,14 @@ export default function MindfulnessPage() {
               </Button>
             )}
             
-            {isActive && !showInstructions && (
+            {isActive && !showInstructions && !showCountdown && (
               <Button onClick={handleReset} variant="outline" size="lg" className="px-8">
                 <RotateCcw className="h-5 w-5 mr-2" />
                 Lõpeta
               </Button>
             )}
             
-            {(isCompleted || (!isActive && !showInstructions)) && (
+            {(isCompleted || (!isActive && !showInstructions && !showCountdown)) && (
               <div className="flex gap-3">
                 {fromCalendar && (
                   <Button 
@@ -520,7 +574,7 @@ export default function MindfulnessPage() {
           </div>
 
           {/* Instructions */}
-          {!showInstructions && !isCompleted && (
+          {!showInstructions && !showCountdown && !isCompleted && (
             <div className="text-center space-y-3 pt-2">
               <p className="text-base text-muted-foreground font-medium">Järgi ringi liikumist:</p>
               <div className="space-y-2 max-w-md mx-auto">
