@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSupportChat } from '@/hooks/useSupportChat';
+import { useSupportNotifications } from '@/hooks/useSupportNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,6 +24,7 @@ export function SupportChatWidget() {
   });
   const [newMessage, setNewMessage] = useState('');
   const { messages, loading, sending, sendMessage } = useSupportChat();
+  const { notification, markAsRead } = useSupportNotifications();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive - moved to top level to follow Rules of Hooks
@@ -30,6 +32,13 @@ export function SupportChatWidget() {
     if (!user || !messagesEndRef.current) return;
     messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages, user]);
+
+  // Mark messages as read when chat is opened
+  useEffect(() => {
+    if (isOpen && notification.hasUnreadAdminMessages) {
+      markAsRead();
+    }
+  }, [isOpen, notification.hasUnreadAdminMessages, markAsRead]);
 
   if (!user) {
     if (isAnnounced) {
@@ -103,16 +112,25 @@ export function SupportChatWidget() {
     <>
       {/* Chat Toggle Button */}
       {!isOpen && (
-        <Button
-          onClick={() => {
-            setIsOpen(true);
-            localStorage.setItem('supportChatOpen', 'true');
-          }}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 z-[100]"
-          size="icon"
-        >
-          <MessageCircle className="h-6 w-6" />
-        </Button>
+        <div className="fixed bottom-6 right-6 z-[100]">
+          <Button
+            onClick={() => {
+              setIsOpen(true);
+              localStorage.setItem('supportChatOpen', 'true');
+            }}
+            className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 relative"
+            size="icon"
+          >
+            <MessageCircle className="h-6 w-6" />
+            {notification.hasUnreadAdminMessages && (
+              <div className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-xs text-white font-bold">
+                  {notification.unreadCount > 9 ? '9+' : notification.unreadCount}
+                </span>
+              </div>
+            )}
+          </Button>
+        </div>
       )}
 
       {/* Chat Window */}
