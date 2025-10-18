@@ -10,7 +10,7 @@ import { UpgradePromptManager } from "@/components/subscription/UpgradePromptMan
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
-import { trackPageView, trackLoadTime, uxMetricsTracker } from "@/utils/uxMetricsTracker";
+// import { trackPageView, trackLoadTime, uxMetricsTracker } from "@/utils/uxMetricsTracker";
 import { useEffect } from "react";
 
 export default function App({ children }: { children?: React.ReactNode }) {
@@ -18,46 +18,46 @@ export default function App({ children }: { children?: React.ReactNode }) {
   const { subscribe } = useSubscription();
   const navigate = useNavigate();
   
-  // Track page load performance
-  useEffect(() => {
-    const startTime = performance.now();
+  // Track page load performance - DISABLED TEMPORARILY
+  // useEffect(() => {
+  //   const startTime = performance.now();
     
-    // Track page view
-    trackPageView(window.location.pathname, {
-      userId: user?.id,
-      additionalData: { 
-        userAgent: navigator.userAgent,
-        screenResolution: `${screen.width}x${screen.height}`,
-        deviceType: screen.width <= 768 ? 'mobile' : screen.width <= 1024 ? 'tablet' : 'desktop'
-      }
-    });
+  //   // Track page view
+  //   trackPageView(window.location.pathname, {
+  //     userId: user?.id,
+  //     additionalData: { 
+  //       userAgent: navigator.userAgent,
+  //       screenResolution: `${screen.width}x${screen.height}`,
+  //       deviceType: screen.width <= 768 ? 'mobile' : screen.width <= 1024 ? 'tablet' : 'desktop'
+  //     }
+  //   });
 
-    // Track load time when page is fully loaded
-    const handleLoad = () => {
-      const loadTime = performance.now() - startTime;
-      trackLoadTime(loadTime, window.location.pathname, {
-        userId: user?.id
-      });
-    };
+  //   // Track load time when page is fully loaded
+  //   const handleLoad = () => {
+  //     const loadTime = performance.now() - startTime;
+  //     trackLoadTime(loadTime, window.location.pathname, {
+  //       userId: user?.id
+  //     });
+  //   };
 
-    if (document.readyState === 'complete') {
-      handleLoad();
-    } else {
-      window.addEventListener('load', handleLoad);
-    }
+  //   if (document.readyState === 'complete') {
+  //     handleLoad();
+  //   } else {
+  //     window.addEventListener('load', handleLoad);
+  //   }
 
-    // Track session duration on page unload
-    const handleBeforeUnload = () => {
-      uxMetricsTracker.trackSessionDuration();
-    };
+  //   // Track session duration on page unload
+  //   const handleBeforeUnload = () => {
+  //     uxMetricsTracker.trackSessionDuration();
+  //   };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+  //   window.addEventListener('beforeunload', handleBeforeUnload);
 
-    return () => {
-      window.removeEventListener('load', handleLoad);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [user?.id]);
+  //   return () => {
+  //     window.removeEventListener('load', handleLoad);
+  //     window.removeEventListener('beforeunload', handleBeforeUnload);
+  //   };
+  // }, [user?.id]);
   
   const handleRefresh = async () => {
     // Reload the current page
