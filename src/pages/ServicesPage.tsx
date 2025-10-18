@@ -74,10 +74,22 @@ export default function ServicesPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 24px',
-            fontSize: '32px'
+            margin: '0 auto 24px'
           }}>
-            ✅
+            <div style={{
+              width: '32px',
+              height: '32px',
+              background: 'white',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: '#10b981'
+            }}>
+              ✓
+            </div>
           </div>
           <h2 style={{ 
             color: '#1f2937', 
@@ -131,22 +143,19 @@ export default function ServicesPage() {
       id: 'online-consultation',
       name: 'Online konsultatsioonid',
       price: '40€',
-      description: 'Individuaalne konsultatsioon videokõne kaudu',
-      icon: '💻'
+      description: 'Individuaalne konsultatsioon videokõne kaudu'
     },
     {
       id: 'personal-training-gym',
       name: '1:1 personaaltreening spordisaalis',
       price: '60€',
-      description: 'Individuaalne treening spordisaalis',
-      icon: '🏋️'
+      description: 'Individuaalne treening spordisaalis'
     },
     {
       id: 'training-plan-creation',
       name: 'Personaalse treeningplaani koostamine',
       price: '80€',
-      description: 'Individuaalne treeningplaan teie vajaduste järgi',
-      icon: '📋'
+      description: 'Individuaalne treeningplaan teie vajaduste järgi'
     }
   ];
 
@@ -169,38 +178,23 @@ export default function ServicesPage() {
       }}>
         {/* Header */}
         <div style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
           color: 'white',
           padding: window.innerWidth <= 768 ? '32px 24px' : '48px 40px',
-          textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden'
+          textAlign: 'center'
         }}>
-          <div style={{
-            position: 'absolute',
-            top: '-50%',
-            right: '-50%',
-            width: '200%',
-            height: '200%',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-            animation: 'float 6s ease-in-out infinite'
-          }} />
           <h1 style={{ 
             fontSize: window.innerWidth <= 768 ? '28px' : '36px', 
             marginBottom: '16px',
             fontWeight: '800',
-            letterSpacing: '-0.025em',
-            position: 'relative',
-            zIndex: 1
+            letterSpacing: '-0.025em'
           }}>
-            Meie teenused
+            Teenused
           </h1>
           <p style={{ 
             opacity: 0.95, 
             fontSize: window.innerWidth <= 768 ? '16px' : '18px',
-            fontWeight: '400',
-            position: 'relative',
-            zIndex: 1
+            fontWeight: '400'
           }}>
             Vali teenused, millest soovid rohkem teada saada
           </p>
@@ -218,7 +212,6 @@ export default function ServicesPage() {
               border: '1px solid #fca5a5',
               animation: 'shake 0.5s ease-in-out'
             }}>
-              <div style={{ fontSize: '20px', marginBottom: '8px' }}>⚠️</div>
               {error}
             </div>
           )}
@@ -302,7 +295,6 @@ export default function ServicesPage() {
                         fontSize: window.innerWidth <= 768 ? '16px' : '18px',
                         letterSpacing: '-0.025em'
                       }}>
-                        <span style={{ marginRight: '12px', fontSize: window.innerWidth <= 768 ? '20px' : '24px' }}>{service.icon}</span>
                         {service.name}
                       </div>
                       <div style={{ 
