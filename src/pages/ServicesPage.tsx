@@ -71,25 +71,13 @@ export default function ServicesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Add error boundary for debugging
-  const [error, setError] = useState<string | null>(null);
-
   const handleServiceToggle = (serviceId: string) => {
-    console.log('Toggling service:', serviceId);
-    console.log('Current selectedServices:', formData.selectedServices);
-    
-    setFormData(prev => {
-      const newSelectedServices = prev.selectedServices.includes(serviceId)
+    setFormData(prev => ({
+      ...prev,
+      selectedServices: prev.selectedServices.includes(serviceId)
         ? prev.selectedServices.filter(id => id !== serviceId)
-        : [...prev.selectedServices, serviceId];
-      
-      console.log('New selectedServices:', newSelectedServices);
-      
-      return {
-        ...prev,
-        selectedServices: newSelectedServices
-      };
-    });
+        : [...prev.selectedServices, serviceId]
+    }));
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
@@ -248,17 +236,6 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
             <p className="text-muted-foreground text-sm sm:text-base">
               Vali teenused, millest soovid rohkem teada saada
             </p>
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600 text-sm">{error}</p>
-                <button 
-                  onClick={() => setError(null)}
-                  className="mt-2 text-red-500 text-xs underline"
-                >
-                  Sulge
-                </button>
-              </div>
-            )}
           </CardHeader>
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
@@ -266,9 +243,7 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Vali teenused</Label>
                 <div className="grid gap-4">
-                  {serviceOptions.map((service) => {
-                    console.log('Rendering service:', service.id, service.name);
-                    return (
+                  {serviceOptions.map((service) => (
                     <Card 
                       key={service.id}
                       className={`cursor-pointer transition-all select-none ${
@@ -278,7 +253,6 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                       }`}
                       onClick={(e) => {
                         e.preventDefault();
-                        console.log('Card clicked for service:', service.id);
                         handleServiceToggle(service.id);
                       }}
                     >
@@ -319,8 +293,7 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                         </div>
                       </CardContent>
                     </Card>
-                    );
-                  })}
+                  ))}
                 </div>
               </div>
 
