@@ -88,15 +88,15 @@ export default function DayTile({ day, onClick, className = "" }: DayTileProps) 
   return (
     <Card 
       className={`transition-all duration-200 ${getTileStyles()} ${
-        isClickable ? 'hover:scale-105 hover:shadow-lg' : ''
+        isClickable ? 'hover:scale-105 hover:shadow-lg active:scale-95' : ''
       } ${className}`}
       onClick={isClickable ? onClick : undefined}
     >
-      <CardContent className="p-3 text-center min-h-[80px] flex flex-col justify-center">
+      <CardContent className="p-2 sm:p-3 text-center min-h-[70px] sm:min-h-[80px] flex flex-col justify-center">
         {/* Day Number and Icon */}
-        <div className="flex items-center justify-center gap-2 mb-2">
+        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
           {getIcon()}
-          <span className="font-bold text-lg">{day.dayNumber}</span>
+          <span className="font-bold text-base sm:text-lg">{day.dayNumber}</span>
         </div>
         
         {/* Status Text */}

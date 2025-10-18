@@ -107,11 +107,11 @@ export default function Programm() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl space-y-8">
+    <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-4xl space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-2xl md:text-3xl font-bold">Kontorikeha Treeningprogramm</h1>
-        <p className="text-muted-foreground">
+      <div className="text-center space-y-3 sm:space-y-4">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Kontorikeha Treeningprogramm</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           20-päevane treeningprogramm, mis avaneb päev-päevalt
         </p>
       </div>
@@ -126,9 +126,9 @@ export default function Programm() {
 
       {/* Quote Display Modal */}
       {selectedDay && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-md w-full">
-            <CardContent className="p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-50">
+          <Card className="max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <CardContent className="p-4 sm:p-6">
               <div className="space-y-4">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold">Päev {selectedDay}</h3>
@@ -164,10 +164,10 @@ export default function Programm() {
 
       {/* Instructions */}
       <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Kuidas programm töötab?</h3>
-            <div className="grid gap-4 text-sm">
+        <CardContent className="p-4 sm:p-6">
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold">Kuidas programm töötab?</h3>
+            <div className="grid gap-3 sm:gap-4 text-xs sm:text-sm">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold">1</div>
                 <div>
