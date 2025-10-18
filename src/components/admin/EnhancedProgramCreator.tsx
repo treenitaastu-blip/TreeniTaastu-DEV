@@ -554,7 +554,7 @@ export default function EnhancedProgramCreator({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="w-[95vw] h-[95vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto p-1 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg"
+        className="w-[98vw] h-[98vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[98vh] overflow-y-auto p-0 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg"
         aria-describedby="program-creator-description"
       >
         <DialogHeader>
@@ -567,13 +567,13 @@ export default function EnhancedProgramCreator({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 sm:space-y-6">
+        <div className="space-y-2 sm:space-y-6 p-2 sm:p-0">
           {/* Program Settings */}
-          <Card className="p-2 sm:p-4">
-            <CardHeader className="p-2 sm:p-4">
-              <CardTitle className="text-sm sm:text-lg">Programmi seaded</CardTitle>
+          <Card className="p-1 sm:p-4">
+            <CardHeader className="p-1 sm:p-4">
+              <CardTitle className="text-xs sm:text-lg">Programmi seaded</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4 p-2 sm:p-4">
+            <CardContent className="space-y-2 sm:space-y-4 p-1 sm:p-4">
               <div className="grid grid-cols-1 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2">
@@ -589,7 +589,7 @@ export default function EnhancedProgramCreator({
                     }}
                     disabled={loadingClients}
                   >
-                    <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
+                    <SelectTrigger className="w-full text-xs sm:text-sm h-7 sm:h-10">
                       <SelectValue placeholder={loadingClients ? "Laen kliente..." : "Vali klient dropdownist"} />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
@@ -613,7 +613,7 @@ export default function EnhancedProgramCreator({
                     value={programTitle}
                     onChange={(e) => setProgramTitle(e.target.value)}
                     placeholder="nt. Jõuprogramm algajale"
-                    className="w-full rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm h-8 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-2 py-1 text-xs sm:text-sm h-7 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
               </div>
@@ -628,7 +628,7 @@ export default function EnhancedProgramCreator({
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm h-8 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-2 py-1 text-xs sm:text-sm h-7 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
                 <div>
@@ -639,7 +639,7 @@ export default function EnhancedProgramCreator({
                   <select
                     value={durationWeeks}
                     onChange={(e) => setDurationWeeks(Number(e.target.value))}
-                    className="w-full rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm h-8 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-2 py-1 text-xs sm:text-sm h-7 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   >
                     {[2, 4, 6, 8, 10, 12, 16, 20, 24].map(weeks => (
                       <option key={weeks} value={weeks}>
@@ -656,7 +656,7 @@ export default function EnhancedProgramCreator({
                   <select
                     value={trainingDaysPerWeek}
                     onChange={(e) => setTrainingDaysPerWeek(Number(e.target.value))}
-                    className="w-full rounded-lg border border-input bg-background px-2 py-2 text-xs sm:text-sm h-8 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="w-full rounded-lg border border-input bg-background px-2 py-1 text-xs sm:text-sm h-7 sm:h-10 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   >
                     {[1, 2, 3, 4, 5].map(days => (
                       <option key={days} value={days}>
