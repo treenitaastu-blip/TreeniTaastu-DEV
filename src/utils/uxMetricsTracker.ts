@@ -5,6 +5,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+// DISABLE UX METRICS TRACKING TEMPORARILY
+const UX_METRICS_ENABLED = false;
+
 // UX metric categories
 export enum UXMetricCategory {
   ENGAGEMENT = 'engagement',
@@ -146,6 +149,8 @@ class UXMetricsTracker {
     unit?: string,
     context: UXMetricContext = {}
   ): void {
+    // DISABLE UX METRICS TRACKING TEMPORARILY
+    if (!UX_METRICS_ENABLED) return;
     const metricEntry: UXMetricEntry = {
       user_id: context.userId,
       session_id: this.sessionId,
@@ -179,6 +184,8 @@ class UXMetricsTracker {
    * Track page view
    */
   public trackPageView(pageUrl: string, context?: Partial<UXMetricContext>): void {
+    // DISABLE UX METRICS TRACKING TEMPORARILY
+    if (!UX_METRICS_ENABLED) return;
     this.trackMetric(
       UXMetricCategory.ENGAGEMENT,
       UXMetricType.PAGE_VIEW,
@@ -218,6 +225,8 @@ class UXMetricsTracker {
    * Track load time
    */
   public trackLoadTime(loadTime: number, pageUrl?: string, context?: Partial<UXMetricContext>): void {
+    // DISABLE UX METRICS TRACKING TEMPORARILY
+    if (!UX_METRICS_ENABLED) return;
     this.trackMetric(
       UXMetricCategory.PERFORMANCE,
       UXMetricType.LOAD_TIME,
@@ -309,6 +318,8 @@ class UXMetricsTracker {
    * Track session start
    */
   private trackSessionStart(): void {
+    // DISABLE UX METRICS TRACKING TEMPORARILY
+    if (!UX_METRICS_ENABLED) return;
     this.trackMetric(
       UXMetricCategory.ENGAGEMENT,
       UXMetricType.SESSION_DURATION,
