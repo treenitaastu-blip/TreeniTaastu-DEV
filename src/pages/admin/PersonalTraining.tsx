@@ -354,6 +354,8 @@ export default function PersonalTraining() {
   };
 
   const handleDeleteTemplate = async (templateId: string, templateTitle: string) => {
+    console.log("handleDeleteTemplate called", { templateId, templateTitle });
+    
     if (!confirm(`Kas oled kindel, et soovid malli "${templateTitle}" kustutada? See kustutab ka kõik sellel mallil põhinevad programmid.`)) return;
 
     try {
@@ -363,10 +365,12 @@ export default function PersonalTraining() {
         template_title: templateTitle
       });
 
-      const { error } = await supabase.rpc("admin_delete_template_cascade", {
+      console.log("Calling delete_template_simple RPC", { p_template_id: templateId });
+      const { data, error } = await supabase.rpc("delete_template_simple", {
         p_template_id: templateId,
       });
 
+      console.log("RPC result", { data, error });
       if (error) throw error;
 
       // Track successful template deletion
