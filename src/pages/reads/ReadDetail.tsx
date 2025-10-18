@@ -7,6 +7,7 @@ import { BlogPost, ReadCategory } from "@/types/reads";
 import { TagChip } from "@/components/reads/TagChip";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import DOMPurify from "dompurify";
 
 export default function ReadDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -32,7 +33,9 @@ export default function ReadDetail() {
           .maybeSingle();
 
         if (error) {
-          console.error("Database error:", error);
+          // Use secure logger instead of console.error
+          const { error: logError } = await import("@/utils/secureLogger");
+          logError("Database error loading article", { error: error.message, slug });
           setError(true);
           setLoading(false);
           return;
@@ -68,10 +71,14 @@ export default function ReadDetail() {
           const savedReads = JSON.parse(localStorage.getItem('savedReads') || '[]');
           setIsSaved(savedReads.includes(slug));
         } catch (error) {
-          console.warn('Could not load saved reads:', error);
+          // Use secure logger instead of console.warn
+          const { warn: logWarn } = await import("@/utils/secureLogger");
+          logWarn('Could not load saved reads', { error: error instanceof Error ? error.message : 'Unknown error' });
         }
       } catch (error) {
-        console.error('Error loading article:', error);
+        // Use secure logger instead of console.error
+        const { error: logError } = await import("@/utils/secureLogger");
+        logError('Error loading article', { error: error instanceof Error ? error.message : 'Unknown error', slug });
         setError(true);
       } finally {
         setLoading(false);
@@ -91,8 +98,14 @@ export default function ReadDetail() {
   };
 
   const renderArticleContent = (content: string) => {
+    // SECURITY: Sanitize content to prevent XSS attacks
+    const sanitizedContent = DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'hr'],
+      ALLOWED_ATTR: ['class']
+    });
+    
     // Enhanced markdown-like rendering for better visual presentation
-    return content
+    return sanitizedContent
       .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mb-6 mt-8 first:mt-0 text-foreground">$1</h1>')
       .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mb-4 mt-6 text-foreground">$1</h2>')
       .replace(/^### (.*$)/gm, '<h3 class="text-xl font-semibold mb-3 mt-5 text-foreground">$1</h3>')
