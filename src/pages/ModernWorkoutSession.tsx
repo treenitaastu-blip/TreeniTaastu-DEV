@@ -847,10 +847,12 @@ export default function ModernWorkoutSession() {
   }, [session, programId, exercises, exerciseRPE, autoProgressProgram]);
 
   const handleFinishWorkout = useCallback(async () => {
+    console.log('handleFinishWorkout called', { session: !!session, sessionId: session?.id });
     if (!session) return;
 
     try {
       setSaving(true);
+      console.log('Starting workout finish process...');
       
       // Save any remaining exercise notes and RPE that weren't saved yet
       for (const exercise of exercises) {
@@ -873,6 +875,7 @@ export default function ModernWorkoutSession() {
       }
       
       // End session
+      console.log('Updating workout session...', { sessionId: session.id });
       const { error } = await supabase
         .from("workout_sessions")
         .update({ 
@@ -881,7 +884,11 @@ export default function ModernWorkoutSession() {
         })
         .eq("id", session.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating workout session:', error);
+        throw error;
+      }
+      console.log('Workout session updated successfully');
 
       // Track workout completion first (before progression analysis)
       trackFeatureUsage('workout', 'completed', {
@@ -909,37 +916,40 @@ export default function ModernWorkoutSession() {
       toast.success("Treening lõpetatud!");
       setShowCompletionDialog(true);
 
-      // Apply automatic progression based on RPE/RIR data (non-blocking)
-      try {
-        await applyAutomaticProgression();
-      } catch (progressionError) {
-        // Track progression analysis failure
-        if (user?.id && session?.id) {
-          trackProgressionFailure(user.id, session.id, progressionError, {
-            programId,
-            dayId,
-            exerciseCount: exercises.length,
-            completedExercises: completedExerciseIds.size,
-            sessionDuration: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)
-          });
-        }
-
-        // Log progression analysis failure
-        logProgressionError(progressionError, {
-          userId: user?.id,
-          sessionId: session?.id,
-          programId: programId,
-          dayId: dayId,
-          action: 'progression_analysis',
-          component: 'ModernWorkoutSession',
-          additionalData: {
-            exerciseCount: exercises.length,
-            completedExercises: completedExerciseIds.size
+      // Apply automatic progression based on RPE/RIR data (truly non-blocking)
+      // Use setTimeout to ensure it doesn't block the UI
+      setTimeout(async () => {
+        try {
+          await applyAutomaticProgression();
+        } catch (progressionError) {
+          // Track progression analysis failure
+          if (user?.id && session?.id) {
+            trackProgressionFailure(user.id, session.id, progressionError, {
+              programId,
+              dayId,
+              exerciseCount: exercises.length,
+              completedExercises: completedExerciseIds.size,
+              sessionDuration: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)
+            });
           }
-        });
-        console.error('Progression analysis failed (non-critical):', progressionError);
-        // Don't show error to user as workout is already completed
-      }
+
+          // Log progression analysis failure
+          logProgressionError(progressionError, {
+            userId: user?.id,
+            sessionId: session?.id,
+            programId: programId,
+            dayId: dayId,
+            action: 'progression_analysis',
+            component: 'ModernWorkoutSession',
+            additionalData: {
+              exerciseCount: exercises.length,
+              completedExercises: completedExerciseIds.size
+            }
+          });
+          console.error('Progression analysis failed (non-critical):', progressionError);
+          // Don't show error to user as workout is already completed
+        }
+      }, 100); // Small delay to ensure session is saved first
 
     } catch (err) {
       // Track session end failure
