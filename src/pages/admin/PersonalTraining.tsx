@@ -342,6 +342,7 @@ export default function PersonalTraining() {
         title: "Mall kustutatud",
         description: "Mall ja seotud programmid on edukalt kustutatud",
       });
+      hideDialog();
       loadData();
     } catch (error: unknown) {
       // Track template deletion failure
@@ -356,6 +357,7 @@ export default function PersonalTraining() {
         description: (error as Error).message || "Malli kustutamine ebaõnnestus",
         variant: "destructive",
       });
+      hideDialog();
     }
   };
 
