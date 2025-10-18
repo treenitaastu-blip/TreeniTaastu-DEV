@@ -18,7 +18,10 @@ const ServiceCard = memo(({
   isSelected: boolean; 
   onToggle: (id: string) => void; 
 }) => {
+  console.log(`🔍 ServiceCard ${service.id} rendered, isSelected: ${isSelected}`);
+  
   const handleClick = useCallback(() => {
+    console.log(`🖱️ ServiceCard ${service.id} clicked`);
     onToggle(service.id);
   }, [onToggle, service.id]);
 
@@ -108,12 +111,15 @@ export default function ServicesPageMinimal() {
   });
 
   const toggleService = useCallback((serviceId: string) => {
-    setSelectedServices(prev => 
-      prev.includes(serviceId) 
+    console.log(`🔄 toggleService called for ${serviceId}`);
+    setSelectedServices(prev => {
+      const newSelection = prev.includes(serviceId) 
         ? prev.filter(id => id !== serviceId)
-        : [...prev, serviceId]
-    );
-  }, []);
+        : [...prev, serviceId];
+      console.log(`🔄 selectedServices changed from [${prev.join(',')}] to [${newSelection.join(',')}]`);
+      return newSelection;
+    });
+  }, []); // Empty dependency array - function never changes
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
