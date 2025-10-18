@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,15 +45,15 @@ export default function ServicesPageMinimal() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
 
-  const toggleService = (serviceId: string) => {
+  const toggleService = useCallback((serviceId: string) => {
     setSelectedServices(prev => 
       prev.includes(serviceId) 
         ? prev.filter(id => id !== serviceId)
         : [...prev, serviceId]
     );
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -120,9 +120,9 @@ Saadetud: ${timestamp}
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [selectedServices, name, email, phone, message]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setIsSubmitted(false);
     setSelectedServices([]);
     setName('');
@@ -130,7 +130,7 @@ Saadetud: ${timestamp}
     setPhone('');
     setMessage('');
     setError('');
-  };
+  }, []);
 
   if (isSubmitted) {
     return (
