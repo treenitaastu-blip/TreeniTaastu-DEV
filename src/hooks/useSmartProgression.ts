@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  trackAnalysisFunctionError, 
+  trackDataValidationError, 
+  trackProgressionPermissionError, 
+  trackProgressionNetworkError,
+  trackInsufficientDataError,
+  trackCalculationError,
+  ProgressionFailureType
+} from '@/utils/progressionMonitor';
 
 export interface ProgramProgress {
   program_id: string | null;
@@ -97,6 +106,9 @@ export const useSmartProgression = (programId?: string) => {
 
   // Analyze exercise progression with optimized algorithm
   const analyzeExerciseProgression = async (clientItemId: string, weeksBack: number = 3): Promise<ExerciseProgression | null> => {
+    const sessionId = `analysis_${Date.now()}`;
+    const userId = user?.id;
+    
     try {
       // Use optimized algorithm first
       const { data: optimizedData, error: optimizedError } = await supabase.rpc('analyze_exercise_progression_optimized', {
@@ -106,6 +118,15 @@ export const useSmartProgression = (programId?: string) => {
 
       if (!optimizedError && optimizedData) {
         return (optimizedData as unknown) as ExerciseProgression;
+      }
+
+      // Track optimized algorithm failure
+      if (userId) {
+        trackAnalysisFunctionError(userId, sessionId, optimizedError || 'Optimized algorithm failed', {
+          programId,
+          exerciseId: clientItemId,
+          analysisData: { weeksBack, algorithm: 'optimized' }
+        });
       }
 
       // Fallback to enhanced algorithm
@@ -119,6 +140,15 @@ export const useSmartProgression = (programId?: string) => {
         return (enhancedData as unknown) as ExerciseProgression;
       }
 
+      // Track enhanced algorithm failure
+      if (userId) {
+        trackAnalysisFunctionError(userId, sessionId, enhancedError || 'Enhanced algorithm failed', {
+          programId,
+          exerciseId: clientItemId,
+          analysisData: { weeksBack, algorithm: 'enhanced' }
+        });
+      }
+
       // Final fallback to original function
       console.log('Enhanced algorithm failed, falling back to original:', enhancedError);
       const { data: originalData, error: originalError } = await supabase.rpc('analyze_exercise_progression', {
@@ -126,9 +156,29 @@ export const useSmartProgression = (programId?: string) => {
         p_weeks_back: weeksBack
       });
       
-      if (originalError) throw originalError;
+      if (originalError) {
+        // Track original algorithm failure
+        if (userId) {
+          trackAnalysisFunctionError(userId, sessionId, originalError, {
+            programId,
+            exerciseId: clientItemId,
+            analysisData: { weeksBack, algorithm: 'original' }
+          });
+        }
+        throw originalError;
+      }
+      
       return (originalData as unknown) as ExerciseProgression;
     } catch (err) {
+      // Track general analysis failure
+      if (userId) {
+        trackAnalysisFunctionError(userId, sessionId, err, {
+          programId,
+          exerciseId: clientItemId,
+          analysisData: { weeksBack, algorithm: 'all_failed' }
+        });
+      }
+      
       console.error('All progression analysis methods failed:', err);
       return null;
     }
@@ -144,6 +194,9 @@ export const useSmartProgression = (programId?: string) => {
       });
       return null;
     }
+    
+    const sessionId = `auto_progress_${Date.now()}`;
+    const userId = user?.id;
     
     try {
       // Try optimized auto-progression first
@@ -224,6 +277,14 @@ export const useSmartProgression = (programId?: string) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to auto-progress program';
       setError(errorMessage);
+      
+      // Track progression analysis failure
+      if (userId) {
+        trackAnalysisFunctionError(userId, sessionId, err, {
+          programId,
+          analysisData: { algorithm: 'auto_progress_program' }
+        });
+      }
       
       // Enhanced error logging for debugging
       console.error('Auto-progression error:', {
