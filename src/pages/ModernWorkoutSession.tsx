@@ -6,6 +6,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useSmartProgression, type ExerciseProgression } from "@/hooks/useSmartProgression";
 import { toast } from "sonner";
+import { getErrorMessage, getSeverityStyles, getActionButtonText } from '@/utils/errorMessages';
+import { useLoadingState, LOADING_KEYS, getLoadingMessage } from '@/hooks/useLoadingState';
+import { LoadingIndicator, LoadingOverlay } from '@/components/ui/LoadingIndicator';
 
 import ModernWorkoutHeader from "@/components/workout/ModernWorkoutHeader";
 import SmartExerciseCard from "@/components/workout/SmartExerciseCard";
@@ -79,6 +82,7 @@ export default function ModernWorkoutSession() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { loadingStates, setLoading: setLoadingState, setError: setLoadingError, getLoadingState } = useLoadingState();
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   
   // Rest timer
@@ -332,6 +336,7 @@ export default function ModernWorkoutSession() {
 
     try {
       setSaving(true);
+      setLoadingState(LOADING_KEYS.SET_COMPLETE, true, getLoadingMessage(LOADING_KEYS.SET_COMPLETE));
       
       // Parse target reps for fallback
       const targetReps = exercise?.reps ? parseInt(exercise.reps.replace(/[^\d]/g, '')) || null : null;
@@ -402,9 +407,21 @@ export default function ModernWorkoutSession() {
       }
 
     } catch (err) {
-      toast.error("Viga seti märkimisel");
+      const errorInfo = getErrorMessage(err, 'exercise_save');
+      setLoadingError(LOADING_KEYS.SET_COMPLETE, errorInfo.description);
+      toast.error(errorInfo.title, {
+        description: errorInfo.description,
+        action: errorInfo.action ? {
+          label: getActionButtonText(errorInfo.action),
+          onClick: () => {
+            // Retry the operation
+            handleSetComplete(exerciseId, setNumber);
+          }
+        } : undefined
+      });
     } finally {
       setSaving(false);
+      setLoadingState(LOADING_KEYS.SET_COMPLETE, false);
     }
   }, [session, user, dayId, programId, setInputs, exercises, getCompletedSetsForExercise, completedExerciseIds, trackFeatureUsage]);
 
@@ -529,7 +546,17 @@ export default function ModernWorkoutSession() {
       setRpeRirDialog(prev => ({ ...prev, isOpen: false }));
       
     } catch (error) {
-      toast.error("Viga hinnangu salvestamisel");
+      const errorInfo = getErrorMessage(error, 'exercise_save');
+      toast.error(errorInfo.title, {
+        description: errorInfo.description,
+        action: errorInfo.action ? {
+          label: getActionButtonText(errorInfo.action),
+          onClick: () => {
+            // Retry the operation
+            handleSaveRPERIR(rpeRirDialog.exerciseId, rpeRirDialog.exerciseName, rpeRirDialog.rpe, rpeRirDialog.rir);
+          }
+        } : undefined
+      });
     }
   }, [session, user, dayId, programId, rpeRirDialog.exerciseId, rpeRirDialog.exerciseName, trackFeatureUsage]);
 
@@ -653,7 +680,17 @@ export default function ModernWorkoutSession() {
         });
       }
     } catch (error) {
-      toast.error("Viga progressiooni rakendamisel");
+      const errorInfo = getErrorMessage(error, 'progression_update');
+      toast.error(errorInfo.title, {
+        description: errorInfo.description,
+        action: errorInfo.action ? {
+          label: getActionButtonText(errorInfo.action),
+          onClick: () => {
+            // Retry the operation
+            applyIntelligentProgression(exerciseId, rpe, rir);
+          }
+        } : undefined
+      });
     }
   }, [exercises, trackFeatureUsage]);
 
@@ -850,7 +887,17 @@ export default function ModernWorkoutSession() {
       }
 
     } catch (err) {
-      toast.error("Viga treeningu lõpetamisel");
+      const errorInfo = getErrorMessage(err, 'workout_complete');
+      toast.error(errorInfo.title, {
+        description: errorInfo.description,
+        action: errorInfo.action ? {
+          label: getActionButtonText(errorInfo.action),
+          onClick: () => {
+            // Retry the operation
+            handleFinishWorkout();
+          }
+        } : undefined
+      });
     } finally {
       setSaving(false);
     }
@@ -910,7 +957,20 @@ export default function ModernWorkoutSession() {
         )}
 
         {/* Exercises */}
-        <div className="px-4 py-6 space-y-6">
+        <div className="px-4 py-6 space-y-6 relative">
+          {/* Loading overlay for set completion */}
+          {getLoadingState(LOADING_KEYS.SET_COMPLETE).isLoading && (
+            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
+              <LoadingIndicator
+                isLoading={true}
+                loadingMessage={getLoadingState(LOADING_KEYS.SET_COMPLETE).loadingMessage}
+                size="md"
+                showMessage={true}
+                className="justify-center"
+              />
+            </div>
+          )}
+          
           {exercises.map((exercise) => (
             <SmartExerciseCard
               key={exercise.id}

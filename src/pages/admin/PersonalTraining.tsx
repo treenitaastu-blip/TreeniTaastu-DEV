@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { handleProgramAccessError, handleTemplateAccessError, isPermissionError } from "@/utils/errorHandling";
+import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { 
   Users, 
   TrendingUp, 
@@ -69,6 +70,7 @@ type Template = {
 export default function PersonalTraining() {
   const { toast } = useToast();
   const { trackPageView, trackFeatureUsage, trackButtonClick } = useTrackEvent();
+  const { showDeleteConfirmation, dialog, hideDialog } = useConfirmationDialog();
 
   const [stats, setStats] = useState<ProgramStats>({
     totalPrograms: 0,
@@ -319,7 +321,15 @@ export default function PersonalTraining() {
   const handleDeleteProgram = async (programId: string, programName: string) => {
     console.log("handleDeleteProgram called", { programId, programName });
     
-    if (!confirm(`Kas oled kindel, et soovid programmi "${programName}" kustutada? See kustutab ka kõik seotud andmed (päevad, harjutused, sessioonid).`)) return;
+    showDeleteConfirmation({
+      itemName: programName,
+      itemType: 'Programm',
+      onConfirm: () => performDeleteProgram(programId, programName),
+      additionalWarning: 'See kustutab ka kõik seotud andmed (päevad, harjutused, sessioonid).'
+    });
+  };
+
+  const performDeleteProgram = async (programId: string, programName: string) => {
 
     try {
       // Track deletion attempt
@@ -378,7 +388,15 @@ export default function PersonalTraining() {
   const handleDeleteTemplate = async (templateId: string, templateTitle: string) => {
     console.log("handleDeleteTemplate called", { templateId, templateTitle });
     
-    if (!confirm(`Kas oled kindel, et soovid malli "${templateTitle}" kustutada? See kustutab ka kõik sellel mallil põhinevad programmid.`)) return;
+    showDeleteConfirmation({
+      itemName: templateTitle,
+      itemType: 'Mall',
+      onConfirm: () => performDeleteTemplate(templateId, templateTitle),
+      additionalWarning: 'See kustutab ka kõik sellel mallil põhinevad programmid.'
+    });
+  };
+
+  const performDeleteTemplate = async (templateId: string, templateTitle: string) => {
 
     try {
       // Track template deletion attempt
@@ -922,6 +940,21 @@ export default function PersonalTraining() {
          </div>
          </div>
        </div>
+       
+       {/* Confirmation Dialog */}
+       <ConfirmationDialog
+         isOpen={dialog.isOpen}
+         onClose={hideDialog}
+         onConfirm={dialog.onConfirm}
+         title={dialog.title}
+         description={dialog.description}
+         variant={dialog.variant}
+         confirmText={dialog.confirmText}
+         cancelText={dialog.cancelText}
+         isLoading={dialog.isLoading}
+         loadingText={dialog.loadingText}
+         icon={dialog.icon}
+       />
      </PTAccessValidator>
    );
  }
