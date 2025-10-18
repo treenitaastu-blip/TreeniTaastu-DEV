@@ -7,6 +7,31 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Send, CheckCircle } from 'lucide-react';
 
+// Move services array outside component to prevent recreation on every render
+const services = [
+  {
+    id: 'online-consultation',
+    name: 'Online konsultatsioonid',
+    description: 'Individuaalne konsultatsioon videokõne kaudu.',
+    price: '40€',
+    duration: '60 min'
+  },
+  {
+    id: 'personal-training-gym',
+    name: '1:1 personaaltreening jõusaalis',
+    description: 'Individuaalne treening jõusaalis minu juhendamisel.',
+    price: '50€',
+    duration: '60 min'
+  },
+  {
+    id: 'training-plan-creation',
+    name: 'Personaaltreeningu plaan (1 kuu)',
+    description: 'Täielik treeningplaan sinu eesmärkide ja võimaluste järgi.',
+    price: '80€',
+    duration: '1 kuu'
+  }
+];
+
 export default function ServicesPageMinimal() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [name, setName] = useState('');
@@ -16,30 +41,6 @@ export default function ServicesPageMinimal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
-
-  const services = [
-    {
-      id: 'online-consultation',
-      name: 'Online konsultatsioonid',
-      description: 'Individuaalne konsultatsioon videokõne kaudu.',
-      price: '40€',
-      duration: '60 min'
-    },
-    {
-      id: 'personal-training-gym',
-      name: '1:1 personaaltreening jõusaalis',
-      description: 'Individuaalne treening jõusaalis minu juhendamisel.',
-      price: '50€',
-      duration: '60 min'
-    },
-    {
-      id: 'training-plan-creation',
-      name: 'Personaaltreeningu plaan (1 kuu)',
-      description: 'Täielik treeningplaan sinu eesmärkide ja võimaluste järgi.',
-      price: '80€',
-      duration: '1 kuu'
-    }
-  ];
 
   const toggleService = (serviceId: string) => {
     setSelectedServices(prev => 
@@ -70,6 +71,9 @@ export default function ServicesPageMinimal() {
         selectedServices.includes(service.id)
       );
 
+      // Create timestamp once, not during render
+      const timestamp = new Date().toLocaleString('et-EE');
+
       const formPayload = {
         access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || 'your-access-key-here',
         name: name,
@@ -89,7 +93,7 @@ Lisainfo:
 ${message || 'Puudub'}
 
 ---
-Saadetud: ${new Date().toLocaleString('et-EE')}
+Saadetud: ${timestamp}
         `,
         from_name: name,
         reply_to: email

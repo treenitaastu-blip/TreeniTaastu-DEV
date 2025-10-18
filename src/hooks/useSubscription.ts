@@ -96,7 +96,7 @@ export function useSubscription() {
 
   useEffect(() => {
     loadSubscription();
-  }, [loadSubscription]);
+  }, [user]);
 
   // Get current tier
   const getCurrentTier = useCallback((): SubscriptionTier => {
