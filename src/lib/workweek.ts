@@ -116,3 +116,78 @@ export function getCurrentWeekStart(): Date {
   
   return monday;
 }
+
+/**
+ * Check if it's after 15:00 Estonia time (unlock time for new days)
+ */
+export function isAfterUnlockTime(): boolean {
+  const tallinnDate = getTallinnDate();
+  const currentHour = tallinnDate.getHours();
+  return currentHour >= 15; // 15:00 Estonia time
+}
+
+/**
+ * Check if a specific day should be unlocked based on 15:00 Estonia time rule
+ * New weekdays unlock after 15:00 Estonia time
+ */
+export function shouldUnlockDay(dayNumber: number, userStartDate?: Date): boolean {
+  const tallinnDate = getTallinnDate();
+  const today = tallinnDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  
+  // Weekends never unlock new training days
+  if (isWeekend(tallinnDate)) {
+    return false;
+  }
+  
+  // If it's before 15:00, day is locked
+  if (!isAfterUnlockTime()) {
+    return false;
+  }
+  
+  // Calculate how many weekdays have passed since program start
+  const startDate = userStartDate || getCurrentWeekStart();
+  const daysSinceStart = Math.floor((tallinnDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  const weekdaysSinceStart = Math.floor(daysSinceStart / 7) * 5 + Math.min(daysSinceStart % 7, 5);
+  
+  // Day should be unlocked if enough weekdays have passed
+  return dayNumber <= weekdaysSinceStart + 1; // +1 because day 1 unlocks on first weekday
+}
+
+/**
+ * Get unlock time for today (15:00 Estonia time)
+ */
+export function getTodayUnlockTime(): Date {
+  const tallinnDate = getTallinnDate();
+  const unlockTime = new Date(tallinnDate);
+  unlockTime.setHours(15, 0, 0, 0);
+  return unlockTime;
+}
+
+/**
+ * Get time until unlock (in milliseconds)
+ */
+export function getTimeUntilUnlock(): number {
+  const unlockTime = getTodayUnlockTime();
+  const now = getTallinnDate();
+  const diff = unlockTime.getTime() - now.getTime();
+  return Math.max(0, diff);
+}
+
+/**
+ * Format time until unlock as human readable string
+ */
+export function formatTimeUntilUnlock(): string {
+  const timeUntil = getTimeUntilUnlock();
+  if (timeUntil === 0) {
+    return "Avaneb nüüd!";
+  }
+  
+  const hours = Math.floor(timeUntil / (1000 * 60 * 60));
+  const minutes = Math.floor((timeUntil % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 0) {
+    return `Avaneb ${hours}t ${minutes}min pärast`;
+  } else {
+    return `Avaneb ${minutes}min pärast`;
+  }
+}

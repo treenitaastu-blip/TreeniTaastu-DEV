@@ -11,7 +11,7 @@ import CalendarGrid from '@/components/calendar/CalendarGrid';
 import QuoteDisplay from '@/components/calendar/QuoteDisplay';
 import { getTallinnDate, isAfterUnlockTime } from '@/lib/workweek';
 
-export default function Programm() {
+export default function ProgrammNew() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();

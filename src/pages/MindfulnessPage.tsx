@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, RotateCcw } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useWeekendRedirect } from '@/hooks/useWeekendRedirect';
 
 export default function MindfulnessPage() {
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { markWeekendCompleted } = useWeekendRedirect();
+  
   const [isActive, setIsActive] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(0);
   const [phase, setPhase] = useState<'prep' | 'inhale' | 'exhale'>('prep');
@@ -11,6 +19,11 @@ export default function MindfulnessPage() {
   const [timeLeft, setTimeLeft] = useState(5000); // 5 seconds in ms
   const [prepBreaths, setPrepBreaths] = useState(0);
   const [showInstructions, setShowInstructions] = useState(true);
+  
+  // Check if coming from calendar
+  const fromCalendar = location.state?.fromCalendar;
+  const dayNumber = location.state?.dayNumber;
+  const returnPath = location.state?.returnPath || '/programm';
 
   const totalCycles = 10;
   const cycleDuration = 5000; // 5 seconds per phase
@@ -239,6 +252,11 @@ export default function MindfulnessPage() {
                     if (nextCycle >= totalCycles) {
                       setIsActive(false);
                       setIsCompleted(true);
+                      
+                      // Track weekend completion if coming from calendar
+                      if (fromCalendar && dayNumber && user?.id) {
+                        markWeekendCompleted(dayNumber, user.id);
+                      }
                     }
                     return nextCycle;
                   });
@@ -483,10 +501,21 @@ export default function MindfulnessPage() {
             )}
             
             {(isCompleted || (!isActive && !showInstructions)) && (
-              <Button onClick={handleReset} variant="outline" size="lg" className="px-8">
-                <RotateCcw className="h-5 w-5 mr-2" />
-                Algusesse
-              </Button>
+              <div className="flex gap-3">
+                {fromCalendar && (
+                  <Button 
+                    onClick={() => navigate(returnPath)} 
+                    size="lg" 
+                    className="px-8"
+                  >
+                    Tagasi kalendrisse
+                  </Button>
+                )}
+                <Button onClick={handleReset} variant="outline" size="lg" className="px-8">
+                  <RotateCcw className="h-5 w-5 mr-2" />
+                  Algusesse
+                </Button>
+              </div>
             )}
           </div>
 
