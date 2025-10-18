@@ -228,17 +228,17 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-2 sm:p-4">
       <div className="max-w-4xl mx-auto">
-        <Card className="mt-20">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold">Meie teenused</CardTitle>
-            <p className="text-muted-foreground">
+        <Card className="mt-4 sm:mt-20">
+          <CardHeader className="text-center p-4 sm:p-6">
+            <CardTitle className="text-2xl sm:text-3xl font-bold">Meie teenused</CardTitle>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Vali teenused, millest soovid rohkem teada saada
             </p>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-8">
+          <CardContent className="p-4 sm:p-6">
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               {/* Service Selection */}
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Vali teenused</Label>
@@ -246,34 +246,39 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                   {serviceOptions.map((service) => (
                     <Card 
                       key={service.id}
-                      className={`cursor-pointer transition-all ${
+                      className={`cursor-pointer transition-all select-none ${
                         formData.selectedServices.includes(service.id)
                           ? 'ring-2 ring-primary bg-primary/5'
                           : 'hover:bg-muted/50'
                       }`}
-                      onClick={() => handleServiceToggle(service.id)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleServiceToggle(service.id);
+                      }}
                     >
                       <CardContent className="p-4">
-                        <div className="flex items-start space-x-4">
+                        <div className="flex items-start space-x-3">
                           <Checkbox
                             checked={formData.selectedServices.includes(service.id)}
                             readOnly
-                            className="mt-1 pointer-events-none"
+                            className="mt-1 pointer-events-none w-4 h-4 sm:w-5 sm:h-5"
                           />
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              {service.icon}
-                              <h3 className="text-lg font-semibold">{service.name}</h3>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                              <div className="flex items-center space-x-2">
+                                {service.icon}
+                                <h3 className="text-base sm:text-lg font-semibold">{service.name}</h3>
+                              </div>
                               {service.price && (
-                                <span className="text-primary font-bold">{service.price}</span>
+                                <span className="text-primary font-bold text-sm sm:text-base">{service.price}</span>
                               )}
                             </div>
-                            <p className="text-muted-foreground text-sm mb-2">
+                            <p className="text-muted-foreground text-sm mb-2 leading-relaxed">
                               {service.description}
                             </p>
                             {service.duration && (
-                              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
+                              <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
+                                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                                 <span>{service.duration}</span>
                               </div>
                             )}
