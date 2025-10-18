@@ -11,8 +11,10 @@ type UUID = string;
 // Narrow to the columns we read from client_programs
 type ProgramRow = Pick<
   Database["public"]["Tables"]["client_programs"]["Row"],
-  "id" | "assigned_to" | "start_date" | "is_active" | "title_override" | "inserted_at"
->;
+  "id" | "assigned_to" | "start_date" | "is_active" | "title_override" | "inserted_at" | "template_id"
+> & {
+  templates?: { title: string } | null;
+};
 
 type ShapedProgram = {
   id: UUID;
@@ -47,7 +49,7 @@ export default function ProgramsList() {
     try {
       const { data, error: err } = await supabase
         .from("client_programs")
-        .select("id, assigned_to, start_date, is_active, title_override, inserted_at")
+        .select("id, assigned_to, start_date, is_active, title_override, inserted_at, template_id, templates:template_id(title)")
         .eq("assigned_to", user.id)
         .not("assigned_to", "is", null) // Ensure assigned_to is not null
         .order("inserted_at", { ascending: false })
@@ -78,7 +80,7 @@ export default function ProgramsList() {
       const isActive = r.is_active !== false; // treat null as active
       return {
         id: r.id as UUID,
-        title: r.title_override || "Isiklik programm",
+        title: r.title_override || r.templates?.title || "Isiklik programm",
         start: fmtDate(r.start_date),
         status: isActive ? "Aktiivne" : "Mitteaktiivne",
         isActive,
