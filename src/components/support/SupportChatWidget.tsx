@@ -26,12 +26,27 @@ export function SupportChatWidget() {
   const { messages, loading, sending, sendMessage } = useSupportChat();
   const { notification, markAsRead } = useSupportNotifications();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive - moved to top level to follow Rules of Hooks
+  // Auto-scroll to bottom when new messages arrive or chat opens
   useEffect(() => {
     if (!user || !messagesEndRef.current) return;
     messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages, user]);
+
+  // Scroll to bottom when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to ensure the chat is fully rendered
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        } else if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [isOpen]);
 
   // Mark messages as read when user actually interacts with the chat
   useEffect(() => {
@@ -168,7 +183,7 @@ export function SupportChatWidget() {
 
           <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
             {/* Messages Area */}
-            <ScrollArea className="flex-1 px-4 py-2 min-h-0">
+            <ScrollArea className="flex-1 px-4 py-2 min-h-0" ref={scrollAreaRef}>
               {loading && (
                 <div className="text-center text-muted-foreground py-4">
                   Laadin sõnumeid...
