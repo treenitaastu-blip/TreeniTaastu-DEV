@@ -71,20 +71,33 @@ export default function ServicesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Add error boundary for debugging
+  const [error, setError] = useState<string | null>(null);
+
   const handleServiceToggle = (serviceId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedServices: prev.selectedServices.includes(serviceId)
-        ? prev.selectedServices.filter(id => id !== serviceId)
-        : [...prev.selectedServices, serviceId]
-    }));
+    try {
+      setFormData(prev => ({
+        ...prev,
+        selectedServices: prev.selectedServices.includes(serviceId)
+          ? prev.selectedServices.filter(id => id !== serviceId)
+          : [...prev.selectedServices, serviceId]
+      }));
+    } catch (err) {
+      console.error('Error toggling service:', err);
+      setError('Error selecting service. Please try again.');
+    }
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    try {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    } catch (err) {
+      console.error('Error updating form field:', err);
+      setError('Error updating form. Please try again.');
+    }
   };
 
   const getSelectedServicesInfo = () => {
@@ -227,15 +240,27 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-2 sm:p-4">
-      <div className="max-w-4xl mx-auto">
-        <Card className="mt-4 sm:mt-20">
+  try {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-2 sm:p-4">
+        <div className="max-w-4xl mx-auto">
+          <Card className="mt-4 sm:mt-20">
           <CardHeader className="text-center p-4 sm:p-6">
             <CardTitle className="text-2xl sm:text-3xl font-bold">Meie teenused</CardTitle>
             <p className="text-muted-foreground text-sm sm:text-base">
               Vali teenused, millest soovid rohkem teada saada
             </p>
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm">{error}</p>
+                <button 
+                  onClick={() => setError(null)}
+                  className="mt-2 text-red-500 text-xs underline"
+                >
+                  Sulge
+                </button>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
@@ -261,7 +286,11 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                           <Checkbox
                             checked={formData.selectedServices.includes(service.id)}
                             readOnly
-                            className="mt-1 pointer-events-none w-4 h-4 sm:w-5 sm:h-5"
+                            className="mt-1 pointer-events-none w-3 h-3 sm:w-4 sm:h-4"
+                            style={{ 
+                              transform: 'scale(0.8)',
+                              transformOrigin: 'center'
+                            }}
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
@@ -411,4 +440,21 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
       </div>
     </div>
   );
+  } catch (err) {
+    console.error('ServicesPage rendering error:', err);
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+        <div className="max-w-4xl mx-auto">
+          <Card className="mt-20">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold text-red-600">Viga</CardTitle>
+              <p className="text-muted-foreground">
+                Tekkis viga lehe laadimisel. Palun värskenda lehte.
+              </p>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 }
