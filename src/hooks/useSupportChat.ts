@@ -204,7 +204,10 @@ export const useSupportChat = () => {
         )
         .subscribe((status, err) => {
           if (status === 'CHANNEL_ERROR') {
-            console.warn('Support conversations subscription error (may resolve on retry):', err);
+            // Use secure logger for production safety
+            import("@/utils/secureLogger").then(({ warn: logWarn }) => {
+              logWarn('Support conversations subscription error (may resolve on retry)', { error: err });
+            });
           }
         });
 
@@ -235,7 +238,10 @@ export const useSupportChat = () => {
         )
         .subscribe((status, err) => {
           if (status === 'CHANNEL_ERROR') {
-            console.warn('Support messages subscription error (may resolve on retry):', err);
+            // Use secure logger for production safety
+            import("@/utils/secureLogger").then(({ warn: logWarn }) => {
+              logWarn('Support messages subscription error (may resolve on retry)', { error: err });
+            });
           }
         });
 
