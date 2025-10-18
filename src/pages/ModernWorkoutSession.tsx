@@ -1152,7 +1152,10 @@ export default function ModernWorkoutSession() {
         {/* Completion Dialog */}
         <PersonalTrainingCompletionDialog
           isOpen={showCompletionDialog}
-          onClose={() => setShowCompletionDialog(false)}
+          onClose={() => {
+            setShowCompletionDialog(false);
+            navigate("/programs/stats");
+          }}
         />
 
         {/* RPE/RIR Dialog */}
