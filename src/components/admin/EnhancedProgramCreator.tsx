@@ -554,7 +554,7 @@ export default function EnhancedProgramCreator({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="w-screen h-screen sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl sm:max-h-[95vh] overflow-y-auto p-0 sm:p-6 fixed left-0 top-0 sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg"
+        className="w-full h-full sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl sm:max-h-[95vh] overflow-y-auto p-0 sm:p-6 fixed inset-0 sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg"
         aria-describedby="program-creator-description"
       >
         <DialogHeader className="relative pr-12 sm:pr-0 pt-4 sm:pt-0">
