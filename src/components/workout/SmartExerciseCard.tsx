@@ -26,6 +26,15 @@ interface SmartExerciseCardProps {
     rest_seconds?: number | null;
     coach_notes?: string | null;
     video_url?: string | null;
+    exercise_alternatives?: Array<{
+      id: string;
+      alternative_name: string;
+      alternative_description?: string;
+      alternative_video_url?: string;
+      difficulty_level: 'easier' | 'same' | 'harder';
+      equipment_required?: string[];
+      muscle_groups?: string[];
+    }>;
   };
   completedSets: number;
   onSetComplete: (setNumber: number, data?: Record<string, unknown>) => void;
@@ -45,6 +54,9 @@ interface SmartExerciseCardProps {
     confidence_score?: number;
     professional_notes?: string;
   } | null;
+  onSwitchToAlternative?: (exerciseId: string, alternativeName: string) => void;
+  showAlternatives?: boolean;
+  onToggleAlternatives?: (exerciseId: string) => void;
 }
 
 export default function SmartExerciseCard({
@@ -60,7 +72,10 @@ export default function SmartExerciseCard({
   onRPEChange,
   rir,
   onRIRChange,
-  progressionSuggestion
+  progressionSuggestion,
+  onSwitchToAlternative,
+  showAlternatives = false,
+  onToggleAlternatives
 }: SmartExerciseCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
@@ -278,6 +293,19 @@ export default function SmartExerciseCard({
             >
               <MessageSquare className="h-4 w-4" />
             </Button>
+            {exercise.exercise_alternatives && exercise.exercise_alternatives.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onToggleAlternatives?.(exercise.id)}
+                className={cn(
+                  "h-8 w-8 p-0",
+                  showAlternatives && "bg-accent/10 text-accent"
+                )}
+              >
+                <Repeat className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -373,6 +401,46 @@ export default function SmartExerciseCard({
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alternative Exercises */}
+      {showAlternatives && exercise.exercise_alternatives && exercise.exercise_alternatives.length > 0 && (
+        <div className="p-4 border-t bg-muted/30">
+          <h4 className="font-medium mb-3 text-sm flex items-center gap-2">
+            <Repeat className="h-4 w-4" />
+            Alternatiivsed harjutused
+          </h4>
+          <div className="space-y-2">
+            {exercise.exercise_alternatives.map((alt, index) => (
+              <div key={alt.id} className="flex items-center justify-between p-3 border rounded-lg bg-background">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-sm">{alt.alternative_name}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      alt.difficulty_level === 'easier' ? 'bg-green-100 text-green-700' :
+                      alt.difficulty_level === 'harder' ? 'bg-red-100 text-red-700' :
+                      'bg-blue-100 text-blue-700'
+                    }`}>
+                      {alt.difficulty_level === 'easier' ? 'Lihtsam' :
+                       alt.difficulty_level === 'harder' ? 'Raskem' : 'Sama'}
+                    </span>
+                  </div>
+                  {alt.alternative_description && (
+                    <p className="text-xs text-muted-foreground">{alt.alternative_description}</p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onSwitchToAlternative?.(exercise.id, alt.alternative_name)}
+                  className="ml-2"
+                >
+                  Vali
+                </Button>
+              </div>
+            ))}
           </div>
         </div>
       )}

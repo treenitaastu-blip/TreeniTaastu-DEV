@@ -78,6 +78,10 @@ export default function ModernWorkoutSession() {
   // Track completed exercises for RPE/RIR collection
   const [completedExerciseIds, setCompletedExerciseIds] = useState<Set<string>>(new Set());
   
+  // Alternative exercises management
+  const [openAlternativesFor, setOpenAlternativesFor] = useState<Record<string, boolean>>({});
+  const [selectedAlternative, setSelectedAlternative] = useState<Record<string, string>>({});
+  
   // UI state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -205,7 +209,18 @@ export default function ModernWorkoutSession() {
         // Load exercises with enhanced validation and logging
         const { data: exerciseData, error: exerciseError } = await supabase
           .from("client_items")
-          .select("*")
+          .select(`
+            *,
+            exercise_alternatives (
+              id,
+              alternative_name,
+              alternative_description,
+              alternative_video_url,
+              difficulty_level,
+              equipment_required,
+              muscle_groups
+            )
+          `)
           .eq("client_day_id", dayId)
           .order("order_in_day");
 
@@ -903,6 +918,35 @@ export default function ModernWorkoutSession() {
     }
   }, [session, exercises, exerciseNotes, exerciseRPE, dayId, programId, user, applyAutomaticProgression, trackFeatureUsage, completedExerciseIds.size]);
 
+  // Function to switch to an alternative exercise
+  const switchToAlternative = useCallback(async (exerciseId: string, alternativeName: string) => {
+    try {
+      // Update the exercise name in the database
+      const { error } = await supabase
+        .from("client_items")
+        .update({ exercise_name: alternativeName })
+        .eq("id", exerciseId);
+
+      if (error) throw error;
+
+      // Update local state
+      setExercises(prev => prev.map(item => 
+        item.id === exerciseId 
+          ? { ...item, exercise_name: alternativeName }
+          : item
+      ));
+
+      // Close alternatives panel
+      setOpenAlternativesFor(prev => ({ ...prev, [exerciseId]: false }));
+      
+      // Show success message
+      toast.success(`Harjutus vahetatud: ${alternativeName}`);
+    } catch (error) {
+      console.error("Error switching to alternative:", error);
+      toast.error("Viga harjutuse vahetamisel");
+    }
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex items-center justify-center">
@@ -986,6 +1030,9 @@ export default function ModernWorkoutSession() {
               onNotesChange={(notes) => handleNotesChange(exercise.id, notes)}
               rpe={exerciseRPE[exercise.id]}
               onRPEChange={(rpe) => handleRPEChange(exercise.id, rpe)}
+              onSwitchToAlternative={switchToAlternative}
+              showAlternatives={openAlternativesFor[exercise.id] || false}
+              onToggleAlternatives={(exerciseId) => setOpenAlternativesFor(prev => ({ ...prev, [exerciseId]: !prev[exerciseId] }))}
             />
           ))}
         </div>

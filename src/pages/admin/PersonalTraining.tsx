@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { handleProgramAccessError, handleTemplateAccessError, isPermissionError } from "@/utils/errorHandling";
 import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+import { MobileOptimizedCard, MobileStatsCard, MobileFilterBar } from "@/components/admin/MobileOptimizedCard";
 import { 
   Users, 
   TrendingUp, 
@@ -649,63 +650,32 @@ export default function PersonalTraining() {
           onSuccess={loadData}
         />
 
-        {/* Stats Cards - Improved and Clear */}
+        {/* Stats Cards - Mobile Optimized */}
         <div className="grid gap-3 mb-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-0 shadow-soft bg-gradient-to-br from-purple-500/10 to-purple-600/5">
-            <CardContent className="p-3 lg:p-6">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <Target className="h-5 w-5 lg:h-6 lg:w-6 text-purple-600" />
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Kokku Programme</p>
-                </div>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">
-                  {stats.totalPrograms}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-soft bg-gradient-to-br from-green-500/10 to-green-600/5">
-            <CardContent className="p-3 lg:p-6">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <Activity className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Aktiivsed Programme</p>
-                </div>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
-                  {stats.activePrograms}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-soft bg-gradient-to-br from-primary/10 to-primary/5">
-            <CardContent className="p-3 lg:p-6">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <Users className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Aktiivsed Kliendid</p>
-                </div>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
-                  {stats.totalClients}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-soft bg-gradient-to-br from-blue-500/10 to-blue-600/5">
-            <CardContent className="p-3 lg:p-6">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Lõpetatud Sessioone</p>
-                </div>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
-                  {stats.completedSessions}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <MobileStatsCard
+            title="Kokku Programme"
+            value={stats.totalPrograms}
+            icon={<Target className="h-5 w-5 lg:h-6 lg:w-6 text-purple-600" />}
+            className="bg-gradient-to-br from-purple-500/10 to-purple-600/5"
+          />
+          <MobileStatsCard
+            title="Aktiivsed Programme"
+            value={stats.activePrograms}
+            icon={<Activity className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />}
+            className="bg-gradient-to-br from-green-500/10 to-green-600/5"
+          />
+          <MobileStatsCard
+            title="Aktiivsed Kliendid"
+            value={stats.totalClients}
+            icon={<Users className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />}
+            className="bg-gradient-to-br from-primary/10 to-primary/5"
+          />
+          <MobileStatsCard
+            title="Lõpetatud Sessioone"
+            value={stats.completedSessions}
+            icon={<TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />}
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/5"
+          />
         </div>
 
         {/* Template Management Section */}
@@ -817,29 +787,15 @@ export default function PersonalTraining() {
                 </p>
               </div>
               
-              {/* Cleaner filters */}
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="relative flex-1 sm:w-64">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Otsi kliente või programme..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 text-sm border border-input rounded-lg bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                  />
-                </div>
-                
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value as any)}
-                  className="px-3 py-2 text-sm border border-input rounded-lg bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                >
-                  <option value="all">Kõik ({programs.length})</option>
-                  <option value="active">Aktiivsed ({programs.filter(p => p.is_active !== false).length})</option>
-                  <option value="inactive">Mitteaktiivsed ({programs.filter(p => p.is_active === false).length})</option>
-                </select>
-              </div>
+              {/* Mobile Optimized Filters */}
+              <MobileFilterBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                filterStatus={filterStatus}
+                onFilterChange={(status) => setFilterStatus(status as "all" | "active" | "inactive")}
+                totalItems={programs.length}
+                filteredItems={filteredPrograms.length}
+              />
             </div>
           </CardHeader>
 
