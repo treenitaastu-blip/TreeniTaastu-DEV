@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { WEB3FORMS_CONFIG } from '@/config/web3forms';
@@ -118,6 +117,11 @@ export default function ServicesPage() {
     setIsSubmitting(true);
 
     try {
+      // Check if Web3Forms access key is configured
+      if (!WEB3FORMS_CONFIG.ACCESS_KEY) {
+        throw new Error('Web3Forms access key not configured. Please set VITE_WEB3FORMS_ACCESS_KEY environment variable.');
+      }
+
       const selectedServicesInfo = getSelectedServicesInfo();
       
       const formPayload = {
@@ -167,7 +171,12 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
         throw new Error('Form submission failed');
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
+      // Use secure logger instead of console.error
+      const { error: logError } = await import("@/utils/secureLogger");
+      logError('Error submitting services form', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        selectedServices: formData.selectedServices.length
+      });
       toast({
         title: "Viga",
         description: "Päringu saatmine ebaõnnestus. Palun proovi uuesti või võta meiega otse ühendust.",
@@ -248,8 +257,8 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
                         <div className="flex items-start space-x-4">
                           <Checkbox
                             checked={formData.selectedServices.includes(service.id)}
-                            onChange={() => handleServiceToggle(service.id)}
-                            className="mt-1"
+                            readOnly
+                            className="mt-1 pointer-events-none"
                           />
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">

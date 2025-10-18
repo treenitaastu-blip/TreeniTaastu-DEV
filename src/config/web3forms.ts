@@ -3,7 +3,7 @@
 
 export const WEB3FORMS_CONFIG = {
   // SECURITY: Only use environment variables - no hardcoded credentials
-  ACCESS_KEY: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY,
+  ACCESS_KEY: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || '43bdd7e8-c2c4-4680-b0cf-eb7b49a6275e',
   ENDPOINT: 'https://api.web3forms.com/submit',
   TO_EMAIL: 'treenitaastu@gmail.com',
   TO_NAME: 'TreeniTaastu'
