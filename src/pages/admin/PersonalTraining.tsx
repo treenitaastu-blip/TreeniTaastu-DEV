@@ -286,10 +286,13 @@ export default function PersonalTraining() {
       setSelectedUserId("");
       loadData();
     } catch (error: unknown) {
+      // Get selected user for error tracking
+      const selectedUser = users.find(u => u.id === selectedUserId);
+      
       // Track assignment failure
       trackFeatureUsage('program_assignment', 'failed', {
         template_id: selectedTemplate?.id,
-        target_email: selectedUser?.email,
+        target_email: selectedUser?.email || 'unknown',
         error_message: (error as Error).message
       });
 
