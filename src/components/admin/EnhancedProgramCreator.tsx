@@ -554,20 +554,20 @@ export default function EnhancedProgramCreator({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="w-[98vw] h-[98vh] sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl max-h-[98vh] overflow-y-auto p-0 sm:p-6 fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:rounded-lg"
+        className="w-screen h-screen sm:w-auto sm:h-auto sm:max-w-2xl lg:max-w-4xl sm:max-h-[95vh] overflow-y-auto p-0 sm:p-6 fixed left-0 top-0 sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg"
         aria-describedby="program-creator-description"
       >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <Target className="h-5 w-5 text-primary" />
-            Loo Smart Personaalprogramm
+        <DialogHeader className="relative pr-12 sm:pr-0 pt-4 sm:pt-0">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-xl pr-2">
+            <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <span className="text-sm sm:text-xl">Loo Smart Personaalprogramm</span>
           </DialogTitle>
-          <DialogDescription id="program-creator-description">
+          <DialogDescription id="program-creator-description" className="pr-2 text-xs sm:text-sm">
             Loo personaalne treeningprogramm klientidele. Vali klient, määra programmi parameetrid ja lisa harjutused.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 sm:space-y-6 p-2 sm:p-0">
+        <div className="space-y-2 sm:space-y-6 p-2 sm:p-0 pr-2">
           {/* Program Settings */}
           <Card className="p-1 sm:p-4">
             <CardHeader className="p-1 sm:p-4">
@@ -1009,6 +1009,19 @@ export default function EnhancedProgramCreator({
             )}
           </div>
         </div>
+        
+        {/* Mobile Close Button */}
+        <button
+          type="button"
+          onClick={() => onOpenChange(false)}
+          className="absolute right-2 top-2 sm:right-4 sm:top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-50 bg-background/80 backdrop-blur-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x h-4 w-4">
+            <path d="M18 6 6 18"></path>
+            <path d="m6 6 12 12"></path>
+          </svg>
+          <span className="sr-only">Close</span>
+        </button>
       </DialogContent>
     </Dialog>
   );
