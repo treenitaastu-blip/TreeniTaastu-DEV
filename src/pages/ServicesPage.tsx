@@ -1,185 +1,36 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
-import { WEB3FORMS_CONFIG } from '@/config/web3forms';
-import { Loader2, Send, CheckCircle, Users, Dumbbell, FileText, Calendar, Phone, Mail, User } from 'lucide-react';
-
-interface ServiceOption {
-  id: string;
-  name: string;
-  description: string;
-  price?: string;
-  duration?: string;
-}
-
-
-interface FormData {
-  selectedServices: string[];
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-  preferredTime: string;
-  experience: string;
-  goals: string;
-}
+import { useState } from 'react';
 
 export default function ServicesPage() {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState<FormData>({
-    selectedServices: [],
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-    preferredTime: '',
-    experience: '',
-    goals: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  // Service options without icons to eliminate JSX issues
-  const serviceOptions = useMemo(() => [
-    {
-      id: 'online-consultation',
-      name: 'Online konsultatsioonid',
-      description: 'Individuaalne konsultatsioon videokõne kaudu. Analüüsin sinu eesmärke, toitumist ja treeningplaani.',
-      price: '40€',
-      duration: '60 min'
-    },
-    {
-      id: 'personal-training-gym',
-      name: '1:1 personaaltreening jõusaalis',
-      description: 'Individuaalne treening jõusaalis minu juhendamisel. Kohandatud harjutused ja tehnikaõpetus.',
-      price: '50€',
-      duration: '60 min'
-    },
-    {
-      id: 'training-plan-creation',
-      name: 'Personaaltreeningu plaan (1 kuu)',
-      description: 'Täielik treeningplaan sinu eesmärkide ja võimaluste järgi. Sisaldab harjutusi, kordusi ja edenemist.',
-      price: '80€',
-      duration: '1 kuu'
-    }
-  ], []);
-
-  const handleServiceToggle = (serviceId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedServices: prev.selectedServices.includes(serviceId)
-        ? prev.selectedServices.filter(id => id !== serviceId)
-        : [...prev.selectedServices, serviceId]
-    }));
-  };
-
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const getSelectedServicesInfo = () => {
-    return serviceOptions.filter(service => 
-      formData.selectedServices.includes(service.id)
-    );
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    if (formData.selectedServices.length === 0) {
-      toast({
-        title: "Vali vähemalt üks teenus",
-        description: "Palun vali vähemalt üks teenus, millest soovid rohkem teada saada.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.name || !formData.email) {
-      toast({
-        title: "Täida kohustuslikud väljad",
-        description: "Nimi ja e-posti aadress on kohustuslikud.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
+    setError('');
+
+    const formData = new FormData(e.currentTarget);
+    formData.append('access_key', '43bdd7e8-c2c4-4680-b0cf-eb7b49a6275e');
+    formData.append('subject', 'Teenuste päring - TreeniTaastu');
+    formData.append('timestamp', new Date().toLocaleString('et-EE'));
 
     try {
-      // Check if Web3Forms access key is configured
-      if (!WEB3FORMS_CONFIG.ACCESS_KEY) {
-        throw new Error('Web3Forms access key not configured. Please set VITE_WEB3FORMS_ACCESS_KEY environment variable.');
-      }
-
-      const selectedServicesInfo = getSelectedServicesInfo();
-      
-      const formPayload = {
-        access_key: WEB3FORMS_CONFIG.ACCESS_KEY,
-        name: formData.name,
-        email: formData.email,
-        message: `
-Uus teenuse päring:
-
-Valitud teenused:
-${selectedServicesInfo.map(service => `- ${service.name} (${service.price}, ${service.duration})`).join('\n')}
-
-Kontaktandmed:
-Nimi: ${formData.name}
-E-post: ${formData.email}
-Telefon: ${formData.phone || 'Määramata'}
-
-Lisainfo:
-Eelistatud aeg: ${formData.preferredTime || 'Määramata'}
-Kogemus: ${formData.experience || 'Määramata'}
-Eesmärgid: ${formData.goals || 'Määramata'}
-
-Sõnum:
-${formData.message || 'Sõnum puudub'}
-
----
-Saadetud: ${new Date().toLocaleString('et-EE')}
-        `.trim()
-      };
-
-      const response = await fetch(WEB3FORMS_CONFIG.ENDPOINT, {
+      const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formPayload)
+        body: formData
       });
 
-      const result = await response.json();
-      if (result.success) {
+      const data = await response.json();
+      
+      if (data.success) {
         setIsSubmitted(true);
-        toast({
-          title: "Päring saadetud!",
-          description: "Sinu päring on edukalt saadetud. Võtame sinuga ühendust 24 tunni jooksul.",
-        });
+        (e.target as HTMLFormElement).reset();
       } else {
         throw new Error('Form submission failed');
       }
-    } catch (error) {
-      // Use secure logger instead of console.error
-      const { error: logError } = await import("@/utils/secureLogger");
-      logError('Error submitting services form', { 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        selectedServices: formData.selectedServices.length
-      });
-      toast({
-        title: "Viga",
-        description: "Päringu saatmine ebaõnnestus. Palun proovi uuesti või võta meiega otse ühendust.",
-        variant: "destructive",
-      });
+    } catch (err) {
+      setError('Päringu saatmine ebaõnnestus. Palun proovi uuesti.');
     } finally {
       setIsSubmitting(false);
     }
@@ -187,231 +38,147 @@ Saadetud: ${new Date().toLocaleString('et-EE')}
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-        <div className="max-w-2xl mx-auto">
-          <Card className="mt-20">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <CheckCircle className="h-16 w-16 text-green-500" />
-              </div>
-              <CardTitle className="text-2xl text-green-600">Päring saadetud!</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                Täname sinu huvi meie teenuste vastu! Võtame sinuga ühendust 24 tunni jooksul.
-              </p>
-              <Button 
-                onClick={() => {
-                  setIsSubmitted(false);
-                  setFormData({
-                    selectedServices: [],
-                    name: '',
-                    email: '',
-                    phone: '',
-                    message: '',
-                    preferredTime: '',
-                    experience: '',
-                    goals: ''
-                  });
-                }}
-                variant="outline"
-              >
-                Saada uus päring
-              </Button>
-            </CardContent>
-          </Card>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '18px',
+        textAlign: 'center',
+        padding: '20px'
+      }}>
+        <div>
+          <h2 style={{ color: '#059669', marginBottom: '20px' }}>✅ Täname!</h2>
+          <p>Teie päring on saadetud. Võtame teiega ühendust 24 tunni jooksul.</p>
+          <button 
+            onClick={() => setIsSubmitted(false)}
+            style={{
+              marginTop: '20px',
+              padding: '10px 20px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            Saada uus päring
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-2 sm:p-4">
-      <div className="max-w-4xl mx-auto">
-        <Card className="mt-4 sm:mt-20">
-          <CardHeader className="text-center p-4 sm:p-6">
-            <CardTitle className="text-2xl sm:text-3xl font-bold">Meie teenused</CardTitle>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Vali teenused, millest soovid rohkem teada saada
-            </p>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6">
-            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-              {/* Service Selection */}
-              <div className="space-y-4">
-                <Label className="text-lg font-semibold">Vali teenused</Label>
-                <div className="grid gap-4">
-                  {serviceOptions.map((service) => (
-                    <Card 
-                      key={service.id}
-                      className={`cursor-pointer transition-all select-none ${
-                        formData.selectedServices.includes(service.id)
-                          ? 'ring-2 ring-primary bg-primary/5'
-                          : 'hover:bg-muted/50'
-                      }`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleServiceToggle(service.id);
-                      }}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start space-x-3">
-                          <div className="mt-1">
-                            <Checkbox
-                              checked={formData.selectedServices.includes(service.id)}
-                              className="pointer-events-none !w-3 !h-3 !min-w-3 !min-h-3"
-                              style={{ 
-                                width: '12px !important',
-                                height: '12px !important',
-                                minWidth: '12px !important',
-                                minHeight: '12px !important'
-                              }}
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                              <div className="flex items-center space-x-2">
-                                <h3 className="text-base sm:text-lg font-semibold">{service.name}</h3>
-                              </div>
-                              {service.price && (
-                                <span className="text-primary font-bold text-sm sm:text-base">{service.price}</span>
-                              )}
-                            </div>
-                            <p className="text-muted-foreground text-sm mb-2 leading-relaxed">
-                              {service.description}
-                            </p>
-                            {service.duration && (
-                              <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
-                                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                                <span>{service.duration}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+    <div style={{ 
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%)',
+      minHeight: '100vh',
+      padding: '20px'
+    }}>
+      <div style={{
+        maxWidth: '600px',
+        margin: '0 auto',
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+          color: 'white',
+          padding: '30px',
+          textAlign: 'center'
+        }}>
+          <h1 style={{ fontSize: '28px', marginBottom: '10px' }}>Meie teenused</h1>
+          <p style={{ opacity: 0.9, fontSize: '16px' }}>Vali teenused, millest soovid rohkem teada saada</p>
+        </div>
+        
+        <div style={{ padding: '30px' }}>
+          {error && (
+            <div style={{
+              background: '#fee2e2',
+              color: '#dc2626',
+              padding: '15px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}>
+              ❌ {error}
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{ color: '#374151', marginBottom: '15px', fontSize: '18px' }}>Vali teenused</h3>
+              
+              <label style={{ display: 'flex', alignItems: 'center', padding: '15px', border: '2px solid #e5e7eb', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer' }}>
+                <input type="checkbox" name="services[]" value="Online konsultatsioonid" style={{ marginRight: '12px', width: '18px', height: '18px' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: '#111827', marginBottom: '4px' }}>Online konsultatsioonid</div>
+                  <div style={{ color: '#3b82f6', fontWeight: 600, fontSize: '16px' }}>40€</div>
+                  <div style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>Individuaalne konsultatsioon videokõne kaudu</div>
                 </div>
-              </div>
-
-              {/* Contact Information */}
-              <div className="space-y-4">
-                <Label className="text-lg font-semibold">Kontaktandmed</Label>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nimi *</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        placeholder="Sinu nimi"
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-post *</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        placeholder="sinu@email.com"
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefon</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        placeholder="+372 5xxx xxxx"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="preferredTime">Eelistatud aeg</Label>
-                    <Input
-                      id="preferredTime"
-                      value={formData.preferredTime}
-                      onChange={(e) => handleInputChange('preferredTime', e.target.value)}
-                      placeholder="nt. Õhtud, nädalavahetused"
-                    />
-                  </div>
+              </label>
+              
+              <label style={{ display: 'flex', alignItems: 'center', padding: '15px', border: '2px solid #e5e7eb', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer' }}>
+                <input type="checkbox" name="services[]" value="1:1 personaaltreening spordisaalis" style={{ marginRight: '12px', width: '18px', height: '18px' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: '#111827', marginBottom: '4px' }}>1:1 personaaltreening spordisaalis</div>
+                  <div style={{ color: '#3b82f6', fontWeight: 600, fontSize: '16px' }}>60€</div>
+                  <div style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>Individuaalne treening spordisaalis</div>
                 </div>
-              </div>
-
-              {/* Additional Information */}
-              <div className="space-y-4">
-                <Label className="text-lg font-semibold">Lisainfo</Label>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="experience">Treeningkogemus</Label>
-                    <Input
-                      id="experience"
-                      value={formData.experience}
-                      onChange={(e) => handleInputChange('experience', e.target.value)}
-                      placeholder="nt. Algaja, 1 aasta kogemus"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="goals">Eesmärgid</Label>
-                    <Input
-                      id="goals"
-                      value={formData.goals}
-                      onChange={(e) => handleInputChange('goals', e.target.value)}
-                      placeholder="nt. Kaalulangus, lihasmassi kasv"
-                    />
-                  </div>
+              </label>
+              
+              <label style={{ display: 'flex', alignItems: 'center', padding: '15px', border: '2px solid #e5e7eb', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer' }}>
+                <input type="checkbox" name="services[]" value="Personaalse treeningplaani koostamine" style={{ marginRight: '12px', width: '18px', height: '18px' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: '#111827', marginBottom: '4px' }}>Personaalse treeningplaani koostamine</div>
+                  <div style={{ color: '#3b82f6', fontWeight: 600, fontSize: '16px' }}>80€</div>
+                  <div style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>Individuaalne treeningplaan teie vajaduste järgi</div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message">Sõnum</Label>
-                  <Textarea
-                    id="message"
-                    value={formData.message}
-                    onChange={(e) => handleInputChange('message', e.target.value)}
-                    placeholder="Lisa siia kõik, mida soovid meile öelda..."
-                    rows={4}
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex justify-center pt-6">
-                <Button
-                  type="submit"
-                  size="lg"
-                  disabled={isSubmitting}
-                  className="min-w-[200px]"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saadan...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Saada päring
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+              </label>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', color: '#374151', fontWeight: 500, marginBottom: '8px' }}>Nimi *</label>
+              <input type="text" name="name" required style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px' }} />
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', color: '#374151', fontWeight: 500, marginBottom: '8px' }}>E-post *</label>
+              <input type="email" name="email" required style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px' }} />
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', color: '#374151', fontWeight: 500, marginBottom: '8px' }}>Telefon</label>
+              <input type="tel" name="phone" style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px' }} />
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', color: '#374151', fontWeight: 500, marginBottom: '8px' }}>Sõnum</label>
+              <textarea name="message" placeholder="Kirjeldage oma vajadusi või küsimusi..." style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px', minHeight: '100px', resize: 'vertical' }}></textarea>
+            </div>
+            
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              style={{
+                width: '100%',
+                background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '15px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {isSubmitting ? 'Saadan...' : 'Saada päring'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

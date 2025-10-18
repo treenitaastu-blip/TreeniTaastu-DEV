@@ -55,7 +55,7 @@ const Programm = lazy(() => import("@/pages/Programm"));
 const Harjutused = lazy(() => import("@/pages/Harjutused"));
 const Kogukond = lazy(() => import("@/pages/Kogukond"));
 const Konto = lazy(() => import("@/pages/Konto"));
-const ServicesPage = lazy(() => import("@/pages/ServicesPageMinimal"));
+const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
 const ReadsList = lazy(() => import("@/pages/reads/ReadsList"));
 const ReadDetail = lazy(() => import("@/pages/reads/ReadDetail"));
 const NotFound = lazy(() => import("@/pages/NotFound"));

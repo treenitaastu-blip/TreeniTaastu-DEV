@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { debugRenders, debugUseEffect } from '@/utils/debugRenders';
 import { 
   SUBSCRIPTION_PLANS, 
   UPGRADE_PROMPTS, 
@@ -96,7 +95,6 @@ export function useSubscription() {
   }, [user]);
 
   useEffect(() => {
-    debugUseEffect('useSubscription-loadSubscription', [user]);
     loadSubscription();
   }, [user]);
 

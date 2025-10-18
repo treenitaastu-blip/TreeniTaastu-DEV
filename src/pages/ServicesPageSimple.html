@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meie teenused - TreeniTaastu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .form-container {
+            padding: 30px;
+        }
+        
+        .service-options {
+            margin-bottom: 30px;
+        }
+        
+        .service-options h3 {
+            color: #374151;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .service-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .service-item:hover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+        
+        .service-item.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        .service-checkbox {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .service-info {
+            flex: 1;
+        }
+        
+        .service-name {
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        
+        .service-price {
+            color: #3b82f6;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .service-description {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #374151;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        @media (max-width: 640px) {
+            .container {
+                margin: 10px;
+                border-radius: 8px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Meie teenused</h1>
+            <p>Vali teenused, millest soovid rohkem teada saada</p>
+        </div>
+        
+        <div class="form-container">
+            <div class="success-message" id="successMessage">
+                ✅ Täname! Teie päring on saadetud. Võtame teiega ühendust 24 tunni jooksul.
+            </div>
+            
+            <div class="error-message" id="errorMessage">
+                ❌ Viga päringu saatmisel. Palun proovige uuesti.
+            </div>
+            
+            <form id="servicesForm" action="https://api.web3forms.com/submit" method="POST">
+                <input type="hidden" name="access_key" value="43bdd7e8-c2c4-4680-b0cf-eb7b49a6275e">
+                <input type="hidden" name="subject" value="Teenuste päring - TreeniTaastu">
+                
+                <div class="service-options">
+                    <h3>Vali teenused</h3>
+                    
+                    <div class="service-item" onclick="toggleService('online-consultation')">
+                        <input type="checkbox" name="services[]" value="Online konsultatsioonid" class="service-checkbox" id="service1">
+                        <div class="service-info">
+                            <div class="service-name">Online konsultatsioonid</div>
+                            <div class="service-price">40€</div>
+                            <div class="service-description">Individuaalne konsultatsioon videokõne kaudu</div>
+                        </div>
+                    </div>
+                    
+                    <div class="service-item" onclick="toggleService('personal-training-gym')">
+                        <input type="checkbox" name="services[]" value="1:1 personaaltreening spordisaalis" class="service-checkbox" id="service2">
+                        <div class="service-info">
+                            <div class="service-name">1:1 personaaltreening spordisaalis</div>
+                            <div class="service-price">60€</div>
+                            <div class="service-description">Individuaalne treening spordisaalis</div>
+                        </div>
+                    </div>
+                    
+                    <div class="service-item" onclick="toggleService('training-plan-creation')">
+                        <input type="checkbox" name="services[]" value="Personaalse treeningplaani koostamine" class="service-checkbox" id="service3">
+                        <div class="service-info">
+                            <div class="service-name">Personaalse treeningplaani koostamine</div>
+                            <div class="service-price">80€</div>
+                            <div class="service-description">Individuaalne treeningplaan teie vajaduste järgi</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name">Nimi *</label>
+                    <input type="text" name="name" id="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">E-post *</label>
+                    <input type="email" name="email" id="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Telefon</label>
+                    <input type="tel" name="phone" id="phone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">Sõnum</label>
+                    <textarea name="message" id="message" placeholder="Kirjeldage oma vajadusi või küsimusi..."></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Saada päring
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleService(serviceId) {
+            const checkbox = document.getElementById(serviceId === 'online-consultation' ? 'service1' : 
+                                                 serviceId === 'personal-training-gym' ? 'service2' : 'service3');
+            const serviceItem = checkbox.closest('.service-item');
+            
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                serviceItem.classList.add('selected');
+            } else {
+                serviceItem.classList.remove('selected');
+            }
+        }
+        
+        document.getElementById('servicesForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Hide previous messages
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saadan...';
+            
+            // Get form data
+            const formData = new FormData(this);
+            
+            // Add timestamp
+            formData.append('timestamp', new Date().toLocaleString('et-EE'));
+            
+            // Submit to Web3Forms
+            fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    successMessage.style.display = 'block';
+                    this.reset();
+                    // Reset service selections
+                    document.querySelectorAll('.service-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                } else {
+                    throw new Error('Form submission failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorMessage.style.display = 'block';
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Saada päring';
+            });
+        });
+    </script>
+</body>
+</html>
