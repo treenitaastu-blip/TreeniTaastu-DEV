@@ -40,8 +40,10 @@ export const useSupportNotifications = () => {
       
       const lastSeenDate = new Date(lastSeen);
 
-      console.log('Checking unread messages for user:', user.id);
-      console.log('Last seen:', lastSeenDate.toISOString());
+      // Use secure logger instead of console.log
+      const { debug: logDebug } = await import("@/utils/secureLogger");
+      logDebug('Checking unread messages for user', { userId: user.id });
+      logDebug('Last seen timestamp', { lastSeen: lastSeenDate.toISOString() });
 
       // Get admin messages after last seen
       const { data: adminMessages, error } = await supabase
@@ -57,7 +59,7 @@ export const useSupportNotifications = () => {
       const hasUnread = unreadCount > 0;
       const lastAdminMessage = adminMessages?.[0]?.created_at || null;
 
-      console.log('Found unread messages:', unreadCount, 'hasUnread:', hasUnread);
+      logDebug('Found unread messages', { unreadCount, hasUnread });
 
       setNotification({
         hasUnreadAdminMessages: hasUnread,
