@@ -26,7 +26,19 @@ export const useSupportNotifications = () => {
       // Get the user's last seen timestamp
       const lastSeenKey = `support_last_seen_${user.id}`;
       const lastSeen = localStorage.getItem(lastSeenKey);
-      const lastSeenDate = lastSeen ? new Date(lastSeen) : new Date(0);
+      
+      // If no last seen timestamp, set it to now to avoid showing old notifications
+      if (!lastSeen) {
+        localStorage.setItem(lastSeenKey, new Date().toISOString());
+        setNotification({
+          hasUnreadAdminMessages: false,
+          unreadCount: 0,
+          lastAdminMessageAt: null
+        });
+        return;
+      }
+      
+      const lastSeenDate = new Date(lastSeen);
 
       console.log('Checking unread messages for user:', user.id);
       console.log('Last seen:', lastSeenDate.toISOString());
@@ -117,10 +129,15 @@ export const useSupportNotifications = () => {
     };
   }, [user]);
 
-  // Check for unread messages on mount
+  // Check for unread messages on mount (only if user has been active)
   useEffect(() => {
     if (user) {
-      checkUnreadMessages();
+      // Add a small delay to let real-time subscriptions settle first
+      const timer = setTimeout(() => {
+        checkUnreadMessages();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
   }, [user, checkUnreadMessages]);
 
