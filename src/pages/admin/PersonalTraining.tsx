@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { handleProgramAccessError, handleTemplateAccessError, isPermissionError } from "@/utils/errorHandling";
 import { 
   Users, 
   TrendingUp, 
@@ -289,17 +290,26 @@ export default function PersonalTraining() {
       // Get selected user for error tracking
       const selectedUser = users.find(u => u.id === selectedUserId);
       
+      // Check if it's a permission error and handle accordingly
+      if (isPermissionError(error)) {
+        handleTemplateAccessError(error, selectedTemplate?.id);
+      } else {
+        // Handle other types of errors
+        const errorMessage = (error as Error).message || "Malli määramine ebaõnnestus";
+        
+        toast({
+          title: "Viga",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+      
       // Track assignment failure
       trackFeatureUsage('program_assignment', 'failed', {
         template_id: selectedTemplate?.id,
         target_email: selectedUser?.email || 'unknown',
-        error_message: (error as Error).message
-      });
-
-      toast({
-        title: "Viga",
-        description: (error as Error).message || "Malli määramine ebaõnnestus",
-        variant: "destructive",
+        error_message: (error as Error).message,
+        error_type: isPermissionError(error) ? 'permission_error' : 'general_error'
       });
     } finally {
       setAssigning(false);
@@ -342,16 +352,25 @@ export default function PersonalTraining() {
     } catch (error: unknown) {
       console.error("Error deleting program:", error);
       
+      // Check if it's a permission error and handle accordingly
+      if (isPermissionError(error)) {
+        handleProgramAccessError(error, programId);
+      } else {
+        // Handle other types of errors
+        const errorMessage = (error as Error).message || "Programmi kustutamine ebaõnnestus";
+        
+        toast({
+          title: "Viga",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+      
       // Track deletion failure
       trackFeatureUsage('program_deletion', 'failed', {
         program_id: programId,
-        error_message: (error as Error).message
-      });
-      
-      toast({
-        title: "Viga",
-        description: (error as Error).message || "Programmi kustutamine ebaõnnestus",
-        variant: "destructive",
+        error_message: (error as Error).message,
+        error_type: isPermissionError(error) ? 'permission_error' : 'general_error'
       });
     }
   };

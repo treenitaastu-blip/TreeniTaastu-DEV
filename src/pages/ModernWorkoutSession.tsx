@@ -682,41 +682,110 @@ export default function ModernWorkoutSession() {
     } catch (error) {
       console.error('Smart progression failed, using fallback:', error);
       
-      // Fallback to simple RPE-based progression
+      // Enhanced fallback to simple RPE-based progression
       try {
+        let progressionCount = 0;
+        const progressionResults = [];
+        
         for (const exercise of exercises) {
           const rpe = exerciseRPE[exercise.id];
           
           // Only progress exercises with RPE data
-          if (!rpe) continue;
+          if (!rpe || rpe < 1 || rpe > 10) continue;
 
           // Get current exercise parameters
           const currentWeight = exercise.weight_kg;
+          const currentReps = exercise.reps;
           
-          // Simple progression logic as fallback
+          // Enhanced progression logic with safety checks
           let newWeight = currentWeight;
+          let newReps = currentReps;
+          let progressionReason = '';
           
-          if (rpe <= 6) {
-            // Too easy - increase weight by 5%
-            newWeight = currentWeight ? Math.round(currentWeight * 1.05 * 2) / 2 : currentWeight;
+          // More sophisticated RPE-based progression
+          if (rpe <= 5) {
+            // Very easy - increase weight by 7.5% or add reps
+            if (currentWeight && currentWeight > 0) {
+              newWeight = Math.round(currentWeight * 1.075 * 2) / 2;
+              progressionReason = 'Weight increased (RPE too low)';
+            } else if (currentReps && currentReps < 15) {
+              newReps = currentReps + 1;
+              progressionReason = 'Reps increased (RPE too low)';
+            }
+          } else if (rpe <= 6) {
+            // Easy - increase weight by 5% or add reps
+            if (currentWeight && currentWeight > 0) {
+              newWeight = Math.round(currentWeight * 1.05 * 2) / 2;
+              progressionReason = 'Weight increased (RPE low)';
+            } else if (currentReps && currentReps < 12) {
+              newReps = currentReps + 1;
+              progressionReason = 'Reps increased (RPE low)';
+            }
           } else if (rpe >= 9) {
-            // Too hard - decrease weight by 5%
-            newWeight = currentWeight ? Math.round(currentWeight * 0.95 * 2) / 2 : currentWeight;
+            // Hard - decrease weight by 5% or reduce reps
+            if (currentWeight && currentWeight > 0) {
+              newWeight = Math.round(currentWeight * 0.95 * 2) / 2;
+              progressionReason = 'Weight decreased (RPE too high)';
+            } else if (currentReps && currentReps > 5) {
+              newReps = currentReps - 1;
+              progressionReason = 'Reps decreased (RPE too high)';
+            }
+          } else if (rpe >= 10) {
+            // Very hard - decrease weight by 10% or reduce reps significantly
+            if (currentWeight && currentWeight > 0) {
+              newWeight = Math.round(currentWeight * 0.90 * 2) / 2;
+              progressionReason = 'Weight decreased significantly (RPE very high)';
+            } else if (currentReps && currentReps > 3) {
+              newReps = Math.max(3, currentReps - 2);
+              progressionReason = 'Reps decreased significantly (RPE very high)';
+            }
           } else {
-            // RPE 7-8 is perfect range - maintain weight
+            // RPE 7-8 is perfect range - maintain current parameters
             continue;
           }
 
-          // Only update if weight actually changed
-          if (newWeight !== currentWeight && newWeight && currentWeight) {
-            await supabase
+          // Only update if parameters actually changed
+          const weightChanged = newWeight !== currentWeight && newWeight && currentWeight;
+          const repsChanged = newReps !== currentReps && newReps && currentReps;
+          
+          if (weightChanged || repsChanged) {
+            const updateData: any = {};
+            if (weightChanged) updateData.weight_kg = newWeight;
+            if (repsChanged) updateData.reps = newReps;
+            
+            const { error: updateError } = await supabase
               .from("client_items")
-              .update({ weight_kg: newWeight })
+              .update(updateData)
               .eq("id", exercise.id);
+              
+            if (!updateError) {
+              progressionCount++;
+              progressionResults.push({
+                exercise_name: exercise.exercise_name,
+                reason: progressionReason,
+                old_weight: currentWeight,
+                new_weight: newWeight,
+                old_reps: currentReps,
+                new_reps: newReps
+              });
+            } else {
+              console.error(`Failed to update exercise ${exercise.id}:`, updateError);
+            }
           }
         }
+        
+        // Log progression results
+        if (progressionCount > 0) {
+          console.log(`Fallback progression applied to ${progressionCount} exercises:`, progressionResults);
+        }
+        
       } catch (fallbackError) {
-        console.error('Fallback progression also failed:', fallbackError);
+        console.error('Enhanced fallback progression failed:', {
+          error: fallbackError,
+          programId,
+          exerciseCount: exercises.length,
+          timestamp: new Date().toISOString()
+        });
         // Don't throw - progression is non-critical
       }
     }

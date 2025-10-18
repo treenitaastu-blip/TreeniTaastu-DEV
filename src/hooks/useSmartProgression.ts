@@ -224,10 +224,34 @@ export const useSmartProgression = (programId?: string) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to auto-progress program';
       setError(errorMessage);
-      console.error('Auto-progression error:', err);
+      
+      // Enhanced error logging for debugging
+      console.error('Auto-progression error:', {
+        error: err,
+        programId,
+        timestamp: new Date().toISOString(),
+        errorType: err instanceof Error ? err.constructor.name : 'Unknown',
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      
+      // Track the error for analytics
+      try {
+        await supabase.from('user_analytics_events').insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          event_type: 'progression_analysis_failed',
+          event_data: {
+            program_id: programId,
+            error_message: errorMessage,
+            error_type: err instanceof Error ? err.constructor.name : 'Unknown'
+          }
+        });
+      } catch (analyticsError) {
+        console.error('Failed to track progression error:', analyticsError);
+      }
+      
       toast({
-        title: "Update Failed",
-        description: errorMessage,
+        title: "Progression Analysis Failed",
+        description: "Unable to analyze your workout data. Your program will continue with current settings.",
         variant: "destructive",
       });
       return null;
@@ -255,7 +279,29 @@ export const useSmartProgression = (programId?: string) => {
       
       return result;
     } catch (err) {
-      console.error('Error completing due programs:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to complete due programs';
+      console.error('Error completing due programs:', {
+        error: err,
+        programId,
+        timestamp: new Date().toISOString(),
+        errorType: err instanceof Error ? err.constructor.name : 'Unknown'
+      });
+      
+      // Track the error for analytics
+      try {
+        await supabase.from('user_analytics_events').insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          event_type: 'program_completion_failed',
+          event_data: {
+            program_id: programId,
+            error_message: errorMessage,
+            error_type: err instanceof Error ? err.constructor.name : 'Unknown'
+          }
+        });
+      } catch (analyticsError) {
+        console.error('Failed to track completion error:', analyticsError);
+      }
+      
       return null;
     }
   };
@@ -285,9 +331,35 @@ export const useSmartProgression = (programId?: string) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update program settings';
       setError(errorMessage);
+      
+      // Enhanced error logging for debugging
+      console.error('Program settings update error:', {
+        error: err,
+        programId,
+        updates,
+        timestamp: new Date().toISOString(),
+        errorType: err instanceof Error ? err.constructor.name : 'Unknown'
+      });
+      
+      // Track the error for analytics
+      try {
+        await supabase.from('user_analytics_events').insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          event_type: 'program_settings_update_failed',
+          event_data: {
+            program_id: programId,
+            updates,
+            error_message: errorMessage,
+            error_type: err instanceof Error ? err.constructor.name : 'Unknown'
+          }
+        });
+      } catch (analyticsError) {
+        console.error('Failed to track settings update error:', analyticsError);
+      }
+      
       toast({
-        title: "Update Failed",
-        description: errorMessage,
+        title: "Settings Update Failed",
+        description: "Unable to update program settings. Please try again.",
         variant: "destructive",
       });
     }
