@@ -26,8 +26,7 @@ const ServiceCard = memo(({
   }, [onToggle, service.id]);
 
   return (
-    <Card 
-      key={service.id}
+    <div 
       className={`cursor-pointer transition-all select-none ${
         isSelected
           ? 'ring-2 ring-primary bg-primary/5'
@@ -35,6 +34,7 @@ const ServiceCard = memo(({
       }`}
       onClick={handleClick}
     >
+      <Card>
       <CardContent className="p-4">
         <div className="flex items-start space-x-3">
           <div className="mt-1">
@@ -59,7 +59,8 @@ const ServiceCard = memo(({
           </div>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 });
 
