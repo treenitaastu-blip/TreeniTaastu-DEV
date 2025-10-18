@@ -11,8 +11,14 @@ interface LogEntry {
 }
 
 class SecureLogger {
-  private isDevelopment = import.meta.env.DEV;
-  private isProduction = import.meta.env.PROD;
+  private isDevelopment: boolean;
+  private isProduction: boolean;
+
+  constructor() {
+    // Safely check environment variables
+    this.isDevelopment = typeof import.meta !== 'undefined' && import.meta.env?.DEV === true;
+    this.isProduction = typeof import.meta !== 'undefined' && import.meta.env?.PROD === true;
+  }
 
   private formatMessage(level: LogLevel, message: string, data?: any): LogEntry {
     return {
@@ -70,8 +76,15 @@ class SecureLogger {
   }
 
   debug(message: string, data?: any): void {
-    if (this.isDevelopment) {
-      console.debug(`[DEBUG] ${message}`, data);
+    try {
+      if (this.isDevelopment) {
+        console.debug(`[DEBUG] ${message}`, data);
+      }
+    } catch (error) {
+      // Fallback for production builds where console.debug might not be available
+      if (typeof console !== 'undefined' && console.debug) {
+        console.debug(`[DEBUG] ${message}`, data);
+      }
     }
   }
 
