@@ -567,12 +567,12 @@ export default function EnhancedProgramCreator({
           transform: 'none'
         }}
       >
-        <DialogHeader className="relative pr-12 sm:pr-0 pt-4 sm:pt-0">
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-xl pr-2">
+        <DialogHeader className="relative pr-12 sm:pr-0 pt-4 sm:pt-0 text-left">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-xl pr-2 text-left">
             <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             <span className="text-sm sm:text-xl">Loo Smart Personaalprogramm</span>
           </DialogTitle>
-          <DialogDescription id="program-creator-description" className="pr-2 text-xs sm:text-sm">
+          <DialogDescription id="program-creator-description" className="pr-2 text-xs sm:text-sm text-left">
             Loo personaalne treeningprogramm klientidele. Vali klient, määra programmi parameetrid ja lisa harjutused.
           </DialogDescription>
         </DialogHeader>
@@ -1020,18 +1020,6 @@ export default function EnhancedProgramCreator({
           </div>
         </div>
         
-        {/* Mobile Close Button */}
-        <button
-          type="button"
-          onClick={() => onOpenChange(false)}
-          className="absolute right-2 top-2 sm:right-4 sm:top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-50 bg-background/80 backdrop-blur-sm"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x h-4 w-4">
-            <path d="M18 6 6 18"></path>
-            <path d="m6 6 12 12"></path>
-          </svg>
-          <span className="sr-only">Close</span>
-        </button>
       </DialogContent>
     </Dialog>
   );
