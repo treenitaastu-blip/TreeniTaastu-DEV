@@ -627,7 +627,35 @@ export default function ModernWorkoutSession() {
           }
         }
       } catch (dbError) {
-        // Database progression analysis failed, using local logic
+        // Try simple fallback function
+        try {
+          const { data: simpleAnalysis, error: simpleError } = await supabase.rpc('analyze_exercise_progression_simple', {
+            p_client_item_id: exerciseId,
+            p_weeks_back: 2
+          });
+
+          if (!simpleError && simpleAnalysis) {
+            const progression = simpleAnalysis as unknown as ExerciseProgression;
+            
+            if (progression.action !== 'maintain' && progression.suggested_weight && progression.current_weight) {
+              await supabase
+                .from("client_items")
+                .update({ weight_kg: progression.suggested_weight })
+                .eq("id", exercise.id);
+              
+              setExercises(prev => prev.map(ex => 
+                ex.id === exerciseId ? { ...ex, weight_kg: progression.suggested_weight } : ex
+              ));
+              
+              toast.success(`🧠 ${exercise.exercise_name}: ${progression.current_weight}kg → ${progression.suggested_weight}kg`, {
+                description: `Database analysis (simple)`
+              });
+              return;
+            }
+          }
+        } catch (simpleDbError) {
+          // Both database functions failed, using local logic
+        }
       }
 
       // Fallback to enhanced local progression logic
