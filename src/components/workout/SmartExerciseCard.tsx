@@ -349,6 +349,8 @@ export default function SmartExerciseCard({
             const isCompleted = setNumber <= completedSets;
             const isCurrent = setNumber === currentSet;
             const inputs = getCurrentSetInputs(setNumber);
+            const suggestedReps = getSuggestedValue("reps");
+            const suggestedWeight = getSuggestedValue("weight");
             
             return (
               <Card 
