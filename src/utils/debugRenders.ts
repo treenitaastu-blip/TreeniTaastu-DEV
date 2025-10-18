@@ -1,5 +1,5 @@
 // Debug utility to track component re-renders
-export const debugRenders = (componentName: string) => {
+export const debugRenders = (componentName: string, props?: any) => {
   console.log(`🔄 ${componentName} rendered at ${new Date().toISOString()}`);
   
   // Track render count
@@ -15,6 +15,7 @@ export const debugRenders = (componentName: string) => {
   
   if (window.__renderCounts[componentName] > 10) {
     console.warn(`⚠️ ${componentName} has rendered ${window.__renderCounts[componentName]} times - possible infinite loop!`);
+    console.warn(`🔍 Props:`, props);
   }
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,58 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Send, CheckCircle } from 'lucide-react';
 import { debugRenders, getRenderSummary, clearDebugCounters } from '@/utils/debugRenders';
+
+// Memoized ServiceCard component to prevent unnecessary re-renders
+const ServiceCard = memo(({ 
+  service, 
+  isSelected, 
+  onToggle 
+}: { 
+  service: any; 
+  isSelected: boolean; 
+  onToggle: (id: string) => void; 
+}) => {
+  const handleClick = useCallback(() => {
+    onToggle(service.id);
+  }, [onToggle, service.id]);
+
+  return (
+    <Card 
+      key={service.id}
+      className={`cursor-pointer transition-all select-none ${
+        isSelected
+          ? 'ring-2 ring-primary bg-primary/5'
+          : 'hover:bg-muted/50'
+      }`}
+      onClick={handleClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start space-x-3">
+          <div className="mt-1">
+            <Checkbox
+              checked={isSelected}
+              className="pointer-events-none"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-base sm:text-lg font-semibold">{service.name}</h3>
+              </div>
+              <span className="text-primary font-bold text-sm sm:text-base">{service.price}</span>
+            </div>
+            <p className="text-muted-foreground text-sm mb-2 leading-relaxed">
+              {service.description}
+            </p>
+            <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
+              <span>{service.duration}</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
 
 // Move services array outside component to prevent recreation on every render
 const services = [
@@ -34,8 +86,6 @@ const services = [
 ];
 
 export default function ServicesPageMinimal() {
-  debugRenders('ServicesPageMinimal');
-  
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -44,6 +94,18 @@ export default function ServicesPageMinimal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
+  
+  // Debug with state values
+  debugRenders('ServicesPageMinimal', {
+    selectedServices,
+    name,
+    email,
+    phone,
+    message,
+    isSubmitting,
+    isSubmitted,
+    error
+  });
 
   const toggleService = useCallback((serviceId: string) => {
     setSelectedServices(prev => 
@@ -132,6 +194,7 @@ Saadetud: ${timestamp}
     setError('');
   }, []);
 
+
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -190,40 +253,12 @@ Saadetud: ${timestamp}
                 <Label className="text-lg font-semibold">Vali teenused</Label>
                 <div className="grid gap-4">
                   {services.map((service) => (
-                    <Card 
+                    <ServiceCard
                       key={service.id}
-                      className={`cursor-pointer transition-all select-none ${
-                        selectedServices.includes(service.id)
-                          ? 'ring-2 ring-primary bg-primary/5'
-                          : 'hover:bg-muted/50'
-                      }`}
-                      onClick={() => toggleService(service.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start space-x-3">
-                          <div className="mt-1">
-                            <Checkbox
-                              checked={selectedServices.includes(service.id)}
-                              className="pointer-events-none"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                              <div className="flex items-center space-x-2">
-                                <h3 className="text-base sm:text-lg font-semibold">{service.name}</h3>
-                              </div>
-                              <span className="text-primary font-bold text-sm sm:text-base">{service.price}</span>
-                            </div>
-                            <p className="text-muted-foreground text-sm mb-2 leading-relaxed">
-                              {service.description}
-                            </p>
-                            <div className="flex items-center space-x-2 text-xs sm:text-sm text-muted-foreground">
-                              <span>{service.duration}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      service={service}
+                      isSelected={selectedServices.includes(service.id)}
+                      onToggle={toggleService}
+                    />
                   ))}
                 </div>
               </div>
