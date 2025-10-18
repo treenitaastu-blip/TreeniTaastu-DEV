@@ -102,87 +102,39 @@ export const useSmartProgression = (programId?: string, userId?: string) => {
     }
   };
 
-  // Analyze exercise progression with optimized algorithm
+  // Analyze exercise progression with simple algorithm
   const analyzeExerciseProgression = async (clientItemId: string, weeksBack: number = 3): Promise<ExerciseProgression | null> => {
     const sessionId = `analysis_${Date.now()}`;
     const userId = user?.id;
     
     try {
-      // Use optimized algorithm first
-      const { data: optimizedData, error: optimizedError } = await supabase.rpc('analyze_exercise_progression_optimized', {
-        p_client_item_id: clientItemId,
-        p_weeks_back: weeksBack
+      // Use simple algorithm (most reliable)
+      const { data: simpleData, error: simpleError } = await supabase.rpc('analyze_exercise_progression_simple', {
+        p_client_item_id: clientItemId
       });
 
-      if (!optimizedError && optimizedData) {
-        return (optimizedData as unknown) as ExerciseProgression;
+      if (simpleError) {
+        console.error('Simple progression analysis failed:', simpleError);
+        throw simpleError;
       }
 
-      // Track optimized algorithm failure
-      if (userId) {
-        trackAnalysisFunctionError(userId, sessionId, optimizedError || 'Optimized algorithm failed', {
-          programId,
-          exerciseId: clientItemId,
-          analysisData: { weeksBack, algorithm: 'optimized' }
-        });
-      }
-
-      // Fallback to enhanced algorithm
-      console.log('Optimized algorithm failed, falling back to enhanced:', optimizedError);
-      const { data: enhancedData, error: enhancedError } = await supabase.rpc('analyze_exercise_progression_enhanced', {
-        p_client_item_id: clientItemId,
-        p_weeks_back: weeksBack
-      });
-
-      if (!enhancedError && enhancedData) {
-        return (enhancedData as unknown) as ExerciseProgression;
-      }
-
-      // Track enhanced algorithm failure
-      if (userId) {
-        trackAnalysisFunctionError(userId, sessionId, enhancedError || 'Enhanced algorithm failed', {
-          programId,
-          exerciseId: clientItemId,
-          analysisData: { weeksBack, algorithm: 'enhanced' }
-        });
-      }
-
-      // Final fallback to original function
-      console.log('Enhanced algorithm failed, falling back to original:', enhancedError);
-      const { data: originalData, error: originalError } = await supabase.rpc('analyze_exercise_progression', {
-        p_client_item_id: clientItemId,
-        p_weeks_back: weeksBack
-      });
-      
-      if (originalError) {
-        // Track original algorithm failure
-        if (userId) {
-          trackAnalysisFunctionError(userId, sessionId, originalError, {
-            programId,
-            exerciseId: clientItemId,
-            analysisData: { weeksBack, algorithm: 'original' }
-          });
-        }
-        throw originalError;
-      }
-      
-      return (originalData as unknown) as ExerciseProgression;
+      return (simpleData as unknown) as ExerciseProgression;
     } catch (err) {
       // Track general analysis failure
       if (userId) {
         trackAnalysisFunctionError(userId, sessionId, err, {
           programId,
           exerciseId: clientItemId,
-          analysisData: { weeksBack, algorithm: 'all_failed' }
+          analysisData: { weeksBack, algorithm: 'simple_failed' }
         });
       }
       
-      console.error('All progression analysis methods failed:', err);
+      console.error('Progression analysis failed:', err);
       return null;
     }
   };
 
-  // Auto-progress entire program with optimized algorithm
+  // Auto-progress entire program with simple algorithm
   const autoProgressProgram = async (): Promise<AutoProgressionResult | null> => {
     if (!programId) {
       toast({
@@ -196,80 +148,35 @@ export const useSmartProgression = (programId?: string, userId?: string) => {
     const sessionId = `auto_progress_${Date.now()}`;
     
     try {
-      // Try optimized auto-progression first
-      const { data: optimizedData, error: optimizedError } = await supabase.rpc('auto_progress_program_optimized', {
+      // Use simple auto-progression (most reliable)
+      const { data: simpleData, error: simpleError } = await supabase.rpc('auto_progress_program_simple', {
         p_program_id: programId
       });
 
-      if (!optimizedError && optimizedData) {
-        const result = optimizedData as any; // Type assertion for database response
-        
-        if (result.success) {
-          const deloadMessage = result.deload_applied || (result.deload_exercises > 0) 
-            ? ` (${result.deload_exercises} exercises deloaded)` 
-            : '';
-          
-          if (result.updates_made > 0) {
-            toast({
-              title: result.deload_applied ? "Deload Applied!" : "Program Updated!",
-              description: `${result.updates_made} exercises adjusted using optimized algorithm${deloadMessage}.`,
-            });
-            await fetchProgramProgress();
-          } else {
-            toast({
-              title: "No Updates Needed",
-              description: "Your program is already optimally configured based on your recent performance.",
-            });
-          }
-          return result as AutoProgressionResult;
-        }
+      if (simpleError) {
+        console.error('Simple auto-progression failed:', simpleError);
+        throw simpleError;
       }
 
-      // Fallback to enhanced auto-progression
-      console.log('Optimized auto-progression failed, falling back to enhanced:', optimizedError);
-      const { data: enhancedData, error: enhancedError } = await supabase.rpc('auto_progress_program_enhanced', {
-        p_program_id: programId
-      });
-
-      if (!enhancedError && enhancedData) {
-        const result = enhancedData as unknown as AutoProgressionResult;
-        
-        if (result.success && result.updates_made > 0) {
-          const summaryMsg = result.professional_summary || 
-            `${result.updates_made} exercises have been automatically adjusted based on your performance data.`;
-          
+      const result = simpleData as unknown as AutoProgressionResult;
+      
+      if (result.success) {
+        if (result.updates_made > 0) {
           toast({
-            title: result.deload_applied ? "Deload Applied!" : "Program Updated!",
-            description: summaryMsg,
+            title: "Program Updated!",
+            description: `${result.updates_made} exercises adjusted based on your performance data.`,
           });
-          
           await fetchProgramProgress();
-        } else if (result.success && result.updates_made === 0) {
+        } else {
           toast({
             title: "No Updates Needed",
-            description: result.professional_summary || "Your program is already optimally configured based on your recent performance.",
+            description: "Your program is already optimally configured based on your recent performance.",
           });
         }
         return result;
+      } else {
+        throw new Error(result.reason || 'Auto-progression failed');
       }
-      
-      // Final fallback to original function
-      console.log('Enhanced auto-progression failed, falling back to original:', enhancedError);
-      const { data: originalData, error: originalError } = await supabase.rpc('auto_progress_program', {
-        p_program_id: programId
-      });
-      
-      if (originalError) throw originalError;
-      
-      const result = originalData as unknown as AutoProgressionResult;
-      if (result?.success && result.updates_made > 0) {
-        toast({
-          title: "Program Updated!",
-          description: `${result.updates_made} exercises adjusted using standard progression.`,
-        });
-        await fetchProgramProgress();
-      }
-      return result;
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to auto-progress program';
