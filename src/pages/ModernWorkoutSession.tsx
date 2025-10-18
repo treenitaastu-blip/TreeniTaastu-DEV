@@ -84,6 +84,12 @@ export default function ModernWorkoutSession() {
   // Alternative exercises management
   const [openAlternativesFor, setOpenAlternativesFor] = useState<Record<string, boolean>>({});
   const [selectedAlternative, setSelectedAlternative] = useState<Record<string, string>>({});
+  const [alternativeConfirmation, setAlternativeConfirmation] = useState<{
+    show: boolean;
+    exerciseId: string;
+    alternativeName: string;
+    originalName: string;
+  }>({ show: false, exerciseId: '', alternativeName: '', originalName: '' });
   
   // UI state
   const [loading, setLoading] = useState(true);
@@ -1022,8 +1028,21 @@ export default function ModernWorkoutSession() {
     }
   }, [session, exercises, exerciseNotes, exerciseRPE, dayId, programId, user, applyAutomaticProgression, trackFeatureUsage, completedExerciseIds.size]);
 
-  // Function to switch to an alternative exercise
-  const switchToAlternative = useCallback(async (exerciseId: string, alternativeName: string) => {
+  // Function to show alternative exercise confirmation
+  const switchToAlternative = useCallback((exerciseId: string, alternativeName: string) => {
+    const originalName = exercises.find(e => e.id === exerciseId)?.exercise_name || '';
+    setAlternativeConfirmation({
+      show: true,
+      exerciseId,
+      alternativeName,
+      originalName
+    });
+  }, [exercises]);
+
+  // Function to confirm alternative exercise switch
+  const confirmAlternativeSwitch = useCallback(async () => {
+    const { exerciseId, alternativeName } = alternativeConfirmation;
+    
     try {
       // Update the exercise name in the database
       const { error } = await supabase
@@ -1052,12 +1071,15 @@ export default function ModernWorkoutSession() {
         exerciseId: exerciseId,
         additionalData: {
           alternativeName,
-          originalExerciseName: exercises.find(e => e.id === exerciseId)?.exercise_name
+          originalExerciseName: alternativeConfirmation.originalName
         }
       });
       
       // Show success message
       toast.success(`Harjutus vahetatud: ${alternativeName}`);
+      
+      // Close confirmation dialog
+      setAlternativeConfirmation({ show: false, exerciseId: '', alternativeName: '', originalName: '' });
     } catch (error) {
       // Log the error with context
       logWorkoutError(error, {
@@ -1070,13 +1092,18 @@ export default function ModernWorkoutSession() {
         component: 'ModernWorkoutSession',
         additionalData: {
           alternativeName,
-          originalExerciseName: exercises.find(e => e.id === exerciseId)?.exercise_name
+          originalExerciseName: alternativeConfirmation.originalName
         }
       });
       
       console.error("Error switching to alternative:", error);
       toast.error("Viga harjutuse vahetamisel");
     }
+  }, [alternativeConfirmation, supabase, exercises, user?.id, session?.id, programId, dayId, trackMobileInteraction, logWorkoutError]);
+
+  // Function to cancel alternative exercise switch
+  const cancelAlternativeSwitch = useCallback(() => {
+    setAlternativeConfirmation({ show: false, exerciseId: '', alternativeName: '', originalName: '' });
   }, []);
 
   if (loading) {
@@ -1196,6 +1223,57 @@ export default function ModernWorkoutSession() {
           currentWeight={exercises.find(ex => ex.id === rpeRirDialog.exerciseId)?.weight_kg || undefined}
           previousRPE={exerciseRPE[rpeRirDialog.exerciseId] || undefined}
         />
+
+        {/* Alternative Exercise Confirmation Dialog */}
+        {alternativeConfirmation.show && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg p-6 shadow-xl max-w-sm w-full mx-4">
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    Alternatiivne harjutus
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Kas soovid vahetada harjutust?
+                  </p>
+                  
+                  <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Praegune:</span>
+                      <span className="text-sm font-medium">{alternativeConfirmation.originalName}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Uus:</span>
+                      <span className="text-sm font-medium text-blue-600">{alternativeConfirmation.alternativeName}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={cancelAlternativeSwitch}
+                    className="flex-1"
+                  >
+                    Tühista
+                  </Button>
+                  <Button
+                    onClick={confirmAlternativeSwitch}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  >
+                    Vali
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Loading Overlay */}
         {saving && (
