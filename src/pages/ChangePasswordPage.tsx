@@ -9,7 +9,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Key, CheckCircle, ArrowLeft } from "lucide-react";
 import { passwordSchema, validateAndSanitize } from "@/lib/validations";
 import { useAuth } from "@/hooks/useAuth";
-import { GooglePasswordSetup } from "@/components/GooglePasswordSetup";
 
 export default function ChangePasswordPage() {
   const navigate = useNavigate();
