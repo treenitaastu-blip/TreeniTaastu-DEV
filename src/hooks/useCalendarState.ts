@@ -54,8 +54,8 @@ export const useCalendarState = () => {
       }
       
       const isWeekendDay = isWeekend(currentDate);
-      const isUnlocked = isWeekendDay || shouldUnlockDay(dayNumber);
-      const isLocked = !isUnlocked;
+      const isUnlocked = shouldUnlockDay(dayNumber);
+      const isLocked = !isUnlocked && !isWeekendDay;
       
       days.push({
         dayNumber,

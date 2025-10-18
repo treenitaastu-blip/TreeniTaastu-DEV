@@ -5,7 +5,6 @@ import {
   Trophy, 
   Target, 
   Lock, 
-  Clock, 
   CheckCircle, 
   Heart,
   Brain
@@ -62,10 +61,10 @@ export default function DayTile({ day, onClick, className = "" }: DayTileProps) 
       return "Tehtud";
     }
     if (day.isWeekend) {
-      return "Nädalavahetus";
+      return "Mindfulness";
     }
     if (day.isUnlocked && !day.isCompleted) {
-      return "Tegemata";
+      return "Avatud";
     }
     return "Lukustatud";
   };
@@ -104,19 +103,12 @@ export default function DayTile({ day, onClick, className = "" }: DayTileProps) 
           {getStatusText()}
         </div>
         
-        {/* Unlock Time for Locked Days */}
-        {day.isLocked && day.unlockTime && (
-          <div className="text-xs mt-1 opacity-75 flex items-center justify-center gap-1">
-            <Clock className="h-3 w-3" />
-            {day.unlockTime}
-          </div>
-        )}
 
         {/* Weekend Badge */}
         {day.isWeekend && (
           <Badge variant="secondary" className="mt-2 text-xs">
             <Brain className="h-3 w-3 mr-1" />
-            Mindfulness
+            Puhkepäev
           </Badge>
         )}
 
