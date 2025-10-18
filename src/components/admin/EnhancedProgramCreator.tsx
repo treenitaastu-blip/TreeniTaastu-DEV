@@ -733,14 +733,14 @@ export default function EnhancedProgramCreator({
                       <CardContent className="pt-0 space-y-2 sm:space-y-3">
                         {day.exercises.map((exercise, exerciseIndex) => (
                           <div key={exerciseIndex} className="p-1 sm:p-3 border rounded-lg bg-muted/30">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-1 sm:gap-3 items-start">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 items-start">
                               <div className="sm:col-span-2 lg:col-span-2">
                                 <label className="block text-xs font-medium mb-1">Harjutus</label>
                                 <input
                                   type="text"
                                   value={exercise.exercise_name}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { exercise_name: e.target.value })}
-                                  className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                 />
                               </div>
                               <div className="sm:col-span-1 lg:col-span-1">
@@ -751,7 +751,7 @@ export default function EnhancedProgramCreator({
                                   max="10"
                                   value={exercise.sets}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { sets: Number(e.target.value) })}
-                                  className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                 />
                               </div>
                               <div className="sm:col-span-1 lg:col-span-1">
@@ -763,7 +763,7 @@ export default function EnhancedProgramCreator({
                                   value={exercise.reps}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { reps: e.target.value })}
                                   placeholder={exercise.is_unilateral ? "8" : "8-12"}
-                                  className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                 />
                                 {exercise.is_unilateral && (
                                   <p className="text-xs text-muted-foreground mt-1">
@@ -780,7 +780,7 @@ export default function EnhancedProgramCreator({
                                   step="15"
                                   value={exercise.rest_seconds}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { rest_seconds: Number(e.target.value) })}
-                                  className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                 />
                               </div>
                               <div className="sm:col-span-1 lg:col-span-1">
@@ -791,16 +791,16 @@ export default function EnhancedProgramCreator({
                                   step="0.5"
                                   value={exercise.weight_kg || ""}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { weight_kg: e.target.value ? Number(e.target.value) : undefined })}
-                                  className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                 />
                               </div>
-                              <div className="sm:col-span-2 lg:col-span-1 flex items-end">
+                              <div className="sm:col-span-1 lg:col-span-1 flex items-end">
                                 <Button
                                   type="button"
                                   variant="outline"
                                   size="sm"
                                   onClick={() => removeExercise(dayIndex, exerciseIndex)}
-                                  className="w-full h-8"
+                                  className="w-full h-7 sm:h-8 text-xs"
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
@@ -845,7 +845,7 @@ export default function EnhancedProgramCreator({
                               </div>
                             )}
                             
-                            <div className="grid md:grid-cols-2 gap-3 mt-3">
+                            <div className="grid grid-cols-1 gap-2 sm:gap-3 mt-3">
                               <div>
                                 <label className="block text-xs font-medium mb-1">Märkused</label>
                                 <input
@@ -853,7 +853,7 @@ export default function EnhancedProgramCreator({
                                   value={exercise.coach_notes || ""}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { coach_notes: e.target.value })}
                                   placeholder="Tehnika vihjed..."
-                                  className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                 />
                               </div>
                               <div>
@@ -863,7 +863,7 @@ export default function EnhancedProgramCreator({
                                   value={exercise.video_url || ""}
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { video_url: e.target.value })}
                                   placeholder="https://youtube.com/..."
-                                  className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                 />
                               </div>
                             </div>
@@ -877,6 +877,7 @@ export default function EnhancedProgramCreator({
                                   variant="outline"
                                   size="sm"
                                   onClick={() => addAlternative(dayIndex, exerciseIndex)}
+                                  className="h-7 sm:h-8 text-xs"
                                 >
                                   <Plus className="h-3 w-3 mr-1" />
                                   Lisa alternatiiv
@@ -887,7 +888,7 @@ export default function EnhancedProgramCreator({
                                 <div className="space-y-3">
                                   {exercise.alternatives.map((alt, altIndex) => (
                                     <div key={altIndex} className="p-3 border rounded-lg bg-background">
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <div className="grid grid-cols-1 gap-2 sm:gap-3">
                                         <div>
                                           <label className="block text-xs font-medium mb-1">Alternatiivne harjutus</label>
                                           <input
@@ -895,7 +896,7 @@ export default function EnhancedProgramCreator({
                                             value={alt.alternative_name}
                                             onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'alternative_name', e.target.value)}
                                             placeholder="nt. Kükk ilma raskuseta"
-                                            className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                           />
                                         </div>
                                         <div>
@@ -903,15 +904,13 @@ export default function EnhancedProgramCreator({
                                           <select
                                             value={alt.difficulty_level}
                                             onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'difficulty_level', e.target.value)}
-                                            className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                           >
                                             <option value="easier">Lihtsam</option>
                                             <option value="same">Sama raskus</option>
                                             <option value="harder">Raskem</option>
                                           </select>
                                         </div>
-                                      </div>
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                                         <div>
                                           <label className="block text-xs font-medium mb-1">Kirjeldus (valikuline)</label>
                                           <input
@@ -919,7 +918,7 @@ export default function EnhancedProgramCreator({
                                             value={alt.alternative_description || ""}
                                             onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'alternative_description', e.target.value)}
                                             placeholder="Lühike kirjeldus..."
-                                            className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                           />
                                         </div>
                                         <div>
@@ -929,7 +928,7 @@ export default function EnhancedProgramCreator({
                                             value={alt.alternative_video_url || ""}
                                             onChange={(e) => updateAlternative(dayIndex, exerciseIndex, altIndex, 'alternative_video_url', e.target.value)}
                                             placeholder="https://youtube.com/..."
-                                            className="w-full max-w-full rounded border border-input bg-background px-1.5 py-1.5 text-xs sm:text-sm"
+                                            className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                           />
                                         </div>
                                       </div>
@@ -939,6 +938,7 @@ export default function EnhancedProgramCreator({
                                           variant="outline"
                                           size="sm"
                                           onClick={() => removeAlternative(dayIndex, exerciseIndex, altIndex)}
+                                          className="h-7 sm:h-8 text-xs"
                                         >
                                           <Trash2 className="h-3 w-3 mr-1" />
                                           Eemalda
@@ -960,9 +960,9 @@ export default function EnhancedProgramCreator({
                           type="button"
                           variant="outline"
                           onClick={() => addExercise(dayIndex)}
-                          className="w-full"
+                          className="w-full h-8 sm:h-10 text-xs sm:text-sm"
                         >
-                          <Plus className="mr-2 h-4 w-4" />
+                          <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                           Lisa harjutus
                         </Button>
                       </CardContent>
@@ -978,7 +978,7 @@ export default function EnhancedProgramCreator({
             <Button
               onClick={() => onOpenChange(false)}
               variant="outline"
-              className="flex-1 h-10 sm:h-11 text-sm"
+              className="flex-1 h-8 sm:h-10 text-xs sm:text-sm"
               disabled={creating}
             >
               Tühista
@@ -994,7 +994,7 @@ export default function EnhancedProgramCreator({
                 handleCreateProgram();
               }}
               disabled={creating || !selectedClientId || trainingDays.some(day => day.exercises.length === 0)}
-              className="flex-1 h-10 sm:h-11 text-sm bg-gradient-to-r from-primary to-accent"
+              className="flex-1 h-8 sm:h-10 text-xs sm:text-sm bg-gradient-to-r from-primary to-accent"
             >
               {creating ? "Loon programmi..." : "Loo programm"}
             </Button>
