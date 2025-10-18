@@ -657,19 +657,19 @@ export default function ModernWorkoutSession() {
     }
   }, [exercises, trackFeatureUsage]);
 
+  // Get the smart progression hook at component level
+  const { autoProgressProgram } = useSmartProgression(programId);
+
   // Automatic progression based on RPE/RIR data using optimized algorithm
   const applyAutomaticProgression = useCallback(async () => {
     if (!session || !programId || !exercises.length) return;
 
     try {
       // Use the optimized auto-progression for the entire program
-      const { autoProgressProgram } = useSmartProgression(programId);
-      
       if (autoProgressProgram) {
         const result = await autoProgressProgram();
         
         if (result?.success && result.updates_made > 0) {
-          
           // Show success message
           toast.success(
             result.deload_exercises && result.deload_exercises > 0 ? "Deload Applied!" : "Program Optimized!",
@@ -680,41 +680,47 @@ export default function ModernWorkoutSession() {
         }
       }
     } catch (error) {
+      console.error('Smart progression failed, using fallback:', error);
       
       // Fallback to simple RPE-based progression
-      for (const exercise of exercises) {
-        const rpe = exerciseRPE[exercise.id];
-        
-        // Only progress exercises with RPE data
-        if (!rpe) continue;
+      try {
+        for (const exercise of exercises) {
+          const rpe = exerciseRPE[exercise.id];
+          
+          // Only progress exercises with RPE data
+          if (!rpe) continue;
 
-        // Get current exercise parameters
-        const currentWeight = exercise.weight_kg;
-        
-        // Simple progression logic as fallback
-        let newWeight = currentWeight;
-        
-        if (rpe <= 6) {
-          // Too easy - increase weight by 5%
-          newWeight = currentWeight ? Math.round(currentWeight * 1.05 * 2) / 2 : currentWeight;
-        } else if (rpe >= 9) {
-          // Too hard - decrease weight by 5%
-          newWeight = currentWeight ? Math.round(currentWeight * 0.95 * 2) / 2 : currentWeight;
-        } else {
-          // RPE 7-8 is perfect range - maintain weight
-          continue;
-        }
+          // Get current exercise parameters
+          const currentWeight = exercise.weight_kg;
+          
+          // Simple progression logic as fallback
+          let newWeight = currentWeight;
+          
+          if (rpe <= 6) {
+            // Too easy - increase weight by 5%
+            newWeight = currentWeight ? Math.round(currentWeight * 1.05 * 2) / 2 : currentWeight;
+          } else if (rpe >= 9) {
+            // Too hard - decrease weight by 5%
+            newWeight = currentWeight ? Math.round(currentWeight * 0.95 * 2) / 2 : currentWeight;
+          } else {
+            // RPE 7-8 is perfect range - maintain weight
+            continue;
+          }
 
-        // Only update if weight actually changed
-        if (newWeight !== currentWeight && newWeight && currentWeight) {
-          await supabase
-            .from("client_items")
-            .update({ weight_kg: newWeight })
-            .eq("id", exercise.id);
+          // Only update if weight actually changed
+          if (newWeight !== currentWeight && newWeight && currentWeight) {
+            await supabase
+              .from("client_items")
+              .update({ weight_kg: newWeight })
+              .eq("id", exercise.id);
+          }
         }
+      } catch (fallbackError) {
+        console.error('Fallback progression also failed:', fallbackError);
+        // Don't throw - progression is non-critical
       }
     }
-  }, [session, programId, exercises, exerciseRPE]);
+  }, [session, programId, exercises, exerciseRPE, autoProgressProgram]);
 
   const handleFinishWorkout = useCallback(async () => {
     if (!session) return;
@@ -753,10 +759,7 @@ export default function ModernWorkoutSession() {
 
       if (error) throw error;
 
-      // Apply automatic progression based on RPE/RIR data (final cleanup)
-      await applyAutomaticProgression();
-
-      // Track workout completion
+      // Track workout completion first (before progression analysis)
       trackFeatureUsage('workout', 'completed', {
         program_id: programId,
         day_id: dayId,
@@ -765,8 +768,17 @@ export default function ModernWorkoutSession() {
         completed_exercises: completedExerciseIds.size
       });
 
+      // Show success message immediately
       toast.success("Treening lõpetatud!");
       setShowCompletionDialog(true);
+
+      // Apply automatic progression based on RPE/RIR data (non-blocking)
+      try {
+        await applyAutomaticProgression();
+      } catch (progressionError) {
+        console.error('Progression analysis failed (non-critical):', progressionError);
+        // Don't show error to user as workout is already completed
+      }
 
     } catch (err) {
       toast.error("Viga treeningu lõpetamisel");
