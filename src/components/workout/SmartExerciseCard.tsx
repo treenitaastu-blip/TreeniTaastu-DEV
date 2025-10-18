@@ -1,9 +1,10 @@
 import { useState, useCallback } from "react";
-import { Play, Check, Clock, Weight, Repeat, MessageSquare, Star, TrendingUp, Zap, Activity, Info } from "lucide-react";
+import { Play, Check, Clock, Weight, Repeat, MessageSquare, Star, TrendingUp, Zap, Activity, Info, Target, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { VideoModal } from "./VideoModal";
 import { RIRInput } from "./RIRInput";
 import { cn } from "@/lib/utils";
@@ -108,6 +109,12 @@ export default function SmartExerciseCard({
   const getSuggestedValue = (field: string) => {
     if (!progressionSuggestion || progressionSuggestion.type !== field) return null;
     return progressionSuggestion.value;
+  };
+
+  // Get current set inputs
+  const getCurrentSetInputs = (setNumber: number) => {
+    const key = `${exercise.id}:${setNumber}`;
+    return setInputs[key] || {};
   };
 
   const renderCurrentSet = () => {
