@@ -51,6 +51,42 @@ export default function UserManagement() {
   });
 
 
+  // Load entitlements and access matrix data
+  useEffect(() => {
+    const loadEntitlements = async () => {
+      try {
+        const adminClient = getAdminClient();
+        
+        // Load entitlements
+        const { data: entitlementsData, error: entitlementsError } = await adminClient
+          .from("user_entitlements")
+          .select("*");
+        
+        if (entitlementsError) throw entitlementsError;
+        setEntitlements(entitlementsData || []);
+
+        // Load access matrix
+        const { data: accessMatrixData, error: accessMatrixError } = await adminClient
+          .from("v_access_matrix")
+          .select("*");
+        
+        if (accessMatrixError) throw accessMatrixError;
+        setAccessMatrix(accessMatrixData || []);
+      } catch (error) {
+        console.error("Error loading entitlements:", error);
+        toast({
+          title: "Viga",
+          description: "Ei õnnestunud ligipääsu andmeid laadida",
+          variant: "destructive",
+        });
+      }
+    };
+
+    if (users.length > 0) {
+      loadEntitlements();
+    }
+  }, [users]);
+
   // Handle errors from the hook
   useEffect(() => {
     if (error) {
