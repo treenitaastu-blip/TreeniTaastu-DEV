@@ -12,6 +12,7 @@ export const getAdminClient = () => {
         auth: {
           persistSession: false, // Don't persist session for admin client
           autoRefreshToken: false, // Don't auto refresh for admin client
+          storageKey: 'supabase.admin.client', // Unique storage key for admin client
         }
       }
     );
