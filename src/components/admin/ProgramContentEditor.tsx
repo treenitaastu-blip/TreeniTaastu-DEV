@@ -42,18 +42,6 @@ interface ClientItem {
   is_unilateral?: boolean;
   reps_per_side?: number | null;
   total_reps?: number | null;
-  alternatives?: ExerciseAlternative[];
-}
-
-interface ExerciseAlternative {
-  id: string;
-  primary_exercise_id: string;
-  alternative_name: string;
-  alternative_description?: string | null;
-  alternative_video_url?: string | null;
-  difficulty_level?: string | null;
-  equipment_required?: string[] | null;
-  muscle_groups?: string[] | null;
 }
 
 interface ProgramContentEditorProps {
@@ -74,7 +62,6 @@ export default function ProgramContentEditor({
   const [saving, setSaving] = useState(false);
   const [days, setDays] = useState<ClientDay[]>([]);
   const [editingItem, setEditingItem] = useState<string | null>(null);
-  const [alternativesByItem, setAlternativesByItem] = useState<Record<string, ExerciseAlternative[]>>({});
   const [newExercise, setNewExercise] = useState({
     exercise_name: "",
     sets: 3,
@@ -98,11 +85,11 @@ export default function ProgramContentEditor({
     let display_reps: string;
     
     if (is_unilateral) {
-      // For unilateral exercises, extract the number from "8 mõlemal poolel" or just "8"
+      // For unilateral exercises, extract the number from "8 per side" or just "8"
       const repsNumber = parseInt(reps.replace(/[^\d]/g, ''));
       reps_per_side = repsNumber;
       total_reps = repsNumber * 2;
-      display_reps = `${repsNumber} mõlemal poolel`;
+      display_reps = `${repsNumber} per side`;
     } else {
       // For bilateral exercises, use the number as-is
       const repsNumber = parseInt(reps.replace(/[^\d]/g, ''));
@@ -176,24 +163,6 @@ export default function ProgramContentEditor({
       }
 
       setDays(daysWithItems);
-
-      // Load alternatives for all items
-      const allItemIds = daysWithItems.flatMap(day => day.items.map(item => item.id));
-      if (allItemIds.length > 0) {
-        const { data: alternativesData, error: alternativesError } = await supabase
-          .from("exercise_alternatives")
-          .select("*")
-          .in("primary_exercise_id", allItemIds)
-          .order("created_at", { ascending: true });
-        
-        if (!alternativesError && alternativesData) {
-          const altMap: Record<string, ExerciseAlternative[]> = {};
-          alternativesData.forEach((alt) => {
-            (altMap[alt.primary_exercise_id] = altMap[alt.primary_exercise_id] || []).push(alt);
-          });
-          setAlternativesByItem(altMap);
-        }
-      }
     } catch (error: any) {
       console.error("Error loading program content:", error);
       toast({
@@ -341,126 +310,6 @@ export default function ProgramContentEditor({
     }
   };
 
-  // Alternatives management functions
-  const addAlternative = async (itemId: string, alternative: Partial<ExerciseAlternative>) => {
-    setSaving(true);
-    try {
-      const { data, error } = await supabase
-        .from("exercise_alternatives")
-        .insert({
-          primary_exercise_id: itemId,
-          alternative_name: alternative.alternative_name || "",
-          alternative_description: alternative.alternative_description || null,
-          alternative_video_url: alternative.alternative_video_url || null,
-          difficulty_level: alternative.difficulty_level || null,
-          equipment_required: alternative.equipment_required || null,
-          muscle_groups: alternative.muscle_groups || null,
-        })
-        .select("*")
-        .single();
-
-      if (error) throw error;
-
-      setAlternativesByItem((prev) => ({
-        ...prev,
-        [itemId]: [...(prev[itemId] || []), data],
-      }));
-
-      toast({
-        title: "Alternatiiv lisatud",
-        description: "Alternatiivne harjutus on lisatud",
-      });
-    } catch (error: any) {
-      console.error("Error adding alternative:", error);
-      toast({
-        title: "Viga",
-        description: error.message || "Alternatiivi lisamisel tekkis viga",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const updateAlternative = async (altId: string, updates: Partial<ExerciseAlternative>) => {
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("exercise_alternatives")
-        .update({
-          alternative_name: updates.alternative_name,
-          alternative_description: updates.alternative_description,
-          alternative_video_url: updates.alternative_video_url,
-          difficulty_level: updates.difficulty_level,
-          equipment_required: updates.equipment_required,
-          muscle_groups: updates.muscle_groups,
-        })
-        .eq("id", altId);
-
-      if (error) throw error;
-
-      // Update local state
-      setAlternativesByItem((prev) => {
-        const newMap = { ...prev };
-        Object.keys(newMap).forEach((itemId) => {
-          newMap[itemId] = newMap[itemId].map((alt) =>
-            alt.id === altId ? { ...alt, ...updates } : alt
-          );
-        });
-        return newMap;
-      });
-
-      toast({
-        title: "Alternatiiv uuendatud",
-        description: "Muudatused on salvestatud",
-      });
-    } catch (error: any) {
-      console.error("Error updating alternative:", error);
-      toast({
-        title: "Viga",
-        description: error.message || "Alternatiivi uuendamisel tekkis viga",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteAlternative = async (altId: string) => {
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("exercise_alternatives")
-        .delete()
-        .eq("id", altId);
-
-      if (error) throw error;
-
-      // Update local state
-      setAlternativesByItem((prev) => {
-        const newMap = { ...prev };
-        Object.keys(newMap).forEach((itemId) => {
-          newMap[itemId] = newMap[itemId].filter((alt) => alt.id !== altId);
-        });
-        return newMap;
-      });
-
-      toast({
-        title: "Alternatiiv kustutatud",
-        description: "Alternatiivne harjutus on kustutatud",
-      });
-    } catch (error: any) {
-      console.error("Error deleting alternative:", error);
-      toast({
-        title: "Viga",
-        description: error.message || "Alternatiivi kustutamisel tekkis viga",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -570,103 +419,6 @@ export default function ProgramContentEditor({
                       </Button>
                     </div>
                   </div>
-
-                  {/* Alternatives Section */}
-                  <div className="mt-4 border-t pt-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="text-sm font-medium text-muted-foreground">Alternatiivsed harjutused</h5>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          const newAlt = {
-                            alternative_name: "",
-                            alternative_description: "",
-                            alternative_video_url: "",
-                            difficulty_level: "",
-                            equipment_required: null,
-                            muscle_groups: null,
-                          };
-                          addAlternative(item.id, newAlt);
-                        }}
-                        disabled={saving}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Lisa alternatiiv
-                      </Button>
-                    </div>
-                    
-                    {alternativesByItem[item.id] && alternativesByItem[item.id].length > 0 ? (
-                      <div className="space-y-2">
-                        {alternativesByItem[item.id].map((alt) => (
-                          <div key={alt.id} className="rounded-lg border bg-background p-3">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Nimi</Label>
-                                <Input
-                                  size="sm"
-                                  value={alt.alternative_name || ""}
-                                  onChange={(e) =>
-                                    updateAlternative(alt.id, { alternative_name: e.target.value })
-                                  }
-                                  placeholder="Alternatiivne harjutus"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Kirjeldus</Label>
-                                <Input
-                                  size="sm"
-                                  value={alt.alternative_description || ""}
-                                  onChange={(e) =>
-                                    updateAlternative(alt.id, { alternative_description: e.target.value })
-                                  }
-                                  placeholder="Lühike kirjeldus"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Video URL</Label>
-                                <Input
-                                  size="sm"
-                                  value={alt.alternative_video_url || ""}
-                                  onChange={(e) =>
-                                    updateAlternative(alt.id, { alternative_video_url: e.target.value })
-                                  }
-                                  placeholder="https://..."
-                                />
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-2">
-                              <div className="flex items-center gap-2">
-                                <Label className="text-xs text-muted-foreground">Raskus:</Label>
-                                <select
-                                  className="text-xs border rounded px-2 py-1"
-                                  value={alt.difficulty_level || ""}
-                                  onChange={(e) =>
-                                    updateAlternative(alt.id, { difficulty_level: e.target.value })
-                                  }
-                                >
-                                  <option value="">Vali raskus</option>
-                                  <option value="beginner">Algaja</option>
-                                  <option value="intermediate">Keskmine</option>
-                                  <option value="advanced">Edasijõudnud</option>
-                                </select>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => deleteAlternative(alt.id)}
-                                disabled={saving}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground italic">Pole alternatiivseid harjutusi</div>
-                    )}
-                  </div>
                 </div>
               ))}
 
@@ -709,7 +461,7 @@ export default function ProgramContentEditor({
                         </div>
                         <div>
                           <Label htmlFor="reps">
-                            Kordusi {newExercise.is_unilateral ? "(mõlemal poolel)" : ""}
+                            Kordusi {newExercise.is_unilateral ? "(per side)" : ""}
                           </Label>
                           <Input
                             id="reps"
@@ -719,7 +471,7 @@ export default function ProgramContentEditor({
                           />
                           {newExercise.is_unilateral && (
                             <p className="text-sm text-muted-foreground mt-1">
-                              Sisesta ainult number (nt. 8), süsteem näitab "8 mõlemal poolel"
+                              Sisesta ainult number (nt. 8), süsteem näitab "8 per side"
                             </p>
                           )}
                         </div>
@@ -770,7 +522,7 @@ export default function ProgramContentEditor({
                           <div className="space-y-1">
                             <p><strong>Harjutus:</strong> {newExercise.exercise_name}</p>
                             <p><strong>Seeriat:</strong> {newExercise.sets}</p>
-                            <p><strong>Kordusi:</strong> {newExercise.is_unilateral ? `${newExercise.reps} mõlemal poolel` : newExercise.reps}</p>
+                            <p><strong>Kordusi:</strong> {newExercise.is_unilateral ? `${newExercise.reps} per side` : newExercise.reps}</p>
                             <p><strong>Kaal:</strong> {newExercise.weight_kg === 0 || newExercise.weight_kg === null ? "ilma lisaraskuseta" : `${newExercise.weight_kg}kg`}</p>
                             {newExercise.is_unilateral && (
                               <p><strong>Kokku kordusi:</strong> {parseInt(newExercise.reps) * 2}</p>

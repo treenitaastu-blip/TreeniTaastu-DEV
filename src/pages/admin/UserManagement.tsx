@@ -11,17 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "@/components/ui/use-toast";
 import { Users, Plus, Pause, Play, Trash2, Search, Mail } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { useAdminData, UserProfile } from "@/hooks/useAdminData";
 
-// Types
-type UserProfile = {
-  id: string;
-  email: string | null;
-  role: string;
-  created_at: string;
-  is_paid: boolean;
-  trial_ends_at: string | null;
-  current_period_end: string | null;
-};
+// Types (UserProfile imported from useAdminData hook)
 
 type UserEntitlement = {
   user_id: string;
@@ -44,10 +36,9 @@ type AccessMatrix = {
 };
 
 export default function UserManagement() {
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const { users, loading, error, refetch } = useAdminData();
   const [entitlements, setEntitlements] = useState<UserEntitlement[]>([]);
   const [accessMatrix, setAccessMatrix] = useState<AccessMatrix[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [grantModalOpen, setGrantModalOpen] = useState(false);
@@ -58,58 +49,17 @@ export default function UserManagement() {
     note: ""
   });
 
-  // Load user data with pagination for scalability
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
 
-      // Fetch users from profiles with pagination (limit 100 for performance)
-      const { data: usersData, error: usersError } = await supabase
-        .from("profiles")
-        .select("id, email, role, created_at, is_paid, trial_ends_at, current_period_end")
-        .order("created_at", { ascending: false })
-        .limit(100); // Add pagination limit
-
-      if (usersError) throw usersError;
-
-      // Get user IDs for efficient entitlements query
-      const userIds = usersData?.map(u => u.id) || [];
-
-      // Fetch entitlements only for loaded users
-      const { data: entitlementsData, error: entitlementsError } = await supabase
-        .from("user_entitlements")
-        .select("*")
-        .in("user_id", userIds) // Filter by loaded user IDs
-        .order("created_at", { ascending: false });
-
-      if (entitlementsError) throw entitlementsError;
-
-      // Fetch access matrix only for loaded users
-      const { data: accessData, error: accessError } = await supabase
-        .from("v_access_matrix")
-        .select("*")
-        .in("user_id", userIds); // Filter by loaded user IDs
-
-      if (accessError) throw accessError;
-
-      setUsers((usersData || []) as UserProfile[]);
-      setEntitlements((entitlementsData || []) as UserEntitlement[]);
-      setAccessMatrix((accessData || []) as AccessMatrix[]);
-    } catch (error) {
-      console.error("Error loading user data:", error);
+  // Handle errors from the hook
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Viga",
         description: "Ei õnnestunud kasutajate andmeid laadida",
-        variant: "destructive"
+        variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  }, [error]);
 
   // Grant access to user
   const handleGrantAccess = async () => {
