@@ -629,7 +629,7 @@ export default function ModernWorkoutSession() {
       } catch (dbError) {
         // Try simple fallback function
         try {
-          const { data: simpleAnalysis, error: simpleError } = await supabase.rpc('analyze_exercise_progression_simple', {
+          const { data: simpleAnalysis, error: simpleError } = await supabase.rpc('analyze_exercise_progression_simple_v2', {
             p_client_item_id: exerciseId,
             p_weeks_back: 2
           });

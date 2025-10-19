@@ -109,7 +109,7 @@ export const useSmartProgression = (programId?: string, userId?: string) => {
     
     try {
       // Use simple algorithm (most reliable)
-      const { data: simpleData, error: simpleError } = await supabase.rpc('analyze_exercise_progression_simple', {
+      const { data: simpleData, error: simpleError } = await supabase.rpc('analyze_exercise_progression_simple_v2', {
         p_client_item_id: clientItemId
       });
 
