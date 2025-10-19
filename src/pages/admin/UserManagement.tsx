@@ -69,8 +69,13 @@ export default function UserManagement() {
         const { data: accessMatrixData, error: accessMatrixError } = await adminClient
           .rpc("admin_get_access_matrix");
         
-        if (accessMatrixError) throw accessMatrixError;
-        setAccessMatrix(accessMatrixData || []);
+        if (accessMatrixError) {
+          console.error("Access matrix error:", accessMatrixError);
+          // Don't throw error, just set empty array
+          setAccessMatrix([]);
+        } else {
+          setAccessMatrix(accessMatrixData || []);
+        }
       } catch (error) {
         console.error("Error loading entitlements:", error);
         toast({
