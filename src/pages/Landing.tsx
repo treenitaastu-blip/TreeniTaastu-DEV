@@ -34,12 +34,14 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto px-4 py-12">
           {/* Hero Section */}
           <div className="text-center mb-12">
-            <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-primary to-primary-foreground bg-clip-text text-transparent leading-tight">
-              Muuda oma elu
+            <h1 className="text-6xl font-bold mb-6 leading-tight">
+              <span className="bg-gradient-to-r from-primary via-primary to-primary-foreground bg-clip-text text-transparent">
+                Muuda oma elu
+              </span>
               <br />
-              <span className="text-5xl">28 päevaga</span>
+              <span className="text-5xl text-foreground font-bold">28 päevaga</span>
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-foreground/80 mb-8 max-w-2xl mx-auto font-medium">
               Personaalsed treeningkavad + ekspertide tugi. Tulemused garanteeritud.
             </p>
           </div>
