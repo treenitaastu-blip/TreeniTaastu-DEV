@@ -104,56 +104,75 @@ export function SupportChatDashboard() {
     }
   }, []);
 
-  // Optimized load conversations with proper query
+  // Load all users for proactive messaging
   const loadConversations = useCallback(async () => {
     setLoading(true);
     try {
-      console.log('Loading conversations...');
+      console.log('Loading all users for support...');
       
-      // Get conversations first
+      // Get all users from profiles (not just those with conversations)
+      const { data: profilesData, error: profilesError } = await supabaseAdmin
+        .from('profiles')
+        .select('id, email, full_name, created_at')
+        .order('created_at', { ascending: false });
+
+      console.log('All users data:', profilesData, profilesError);
+
+      if (profilesError) throw profilesError;
+
+      // Get existing conversations to show which users already have active chats
       const { data: conversationsData, error: conversationsError } = await supabase
         .from('support_conversations')
         .select('*')
-        .eq('status', 'active')
-        .order('last_message_at', { ascending: false });
+        .eq('status', 'active');
 
-      console.log('Conversations raw data:', conversationsData, conversationsError);
+      console.log('Existing conversations:', conversationsData, conversationsError);
 
-      if (conversationsError) throw conversationsError;
+      // Create a map of existing conversations
+      const existingConversations = new Map(
+        (conversationsData || []).map(conv => [conv.user_id, conv])
+      );
 
-      // Get unique user IDs for batch email fetch
-      const userIds = [...new Set(conversationsData?.map(conv => conv.user_id) || [])];
-      console.log('User IDs to fetch:', userIds);
+      // Create conversation entries for all users
+      const allUsersWithConversations: ConversationWithProfile[] = (profilesData || []).map(profile => {
+        const existingConv = existingConversations.get(profile.id);
+        
+        if (existingConv) {
+          // User has existing conversation
+          return {
+            ...existingConv as SupportConversation,
+            user_email: profile.email || 'Unknown User',
+            user_name: profile.full_name,
+            user_created_at: profile.created_at
+          };
+        } else {
+          // User has no conversation - create a virtual entry for proactive messaging
+          return {
+            id: `new-${profile.id}`, // Virtual ID for new conversations
+            user_id: profile.id,
+            status: 'new' as any, // Mark as new for UI purposes
+            created_at: profile.created_at,
+            updated_at: profile.created_at,
+            last_message_at: profile.created_at,
+            user_email: profile.email || 'Unknown User',
+            user_name: profile.full_name,
+            user_created_at: profile.created_at
+          };
+        }
+      });
       
-      // Fetch all user emails in one query using admin client to bypass RLS
-      const { data: profilesData, error: profilesError } = await supabaseAdmin
-        .from('profiles')
-        .select('id, email')
-        .in('id', userIds);
-
-      console.log('Profiles data:', profilesData, profilesError);
-
-      // Create email lookup map
-      const emailMap = new Map(profilesData?.map(profile => [profile.id, profile.email]) || []);
-      console.log('Email map:', emailMap);
-
-      const conversationsWithEmail: ConversationWithProfile[] = (conversationsData || []).map(conv => ({
-        ...conv as SupportConversation,
-        user_email: emailMap.get(conv.user_id) || 'Unknown User'
-      }));
-      
-      console.log('Final conversations with emails:', conversationsWithEmail);
-      setConversations(conversationsWithEmail);
+      console.log('All users with conversation status:', allUsersWithConversations);
+      setConversations(allUsersWithConversations);
       
       // Auto-select first conversation if none selected
-      if (conversationsWithEmail.length > 0 && !selectedConversationId) {
-        setSelectedConversationId(conversationsWithEmail[0].id);
+      if (allUsersWithConversations.length > 0 && !selectedConversationId) {
+        setSelectedConversationId(allUsersWithConversations[0].id);
       }
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      console.error('Error loading users:', error);
       toast({
         title: "Viga",
-        description: "Vestluste laadimine ebaõnnestus",
+        description: "Kasutajate laadimine ebaõnnestus",
         variant: "destructive"
       });
     } finally {
@@ -165,6 +184,13 @@ export function SupportChatDashboard() {
   const loadMessages = useCallback(async (conversationId: string) => {
     try {
       console.log('Loading messages for conversation:', conversationId);
+      
+      // Check if this is a new conversation (virtual ID)
+      if (conversationId.startsWith('new-')) {
+        // This is a new conversation, no messages yet
+        setMessages([]);
+        return;
+      }
       
       const { data, error } = await supabase
         .from('support_messages')
@@ -193,10 +219,49 @@ export function SupportChatDashboard() {
 
     setSending(true);
     
+    let actualConversationId = selectedConversationId;
+    
+    // If this is a new conversation, create it first
+    if (selectedConversationId.startsWith('new-')) {
+      const userId = selectedConversationId.replace('new-', '');
+      try {
+        const { data: newConversation, error: convError } = await supabase
+          .from('support_conversations')
+          .insert([{
+            user_id: userId,
+            status: 'active'
+          }])
+          .select()
+          .single();
+          
+        if (convError) throw convError;
+        actualConversationId = newConversation.id;
+        
+        // Update the conversation ID in state
+        setSelectedConversationId(actualConversationId);
+        
+        // Update the conversation in the list
+        setConversations(prev => prev.map(conv => 
+          conv.id === selectedConversationId 
+            ? { ...conv, id: actualConversationId, status: 'active' }
+            : conv
+        ));
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        toast({
+          title: "Viga",
+          description: "Vestluse loomine ebaõnnestus",
+          variant: "destructive"
+        });
+        setSending(false);
+        return;
+      }
+    }
+    
     // Optimistic update
     const tempMessage: SupportMessage = {
       id: `temp-${Date.now()}`,
-      conversation_id: selectedConversationId,
+      conversation_id: actualConversationId,
       sender_id: user.id,
       message: newMessage.trim(),
       is_admin: true,
@@ -211,7 +276,7 @@ export function SupportChatDashboard() {
       const { error } = await supabase
         .from('support_messages')
         .insert([{
-          conversation_id: selectedConversationId,
+          conversation_id: actualConversationId,
           sender_id: user.id,
           message: messageToSend,
           is_admin: true
@@ -430,7 +495,7 @@ export function SupportChatDashboard() {
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
-                Aktiivsed vestlused ({conversations.length})
+                Kõik kasutajad ({conversations.length})
               </div>
               <Button
                 variant="ghost"
@@ -452,7 +517,7 @@ export function SupportChatDashboard() {
               {!loading && conversations.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Aktiivseid vestlusi ei ole</p>
+                  <p>Kasutajaid ei leitud</p>
                 </div>
               )}
               {conversations.map((conversation) => (
@@ -466,17 +531,30 @@ export function SupportChatDashboard() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-sm">
-                        {conversation.user_email}
-                      </span>
+                      <div>
+                        <span className="font-medium text-sm">
+                          {conversation.user_email}
+                        </span>
+                        {conversation.user_name && (
+                          <div className="text-xs text-muted-foreground">
+                            {conversation.user_name}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {conversation.status}
+                    <Badge 
+                      variant={conversation.status === 'new' ? 'default' : 'secondary'} 
+                      className="text-xs"
+                    >
+                      {conversation.status === 'new' ? 'Uus kasutaja' : conversation.status}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    {formatTime(conversation.last_message_at)}
+                    {conversation.status === 'new' 
+                      ? `Registreeritud: ${formatTime(conversation.user_created_at || conversation.created_at)}`
+                      : formatTime(conversation.last_message_at)
+                    }
                   </div>
                 </div>
               ))}
