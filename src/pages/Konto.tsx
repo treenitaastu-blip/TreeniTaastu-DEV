@@ -131,19 +131,22 @@ const Konto = () => {
 
       setEntitlement(ent);
 
-      // 4) Load payments data (stubbed for now)
+      // 4) Load payments data
       try {
-        // Example (disabled for now):
-        // const { data: paymentsData } = await supabase
-        //   .from("payments")
-        //   .select("id, amount_cents, currency, created_at, status")
-        //   .eq("user_id", user.id)
-        //   .order("created_at", { ascending: false });
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from("payments")
+          .select("id, amount_cents, currency, created_at, status")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
         
-        const paymentsData: Payment[] = []; // keep empty for now
-        setPayments(paymentsData || []);
-      } catch {
-        // Table might not exist yet — that's fine.
+        if (paymentsError) {
+          console.error("Error loading payments:", paymentsError);
+          setPayments([]);
+        } else {
+          setPayments(paymentsData || []);
+        }
+      } catch (error) {
+        console.error("Error loading payments:", error);
         setPayments([]);
       } finally {
         setPaymentsLoading(false);
