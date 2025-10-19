@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { RefreshCw, ArrowRight, BarChart3, BookOpen, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useAccess } from "@/hooks/useAccess";
+import useAccess from "@/hooks/useAccess";
 import type { Database } from "@/integrations/supabase/types";
 
 type UUID = string;
