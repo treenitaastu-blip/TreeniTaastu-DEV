@@ -84,7 +84,7 @@ export default function UserManagement() {
       setGrantModalOpen(false);
       setSelectedUser(null);
       setGrantForm({ product: "static", status: "active", days: 30, note: "" });
-      await loadData();
+      await refetch();
     } catch (error) {
       console.error("Error granting access:", error);
       toast({
@@ -111,7 +111,7 @@ export default function UserManagement() {
         description: `Ligipääs ${!currentlyPaused ? "peatatud" : "taastatud"} kasutajale ${user.email || 'tundmatu kasutaja'}`
       });
 
-      await loadData();
+      await refetch();
     } catch (error) {
       console.error("Error toggling pause:", error);
       toast({
@@ -141,7 +141,7 @@ export default function UserManagement() {
         description: `Ligipääs eemaldatud kasutajalt ${user.email || 'tundmatu kasutaja'}`
       });
 
-      await loadData();
+      await refetch();
     } catch (error) {
       console.error("Error clearing access:", error);
       toast({
@@ -221,7 +221,7 @@ export default function UserManagement() {
             className="pl-10"
           />
         </div>
-        <Button onClick={loadData} variant="outline" size="sm" className="w-full sm:w-auto">
+        <Button onClick={refetch} variant="outline" size="sm" className="w-full sm:w-auto">
           Uuenda
         </Button>
       </div>
