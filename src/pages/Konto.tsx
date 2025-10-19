@@ -47,6 +47,7 @@ const Konto = () => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const [email, setEmail] = useState<string | null>(null);
   const [joinDate, setJoinDate] = useState<string | null>(null);
@@ -189,6 +190,32 @@ const Konto = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/"; // redirect peale logouti
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No portal URL received');
+      }
+    } catch (error) {
+      console.error('Customer portal error:', error);
+      toast({
+        title: "Viga",
+        description: "Tellimuse haldamine pole hetkel saadaval. Palun proovi hiljem uuesti.",
+        variant: "destructive",
+      });
+    } finally {
+      setPortalLoading(false);
+    }
   };
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
@@ -516,7 +543,25 @@ const Konto = () => {
                   </Link>
                 </Button>
                 {entitlement?.is_active && entitlement?.status === "active" && (
-                  <Button variant="outline" size="sm">Tühista tellimus</Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleManageSubscription}
+                    disabled={portalLoading}
+                    className="w-full sm:w-auto"
+                  >
+                    {portalLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Laen...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Halda tellimust
+                      </>
+                    )}
+                  </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
