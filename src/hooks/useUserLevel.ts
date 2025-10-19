@@ -29,7 +29,7 @@ let isFetching = false;
 let fetchPromise: Promise<UserLevelData | null> | null = null;
 
 export function useUserLevel() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [levelData, setLevelData] = useState<UserLevelData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +65,7 @@ export function useUserLevel() {
 
         const { data, error: functionError } = await supabase.functions.invoke('calculate-user-xp', {
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            Authorization: `Bearer ${session?.access_token}`,
           },
         });
 

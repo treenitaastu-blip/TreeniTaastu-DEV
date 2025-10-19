@@ -1,19 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export function useSession() {
-  const [session, setSession] = useState<Session | null>(null);
+  const { session, status } = useAuth();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
-      setSession(data.session ?? null);
-      setLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e: string, s: Session | null) => setSession(s));
-    return () => sub.subscription.unsubscribe();
-  }, []);
+    // Use the session from useAuth instead of calling getSession again
+    setLoading(status === "loading");
+  }, [session, status]);
 
   return { session, loading };
 }

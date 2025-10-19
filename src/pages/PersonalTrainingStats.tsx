@@ -53,7 +53,7 @@ type MonthlyData = {
 };
 
 export default function PersonalTrainingStats() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
   const { trackPageView, trackButtonClick } = useTrackEvent();
   
@@ -74,12 +74,7 @@ export default function PersonalTrainingStats() {
         setError(null);
 
         // Force session refresh to ensure we have the latest tokens
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          throw new Error("Autentimise viga: " + sessionError.message);
-        }
-
+        // Use session from useAuth hook instead of calling getSession
         if (!session) {
           throw new Error("Kasutaja pole sisse logitud");
         }

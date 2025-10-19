@@ -58,18 +58,11 @@ export default function LoginPage() {
 
   // If user is already logged in, bounce them to the intended page immediately
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!alive) return;
-      if (data.session?.user) {
-        navigate(postLoginPath, { replace: true });
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [navigate, postLoginPath]);
+    // Use user from useAuth instead of calling getSession
+    if (user) {
+      navigate(postLoginPath, { replace: true });
+    }
+  }, [user, navigate, postLoginPath]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
