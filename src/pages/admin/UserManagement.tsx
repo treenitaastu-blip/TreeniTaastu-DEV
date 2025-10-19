@@ -65,10 +65,9 @@ export default function UserManagement() {
         if (entitlementsError) throw entitlementsError;
         setEntitlements(entitlementsData || []);
 
-        // Load access matrix
+        // Load access matrix via RPC function
         const { data: accessMatrixData, error: accessMatrixError } = await adminClient
-          .from("v_access_matrix")
-          .select("*");
+          .rpc("admin_get_access_matrix");
         
         if (accessMatrixError) throw accessMatrixError;
         setAccessMatrix(accessMatrixData || []);
