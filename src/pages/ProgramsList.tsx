@@ -1,7 +1,7 @@
 // src/pages/ProgramsList.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { RefreshCw, ArrowRight, BarChart3, BookOpen } from "lucide-react";
+import { RefreshCw, ArrowRight, BarChart3, BookOpen, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
@@ -185,15 +185,15 @@ export default function ProgramsList() {
         <div className="rounded-2xl border bg-card shadow-soft p-6 md:p-8 text-center">
           <div className="text-lg font-medium mb-3">Pole programme</div>
           <p className="text-muted-foreground mb-6">
-            Hetkel pole ühtegi isiklikku programmi. Vaata meie{" "}
-            <Link
-              to="/programm"
-              className="text-primary hover:text-primary/80 underline underline-offset-4 font-medium transition-colors"
-            >
-              20-päevast "Programm"
-            </Link>{" "}
-            või küsi personaalse plaani kohta.
+            Hetkel pole ühtegi isiklikku programmi. Vaata meie teenuseid ja vali endale sobiv programm.
           </p>
+          <Link
+            to="/teenused"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+          >
+            <Target className="h-4 w-4" />
+            Vaata teenuseid
+          </Link>
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3" role="list">

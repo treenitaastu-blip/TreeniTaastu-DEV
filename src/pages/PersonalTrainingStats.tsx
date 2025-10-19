@@ -363,11 +363,11 @@ export default function PersonalTrainingStats() {
                   </div>
                   <h3 className="font-semibold mb-2">Pole veel treeninguid</h3>
                   <p className="text-muted-foreground mb-6">Alusta oma esimese treeninguga</p>
-                  <Link to="/programs">
+                  <Link to="/teenused">
                     <Button
-                      onClick={() => trackButtonClick('view_programs', '/programs', 'personal_training_stats_empty')}
+                      onClick={() => trackButtonClick('view_services', '/teenused', 'personal_training_stats_empty')}
                     >
-                      Vaata programme
+                      Vaata teenuseid
                     </Button>
                   </Link>
                 </div>
