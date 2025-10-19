@@ -1,14 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { createClient } from '@supabase/supabase-js';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-
-// Admin service client with service role key for admin operations
-const supabaseAdmin = createClient(
-  'https://dtxbrnrpzepwoxooqwlj.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0eGJybnJwemVwd294b29xd2xqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTM5ODM4OCwiZXhwIjoyMDc0OTc0Mzg4fQ.B5tR2PVFY55A9OIwUjXULkOCMz6fswoCN2CjaaQHy6s'
-);
+import { getAdminClient } from '@/utils/adminClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,7 +105,7 @@ export function SupportChatDashboard() {
       console.log('Loading all users for support...');
       
       // Get all users from profiles (not just those with conversations)
-      const { data: profilesData, error: profilesError } = await supabaseAdmin
+      const { data: profilesData, error: profilesError } = await getAdminClient()
         .from('profiles')
         .select('id, email, full_name, created_at')
         .order('created_at', { ascending: false });
@@ -225,7 +219,7 @@ export function SupportChatDashboard() {
     if (selectedConversationId.startsWith('new-')) {
       const userId = selectedConversationId.replace('new-', '');
       try {
-        const { data: newConversation, error: convError } = await supabaseAdmin
+        const { data: newConversation, error: convError } = await getAdminClient()
           .from('support_conversations')
           .insert([{
             user_id: userId,

@@ -1,11 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-// Admin service client with service role key
-const supabaseAdmin = createClient(
-  'https://dtxbrnrpzepwoxooqwlj.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0eGJybnJwemVwd294b29xd2xqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTM5ODM4OCwiZXhwIjoyMDc0OTc0Mzg4fQ.B5tR2PVFY55A9OIwUjXULkOCMz6fswoCN2CjaaQHy6s'
-);
+import { getAdminClient } from '@/utils/adminClient';
 
 export type UserProfile = {
   id: string;
@@ -27,18 +21,20 @@ export function useAdminData() {
       setLoading(true);
       setError(null);
 
+      const adminClient = getAdminClient();
+
       // Get all users from auth.users
-      const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+      const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers();
       if (authError) throw authError;
 
       // Get all profiles
-      const { data: profiles, error: profilesError } = await supabaseAdmin
+      const { data: profiles, error: profilesError } = await adminClient
         .from("profiles")
         .select("*");
       if (profilesError) throw profilesError;
 
       // Get all subscribers
-      const { data: subscribers, error: subscribersError } = await supabaseAdmin
+      const { data: subscribers, error: subscribersError } = await adminClient
         .from("subscribers")
         .select("*");
       if (subscribersError) throw subscribersError;
