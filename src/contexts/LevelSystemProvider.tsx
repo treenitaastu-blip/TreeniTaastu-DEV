@@ -6,7 +6,7 @@ interface LevelSystemContextType {
   loading: boolean;
   error: string | null;
   previousLevel: number | null;
-  hasLeveledUp: boolean;
+  hasLeveledUp: boolean | null;
   getTierColor: (tier: string) => string;
   getTierIcon: (tier: string) => string;
   clearLevelUpNotification: () => void;
