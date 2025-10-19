@@ -58,7 +58,8 @@ serve(async (req) => {
     logStep("Retrieved checkout session", { 
       sessionId: session.id, 
       paymentStatus: session.payment_status,
-      mode: session.mode 
+      mode: session.mode,
+      customerId: session.customer
     });
 
     // Verify payment was successful
@@ -98,6 +99,7 @@ serve(async (req) => {
         .upsert({
           user_id: userData.user.id,
           email: userData.user.email,
+          stripe_customer_id: session.customer,
           subscribed: true,
           status: 'active',
           subscription_tier: 'self_guided',
@@ -158,6 +160,7 @@ serve(async (req) => {
         .upsert({
           user_id: userData.user.id,
           email: userData.user.email,
+          stripe_customer_id: session.customer,
           subscribed: true,
           status: 'active',
           subscription_tier: 'guided',
@@ -221,6 +224,7 @@ serve(async (req) => {
         .upsert({
           user_id: userData.user.id,
           email: userData.user.email,
+          stripe_customer_id: session.customer,
           subscribed: true,
           status: 'active',
           subscription_tier: 'transformation',
