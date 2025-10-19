@@ -95,7 +95,7 @@ export default function PaymentSuccess() {
           {sessionId && (
             <div className="bg-muted rounded-lg p-3">
               <p className="text-sm text-muted-foreground">
-                Makse ID: <code className="font-mono">{sessionId}</code>
+                Makse ID: <code className="font-mono break-all">{sessionId}</code>
               </p>
             </div>
           )}
