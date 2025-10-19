@@ -1,5 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Custom storage implementation to avoid conflicts with regular client
+const adminStorage = {
+  getItem: (key: string) => {
+    // Use a completely different storage namespace
+    return localStorage.getItem(`admin.${key}`);
+  },
+  setItem: (key: string, value: string) => {
+    localStorage.setItem(`admin.${key}`, value);
+  },
+  removeItem: (key: string) => {
+    localStorage.removeItem(`admin.${key}`);
+  }
+};
+
 // Singleton admin service client with service role key
 let supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
@@ -12,7 +26,8 @@ export const getAdminClient = () => {
         auth: {
           persistSession: false, // Don't persist session for admin client
           autoRefreshToken: false, // Don't auto refresh for admin client
-          storageKey: 'supabase.admin.client', // Unique storage key for admin client
+          storage: adminStorage, // Use custom storage to avoid conflicts
+          detectSessionInUrl: false, // Don't detect sessions in URL
         }
       }
     );
