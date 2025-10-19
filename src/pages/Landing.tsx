@@ -46,44 +46,17 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Subscription Options */}
-          <div className="max-w-2xl mx-auto mb-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Monthly */}
-              <div className="relative p-6 rounded-2xl border-2 border-muted bg-card/50 hover:border-primary/50 transition-all">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Kuu pakett</h3>
-                  <div className="text-3xl font-bold mb-1">14,99€</div>
-                  <p className="text-sm text-muted-foreground mb-4">kuus</p>
-                  <Link
-                    to="/pricing"
-                    className="w-full inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all"
-                  >
-                    Alusta kohe
-                  </Link>
-                </div>
-              </div>
-
-              {/* Yearly */}
-              <div className="relative p-6 rounded-2xl border-2 border-primary bg-primary/5 shadow-lg">
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
-                    Säästab 33%
-                  </span>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Aasta pakett</h3>
-                  <div className="text-3xl font-bold mb-1">9,99€</div>
-                  <p className="text-sm text-muted-foreground mb-4">kuus (119,88€/aastas)</p>
-                  <Link
-                    to="/pricing"
-                    className="w-full inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-md"
-                  >
-                    Parim valik
-                  </Link>
-                </div>
-              </div>
-            </div>
+          {/* CTA Button */}
+          <div className="text-center mb-12">
+            <Link
+              to="/pricing"
+              className="inline-block px-8 py-4 bg-primary text-primary-foreground rounded-lg font-bold text-lg hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            >
+              Vaata hinnakirja ja alusta
+            </Link>
+            <p className="text-sm text-muted-foreground mt-4">
+              Alusta tasuta prooviga • Tühista igal ajal
+            </p>
           </div>
 
           {/* What's Included */}
