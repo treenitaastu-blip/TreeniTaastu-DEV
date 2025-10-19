@@ -103,14 +103,14 @@ export function PricingCards({ onSelectPlan, loading, currentPlan, showTrial = t
 
             <CardContent className="space-y-4 pt-0">
               {/* Features */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {plan.features.map((feature, index) => {
                   const isExcluded = feature.startsWith('Ei sisalda');
                   
                   return (
-                    <div key={index} className={`flex items-start gap-2 ${isExcluded ? 'opacity-60' : ''}`}>
-                      <Check className={`h-3 w-3 mt-1 flex-shrink-0 ${isExcluded ? 'text-muted-foreground/50' : 'text-green-500'}`} />
-                      <span className="text-xs leading-relaxed">{feature}</span>
+                    <div key={index} className={`flex items-start gap-3 ${isExcluded ? 'opacity-60' : ''}`}>
+                      <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${isExcluded ? 'text-muted-foreground/50' : 'text-green-500'}`} />
+                      <span className="text-sm leading-relaxed">{feature}</span>
                     </div>
                   );
                 })}
@@ -118,7 +118,7 @@ export function PricingCards({ onSelectPlan, loading, currentPlan, showTrial = t
 
               {/* Action Button */}
               <Button 
-                className="w-full h-9 text-sm font-semibold"
+                className="w-full h-10 text-sm font-semibold"
                 variant={getButtonVariant(plan)}
                 onClick={() => onSelectPlan(plan.id)}
                 disabled={isLoading || isCurrentPlan}
