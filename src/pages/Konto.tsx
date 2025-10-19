@@ -133,11 +133,14 @@ const Konto = () => {
 
       // 4) Load payments data
       try {
+        console.log("Loading payments for user:", user.id);
         const { data: paymentsData, error: paymentsError } = await supabase
           .from("payments")
           .select("id, amount_cents, currency, created_at, status")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
+        
+        console.log("Payments query result:", { paymentsData, paymentsError });
         
         if (paymentsError) {
           console.error("Error loading payments:", paymentsError);
