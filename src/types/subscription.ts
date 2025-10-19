@@ -29,11 +29,8 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     features: [
       'Kõik treeningprogrammid ja harjutused',
       'Videojuhised kõigile harjutustele',
-      'Progressi jälgimine ja statistika',
-      'Tervisetõed ja mindfulness-õpped',
-      'Ligipääs kõigil seadmetel',
-      'Ei sisalda personaalset juhendamist',
-      'Ei sisalda prioriteetset tuge'
+      'Progressi jälgimine',
+      '7 päeva täielik ligipääs'
     ],
     tier: 'trial'
   },
@@ -48,13 +45,10 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     interval: 'month',
     stripePriceId: 'price_1SBCY0EOy7gy4lEEyRwBvuyw',
     features: [
-      'Kõik valmiskavad ja harjutused',
-      'Progressi jälgimine ja statistika',
-      'Tervisetõed ja mindfulness-õpped',
-      'Ligipääs kõigil seadmetel',
+      'Kõik treeningprogrammid ja harjutused',
       'Uued programmid iga kuu',
       'Email tugi 48 tunni jooksul',
-      'Ideaalselt iseseisvalt treenijatele'
+      'Püsiv ligipääs'
     ],
     tier: 'self_guided'
   },
@@ -72,12 +66,8 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     features: [
       'Kõik iseseisva treeningu funktsioonid',
       'Iganädalased personaalsed tagasisided',
-      'Treeningkava kohandused sinu progressi järgi',
       'Prioriteetne tugi 24 tunni jooksul',
-      '1:1 konsultatsioonid emaili ja chati kaudu',
-      'Eesmärkide seadmine ja saavutamine',
-      'Piiratud kliendiarv - personaalne lähenemine',
-      'Ideaalselt motivatsiooni ja kindluse vajajatele'
+      '1:1 konsultatsioonid'
     ],
     tier: 'guided'
   },
@@ -95,11 +85,7 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
       '5 privaatset videokonsultatsiooni',
       'Täielikult personaalne treeningkava',
       '24/7 tugi programmi vältel',
-      'Toitumis- ja elustiilisoovitused',
-      'Ligipääs programmile ka pärast 6 nädalat',
-      'Põhjalik progressi analüüs',
-      'Kõige tulemuslikum viis luua püsiv muutus',
-      'Investeering, mis tasub end mitmekordselt ära'
+      'Toitumis- ja elustiilisoovitused'
     ],
     tier: 'transformation'
   }
