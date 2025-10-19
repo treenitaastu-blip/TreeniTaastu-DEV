@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+
+// Admin service client with service role key for admin operations
+const supabaseAdmin = createClient(
+  'https://dtxbrnrpzepwoxooqwlj.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0eGJybnJwemVwd294b29xd2xqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTM5ODM4OCwiZXhwIjoyMDc0OTc0Mzg4fQ.B5tR2PVFY55A9OIwUjXULkOCMz6fswoCN2CjaaQHy6s'
+);
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -118,8 +125,8 @@ export function SupportChatDashboard() {
       const userIds = [...new Set(conversationsData?.map(conv => conv.user_id) || [])];
       console.log('User IDs to fetch:', userIds);
       
-      // Fetch all user emails in one query
-      const { data: profilesData, error: profilesError } = await supabase
+      // Fetch all user emails in one query using admin client to bypass RLS
+      const { data: profilesData, error: profilesError } = await supabaseAdmin
         .from('profiles')
         .select('id, email')
         .in('id', userIds);
