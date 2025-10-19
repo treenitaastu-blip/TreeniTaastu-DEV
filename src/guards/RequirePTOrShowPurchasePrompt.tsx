@@ -28,36 +28,36 @@ export default function RequirePTOrShowPurchasePrompt() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
         <div className="max-w-2xl mx-auto pt-20">
-          <Card className="border-orange-200 bg-orange-50/50">
+          <Card className="border-blue-200 bg-blue-50/50">
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
-                <Lock className="h-8 w-8 text-orange-600" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+                <Lock className="h-8 w-8 text-blue-600" />
               </div>
-              <CardTitle className="text-2xl font-bold text-orange-900">
-                Ostu vajalik
+              <CardTitle className="text-2xl font-bold text-blue-900">
+                Tellimus vajalik
               </CardTitle>
-              <CardDescription className="text-orange-700">
+              <CardDescription className="text-blue-700">
                 Minu programmid on saadaval ainult tellimuse ostmise järel
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 text-center">
               <div className="space-y-2">
-                <p className="text-sm text-orange-800">
+                <p className="text-sm text-blue-800">
                   Sinu proovperiood on aktiivne, kuid personaalsete programmide ligipääs nõuab täiendavat tellimust.
                 </p>
-                <p className="text-sm text-orange-800">
+                <p className="text-sm text-blue-800">
                   Vaata meie teenuseid ja vali endale sobiv programm.
                 </p>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button asChild className="bg-orange-600 hover:bg-orange-700">
+                <Button asChild className="bg-blue-600 hover:bg-blue-700">
                   <Link to="/teenused">
                     <Target className="h-4 w-4 mr-2" />
                     Vaata teenuseid
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-100">
+                <Button asChild variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-100">
                   <Link to="/home">
                     Tagasi avalehele
                   </Link>
