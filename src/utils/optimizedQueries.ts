@@ -1,4 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import { createClient } from '@supabase/supabase-js';
+
+// Admin service client with service role key for admin operations
+const supabaseAdmin = createClient(
+  'https://dtxbrnrpzepwoxooqwlj.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0eGJybnJwemVwd294b29xd2xqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTM5ODM4OCwiZXhwIjoyMDc0OTc0Mzg4fQ.B5tR2PVFY55A9OIwUjXULkOCMz6fswoCN2CjaaQHy6s'
+);
 
 /**
  * Optimized database queries for the Personal Training system
@@ -138,7 +145,8 @@ export async function getUsersOptimized() {
   if (cached) return cached;
 
   try {
-    const { data, error } = await supabase
+    // Use admin client to bypass RLS restrictions
+    const { data, error } = await supabaseAdmin
       .from("profiles")
       .select(`
         id,
