@@ -21,6 +21,7 @@ import RequireStatic from "@/guards/RequireStatic";
 import RequireStaticOrShowInfo from "@/guards/RequireStaticOrShowInfo";
 import RequirePT from "@/guards/RequirePT";
 import RequirePTOrTrial from "@/guards/RequirePTOrTrial";
+import RequirePTOrShowPurchasePrompt from "@/guards/RequirePTOrShowPurchasePrompt";
 
 // Debug page
 const PTDebug = lazy(() => import("@/pages/PTDebug"));
@@ -364,7 +365,7 @@ if (container) {
                            <ServicesPage />
                          </Suspense>
                        } />
-                       <Route element={<RequirePT />}>
+                       <Route element={<RequirePTOrShowPurchasePrompt />}>
                          <Route path="/programs" element={
                            <Suspense fallback={<div className="p-6">Laen…</div>}>
                              <ProgramsList />
