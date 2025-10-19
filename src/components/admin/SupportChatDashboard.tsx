@@ -629,6 +629,8 @@ export function SupportChatDashboard() {
               <CardContent className="border-t">
                 <form onSubmit={sendMessage} className="flex gap-2">
                   <Input
+                    id="support-message"
+                    name="support-message"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
