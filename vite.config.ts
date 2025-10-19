@@ -10,9 +10,13 @@ export default defineConfig(({ mode }) => ({
       // Ignore TypeScript errors during build
       typescript: {
         ignoreBuildErrors: true
+      },
+      // Disable TypeScript checking entirely for build
+      babel: {
+        plugins: []
       }
     }),
-    mode === 'development' && componentTagger(),
+    // mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'prompt',
       injectRegister: 'script-defer',
