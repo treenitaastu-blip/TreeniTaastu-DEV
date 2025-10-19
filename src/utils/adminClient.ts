@@ -1,19 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
-// Admin client that uses service role to bypass RLS
-// This allows admin operations without being blocked by RLS policies
+// Admin client that uses the regular client with user session
+// The user must have admin role to access admin data
 export const getAdminClient = () => {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://dtxbrnrpzepwoxooqwlj.supabase.co';
-  const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseServiceKey) {
-    throw new Error('VITE_SUPABASE_SERVICE_ROLE_KEY is not configured');
-  }
-  
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
+  // Return the regular client - it already has the user's session
+  // RLS policies will check if the user has admin role
+  return supabase;
 };
