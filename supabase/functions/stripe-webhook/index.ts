@@ -281,8 +281,33 @@ async function handlePaymentIntentSucceeded(event: Stripe.Event, supabaseClient:
     currency: paymentIntent.currency
   });
   
-  // TODO: Implement payment intent processing
-  // This would record one-time payments in the database
+  // Find user by customer ID
+  const { data: subscriber, error: subError } = await supabaseClient
+    .from('subscribers')
+    .select('user_id, email')
+    .eq('stripe_customer_id', paymentIntent.customer)
+    .single();
+
+  if (subError || !subscriber) {
+    logStep("No subscriber found for customer", { customerId: paymentIntent.customer });
+    return;
+  }
+
+  // Record the payment
+  const { error: paymentError } = await supabaseClient
+    .from('payments')
+    .insert({
+      user_id: subscriber.user_id,
+      amount_cents: paymentIntent.amount,
+      currency: paymentIntent.currency,
+      status: 'paid'
+    });
+
+  if (paymentError) {
+    logStep("Error recording payment", { error: paymentError.message });
+  } else {
+    logStep("Payment recorded successfully", { userId: subscriber.user_id, amount: paymentIntent.amount });
+  }
 }
 
 async function handleCheckoutSessionCompleted(event: Stripe.Event, supabaseClient: any) {
@@ -293,6 +318,31 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event, supabaseClien
     amountTotal: session.amount_total
   });
   
-  // TODO: Implement checkout session processing
-  // This would record completed checkouts in the database
+  // Find user by customer ID
+  const { data: subscriber, error: subError } = await supabaseClient
+    .from('subscribers')
+    .select('user_id, email')
+    .eq('stripe_customer_id', session.customer)
+    .single();
+
+  if (subError || !subscriber) {
+    logStep("No subscriber found for customer", { customerId: session.customer });
+    return;
+  }
+
+  // Record the payment
+  const { error: paymentError } = await supabaseClient
+    .from('payments')
+    .insert({
+      user_id: subscriber.user_id,
+      amount_cents: session.amount_total || 0,
+      currency: session.currency || 'eur',
+      status: 'paid'
+    });
+
+  if (paymentError) {
+    logStep("Error recording payment", { error: paymentError.message });
+  } else {
+    logStep("Payment recorded successfully", { userId: subscriber.user_id, amount: session.amount_total });
+  }
 }
