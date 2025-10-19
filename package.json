@@ -1,6 +1,7 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
+  "_comment": "Force Vercel redeploy - fix CSS loading issues",
   "version": "0.0.0",
   "type": "module",
   "engines": {
