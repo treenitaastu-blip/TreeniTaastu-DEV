@@ -17,6 +17,11 @@ export const getAdminClient = () => {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
+          storage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {}
+          }
         }
       }
     );
