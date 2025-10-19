@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -19,52 +19,106 @@ export type UserLevelData = {
   };
 };
 
+// Global cache to prevent multiple API calls
+const levelDataCache = new Map<string, { data: UserLevelData; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes background refresh
+
+// Global state to prevent multiple simultaneous requests
+let isFetching = false;
+let fetchPromise: Promise<UserLevelData | null> | null = null;
+
 export function useUserLevel() {
   const { user } = useAuth();
   const [levelData, setLevelData] = useState<UserLevelData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previousLevel, setPreviousLevel] = useState<number | null>(null);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchUserLevel = async () => {
+  const fetchUserLevel = useCallback(async (forceRefresh = false): Promise<UserLevelData | null> => {
     if (!user) {
       setLoading(false);
-      return;
+      return null;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { data, error: functionError } = await supabase.functions.invoke('calculate-user-xp', {
-        headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-      });
-
-      if (functionError) {
-        throw functionError;
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = levelDataCache.get(user.id);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        setLevelData(cached.data);
+        setLoading(false);
+        return cached.data;
       }
-
-      // Check for level up
-      if (levelData && data.level > levelData.level) {
-        setPreviousLevel(levelData.level);
-      }
-
-      setLevelData(data);
-    } catch (e) {
-      console.error('Error fetching user level:', e);
-      setError(e instanceof Error ? e.message : 'Failed to fetch user level');
-    } finally {
-      setLoading(false);
     }
-  };
 
+    // Prevent multiple simultaneous requests
+    if (isFetching && fetchPromise) {
+      return fetchPromise;
+    }
+
+    isFetching = true;
+    fetchPromise = (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error: functionError } = await supabase.functions.invoke('calculate-user-xp', {
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+        });
+
+        if (functionError) {
+          throw functionError;
+        }
+
+        // Check for level up
+        if (levelData && data.level > levelData.level) {
+          setPreviousLevel(levelData.level);
+        }
+
+        // Cache the result
+        levelDataCache.set(user.id, { data, timestamp: Date.now() });
+        
+        setLevelData(data);
+        return data;
+      } catch (e) {
+        console.error('Error fetching user level:', e);
+        setError(e instanceof Error ? e.message : 'Failed to fetch user level');
+        return null;
+      } finally {
+        setLoading(false);
+        isFetching = false;
+        fetchPromise = null;
+      }
+    })();
+
+    return fetchPromise;
+  }, [user, levelData]);
+
+  // Initial load
   useEffect(() => {
     fetchUserLevel();
-  }, [user]);
+  }, [fetchUserLevel]);
 
-  const getTierColor = (tier: string): string => {
+  // Background refresh
+  useEffect(() => {
+    if (!user) return;
+
+    // Set up background refresh
+    refreshIntervalRef.current = setInterval(() => {
+      fetchUserLevel(true); // Force refresh in background
+    }, REFRESH_INTERVAL);
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [user, fetchUserLevel]);
+
+  const getTierColor = useCallback((tier: string): string => {
     switch (tier) {
       case 'Müütiline': return 'from-purple-500 to-pink-500';
       case 'Obsidian': return 'from-gray-800 to-gray-900';
@@ -75,9 +129,9 @@ export function useUserLevel() {
       case 'Pronks': return 'from-orange-400 to-orange-600';
       default: return 'from-gray-300 to-gray-500';
     }
-  };
+  }, []);
 
-  const getTierIcon = (tier: string): string => {
+  const getTierIcon = useCallback((tier: string): string => {
     switch (tier) {
       case 'Müütiline': return '👑';
       case 'Obsidian': return '🖤';
@@ -88,11 +142,24 @@ export function useUserLevel() {
       case 'Pronks': return '🥉';
       default: return '🏅';
     }
-  };
+  }, []);
 
-  const clearLevelUpNotification = () => {
+  const clearLevelUpNotification = useCallback(() => {
     setPreviousLevel(null);
-  };
+  }, []);
+
+  const refreshLevel = useCallback(() => {
+    fetchUserLevel(true);
+  }, [fetchUserLevel]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, []);
 
   return {
     levelData,
@@ -103,6 +170,6 @@ export function useUserLevel() {
     getTierColor,
     getTierIcon,
     clearLevelUpNotification,
-    refreshLevel: fetchUserLevel,
+    refreshLevel,
   };
 }

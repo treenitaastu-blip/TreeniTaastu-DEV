@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { useUserLevel } from '@/hooks/useUserLevel';
+import { useLevelSystem } from '@/contexts/LevelSystemProvider';
 import { useToast } from '@/hooks/use-toast';
 import confetti from 'canvas-confetti';
 
 export function LevelUpToast() {
-  const { hasLeveledUp, levelData, previousLevel, clearLevelUpNotification, getTierIcon } = useUserLevel();
+  const { hasLeveledUp, levelData, previousLevel, clearLevelUpNotification, getTierIcon } = useLevelSystem();
   const { toast } = useToast();
 
   useEffect(() => {
