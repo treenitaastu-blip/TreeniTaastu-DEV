@@ -20,20 +20,20 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   // Free Trial - 7 days (no payment needed)
   trial_self_guided: {
     id: 'trial_self_guided',
-    name: '7-päevane proov',
-    description: 'Alusta tasuta ja vaata, kuidas su keha hakkab muutuma',
+    name: 'Tasuta proov',
+    description: 'Alusta tasuta ja kogeda kõiki funktsioone 7 päeva jooksul',
     price: 0,
     currency: 'EUR',
     interval: 'month',
     trialDays: 7,
     features: [
-      '✅ 7 päeva piiramatut ligipääsu',
-      '✅ Kõik treeningprogrammid',
-      '✅ Harjutuste videojuhised',
-      '✅ Progressi jälgimine',
-      '✅ Tervisetõed ja mindfulness',
-      '❌ Ei sisalda personaalset juhendamist',
-      '❌ Ei sisalda prioriteetset tuge'
+      'Kõik treeningprogrammid ja harjutused',
+      'Videojuhised kõigile harjutustele',
+      'Progressi jälgimine ja statistika',
+      'Tervisetõed ja mindfulness-õpped',
+      'Ligipääs kõigil seadmetel',
+      'Ei sisalda personaalset juhendamist',
+      'Ei sisalda prioriteetset tuge'
     ],
     tier: 'trial'
   },
@@ -41,20 +41,20 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   // Self-Guided Plan - 19.99€/month
   self_guided: {
     id: 'self_guided',
-    name: 'Self-Guided',
-    description: 'Treeni omas tempos, kindla suuna ja struktuuriga',
+    name: 'Iseseisev treening',
+    description: 'Treeni omas tempos professionaalse struktuuri ja suunaga',
     price: 19.99,
     currency: 'EUR',
     interval: 'month',
     stripePriceId: 'price_1SBCY0EOy7gy4lEEyRwBvuyw',
     features: [
-      '✅ Kõik valmiskavad ja harjutused',
-      '✅ Progressi jälgimine ja statistika',
-      '✅ Tervisetõed ja mindfulness-õpped',
-      '✅ Ligipääs igal seadmel',
-      '✅ Uued programmid iga kuu',
-      '✅ Email tugi 48h jooksul',
-      '💡 Ideaalne, kui treenid iseseisvalt'
+      'Kõik valmiskavad ja harjutused',
+      'Progressi jälgimine ja statistika',
+      'Tervisetõed ja mindfulness-õpped',
+      'Ligipääs kõigil seadmetel',
+      'Uued programmid iga kuu',
+      'Email tugi 48 tunni jooksul',
+      'Ideaalselt iseseisvalt treenijatele'
     ],
     tier: 'self_guided'
   },
@@ -62,22 +62,22 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   // Guided Plan - 49.99€/month
   guided: {
     id: 'guided',
-    name: 'Guided',
-    description: 'Isiklik juhendaja su taskus – ilma treeneritasu hirmsa hinnaga',
+    name: 'Juhendatud treening',
+    description: 'Isiklik treener su taskus - professionaalne juhendamine igapäev',
     price: 49.99,
     currency: 'EUR',
     interval: 'month',
     stripePriceId: 'price_1SBCYgEOy7gy4lEEWJWNz8gW',
     isPopular: true,
     features: [
-      '✅ Kõik Self-Guided funktsioonid',
-      '💬 Iganädalased personaalsed tagasisided',
-      '📊 Kava kohandused sinu progressi järgi',
-      '⚡ Prioriteetne tugi 24h jooksul',
-      '🎯 1:1 konsultatsioonid (email/chat)',
-      '🏆 Eesmärkide seadmine ja saavutamine',
-      '⭐ Ainult piiratud kliendiarvule',
-      '💡 Ideaalne, kui vajad motivatsiooni ja kindlust'
+      'Kõik iseseisva treeningu funktsioonid',
+      'Iganädalased personaalsed tagasisided',
+      'Treeningkava kohandused sinu progressi järgi',
+      'Prioriteetne tugi 24 tunni jooksul',
+      '1:1 konsultatsioonid emaili ja chati kaudu',
+      'Eesmärkide seadmine ja saavutamine',
+      'Piiratud kliendiarv - personaalne lähenemine',
+      'Ideaalselt motivatsiooni ja kindluse vajajatele'
     ],
     tier: 'guided'
   },
@@ -85,21 +85,21 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   // Transformation Package - 199€ one-time
   transformation: {
     id: 'transformation',
-    name: 'Transformation',
-    description: '6 nädalat, mis muudavad su elu – füsioterapeut ja treener su kõrval',
+    name: 'Transformatsioon',
+    description: '6 nädalat, mis muudavad su elu - füsioterapeut ja treener su kõrval',
     price: 199,
     currency: 'EUR',
     interval: 'one_time',
     stripePriceId: 'price_1SBCZeEOy7gy4lEEc3DwQzTu',
     features: [
-      '🎥 5× privaatsed videokonsultatsioonid',
-      '📝 Täielikult personaalne treeningkava',
-      '💬 24/7 tugi programmi vältel (WhatsApp/email)',
-      '🍎 Toitumis- ja elustiilisoovitused',
-      '♾️ Ligipääs oma programmile ka pärast 6 nädalat',
-      '📊 Põhjalik progressi analüüs',
-      '🔥 Kõige tulemuslikum viis luua püsiv muutus',
-      '💎 Investeering, mis tasub end mitmekordselt ära'
+      '5 privaatset videokonsultatsiooni',
+      'Täielikult personaalne treeningkava',
+      '24/7 tugi programmi vältel',
+      'Toitumis- ja elustiilisoovitused',
+      'Ligipääs programmile ka pärast 6 nädalat',
+      'Põhjalik progressi analüüs',
+      'Kõige tulemuslikum viis luua püsiv muutus',
+      'Investeering, mis tasub end mitmekordselt ära'
     ],
     tier: 'transformation'
   }

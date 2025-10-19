@@ -47,17 +47,17 @@ export function PricingCards({ onSelectPlan, loading, currentPlan, showTrial = t
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
       {plans.map((plan) => {
         const isCurrentPlan = currentPlan === plan.id;
         const isLoading = loading === plan.id;
         
         return (
-          <Card key={plan.id} className={`relative ${getCardStyle(plan)}`}>
+          <Card key={plan.id} className={`relative ${getCardStyle(plan)} transition-all duration-200 hover:shadow-lg`}>
             {/* Popular Badge */}
             {plan.isPopular && (
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground px-3 py-1">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                <Badge className="bg-primary text-primary-foreground px-4 py-1 text-xs font-semibold">
                   Populaarne
                 </Badge>
               </div>
@@ -65,56 +65,52 @@ export function PricingCards({ onSelectPlan, loading, currentPlan, showTrial = t
 
             {/* Trial Badge */}
             {plan.tier === 'trial' && showTrial && (
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-green-100 text-green-800 border-green-200 px-3 py-1">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                <Badge className="bg-green-100 text-green-800 border-green-200 px-4 py-1 text-xs font-semibold">
                   Tasuta Proov
                 </Badge>
               </div>
             )}
 
-            <CardHeader className="text-center pb-4">
-              <div className="flex items-center justify-center gap-2 mb-2">
+            <CardHeader className="text-center pb-4 pt-6">
+              <div className="flex items-center justify-center gap-2 mb-3">
                 {getIcon(plan)}
-                <CardTitle className="text-lg">{plan.name}</CardTitle>
+                <CardTitle className="text-lg font-semibold">{plan.name}</CardTitle>
               </div>
               
-              <CardDescription className="text-sm">
+              <CardDescription className="text-sm text-muted-foreground leading-relaxed">
                 {plan.description}
               </CardDescription>
 
               {/* Price */}
-              <div className="mt-4">
-                <div className="text-3xl font-bold text-primary">
+              <div className="mt-6">
+                <div className="text-3xl font-bold text-primary mb-1">
                   {plan.price === 0 ? 'Tasuta' : `${plan.price}€`}
                 </div>
                 {plan.interval === 'month' && plan.price > 0 && (
                   <div className="text-sm text-muted-foreground">kuus</div>
                 )}
                 {plan.interval === 'one_time' && plan.price > 0 && (
-                  <div className="text-sm text-muted-foreground">ühekordne</div>
+                  <div className="text-sm text-muted-foreground">ühekordne makse</div>
                 )}
                 {plan.trialDays && (
-                  <div className="text-sm text-green-600 font-medium">
+                  <div className="text-sm text-green-600 font-medium mt-1">
                     {plan.trialDays} päeva tasuta
                   </div>
                 )}
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6 pt-0">
               {/* Features */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {plan.features.map((feature, index) => {
-                  // Check if feature starts with emoji (✅, ❌, 💡, etc.)
-                  const hasEmoji = /^[\u{1F300}-\u{1F9FF}]|^[✅❌]/u.test(feature);
-                  const isExcluded = feature.startsWith('❌');
+                  const isExcluded = feature.startsWith('Ei sisalda');
                   
                   return (
-                    <div key={index} className={`flex items-start gap-2 ${isExcluded ? 'opacity-60' : ''}`}>
-                      {!hasEmoji && (
-                        <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      )}
-                      <span className="text-sm">{feature}</span>
+                    <div key={index} className={`flex items-start gap-3 ${isExcluded ? 'opacity-60' : ''}`}>
+                      <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${isExcluded ? 'text-muted-foreground/50' : 'text-green-500'}`} />
+                      <span className="text-sm leading-relaxed">{feature}</span>
                     </div>
                   );
                 })}
@@ -122,7 +118,7 @@ export function PricingCards({ onSelectPlan, loading, currentPlan, showTrial = t
 
               {/* Action Button */}
               <Button 
-                className="w-full"
+                className="w-full h-11 text-sm font-semibold"
                 variant={getButtonVariant(plan)}
                 onClick={() => onSelectPlan(plan.id)}
                 disabled={isLoading || isCurrentPlan}

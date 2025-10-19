@@ -10,7 +10,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { PricingCards } from "@/components/subscription/PricingCards";
 import { FeatureComparison } from "@/components/subscription/FeatureComparison";
 import { TrustIndicators } from "@/components/subscription/TrustIndicators";
-import { Check, ArrowRight, Star } from "lucide-react";
+import { FAQ } from "@/components/subscription/FAQ";
+import { Check, ArrowRight, Star, Shield, Clock, Award, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 // Trial signup component
@@ -197,27 +198,73 @@ export default function Pricing() {
     "Elektrooniline tugi"
   ];
 
-  // Show trial signup if user is not logged in
+  // Show comprehensive pricing page for non-logged in users
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-        <div className="max-w-md mx-auto pt-20">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-4">Alusta tasuta prooviga</h1>
-            <p className="text-lg text-muted-foreground">
-              7 päeva tasuta ligipääsu kõikidele funktsioonidele
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          {/* Hero Section */}
+          <div className="text-center mb-16">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+              Vali oma treeningplaan
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+              Professionaalsed treeningprogrammid, mis sobivad nii algajatele kui kogenud treenijatele. 
+              Alusta tasuta prooviga ja kogeda erinevust.
             </p>
+            
+            {/* Trust Indicators */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-12">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Shield className="h-4 w-4 text-green-500" />
+                <span>100% Turvaline</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4 text-blue-500" />
+                <span>Tühista igal ajal</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Award className="h-4 w-4 text-purple-500" />
+                <span>Füsioterapeudi koostatud</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4 text-orange-500" />
+                <span>500+ treenijat</span>
+              </div>
+            </div>
           </div>
-          
-          <TrialSignupCard />
-          
-          <div className="mt-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Kas sul on juba konto?{' '}
-              <Link to="/login" className="text-primary hover:underline">
-                Logi sisse
-              </Link>
-            </p>
+
+          {/* Pricing Cards */}
+          <PricingCards 
+            onSelectPlan={handleSelectPlan}
+            loading={loading}
+            currentPlan={subscription?.planId}
+            showTrial={true}
+          />
+
+          {/* Feature Comparison */}
+          <FeatureComparison />
+
+          {/* FAQ Section */}
+          <FAQ />
+
+          {/* CTA Section */}
+          <div className="text-center mt-16">
+            <div className="bg-muted/50 rounded-2xl p-8 max-w-2xl mx-auto">
+              <h2 className="text-2xl font-bold mb-4">Valmis alustama?</h2>
+              <p className="text-muted-foreground mb-6">
+                Alusta tasuta prooviga ja kogeda erinevust juba esimese nädala jooksul.
+              </p>
+              <div className="space-y-4">
+                <TrialSignupCard />
+                <p className="text-sm text-muted-foreground">
+                  Kas sul on juba konto?{' '}
+                  <Link to="/login" className="text-primary hover:underline font-medium">
+                    Logi sisse
+                  </Link>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -225,47 +272,56 @@ export default function Pricing() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8 pt-8">
-          <h1 className="text-4xl font-bold mb-4">Vali oma plaan</h1>
-          <p className="text-xl text-muted-foreground mb-2">
-            {subscription ? 'Uuenda oma tellimust' : 'Alusta 7-päevase tasuta prooviga'}
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+            {subscription ? 'Uuenda oma tellimust' : 'Vali oma treeningplaan'}
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+            {subscription 
+              ? 'Uuenda oma plaan või vaata teisi võimalusi. Muudatused jõustuvad kohe.'
+              : 'Alusta tasuta prooviga ja kogeda erinevust juba esimese nädala jooksul.'
+            }
           </p>
-          <p className="text-sm text-muted-foreground">
-            Krediitkaart ei ole vajalik • Tühista igal ajal
-          </p>
+          
+          {/* Trust Indicators */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-8">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Shield className="h-4 w-4 text-green-500" />
+              <span>100% Turvaline</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4 text-blue-500" />
+              <span>Tühista igal ajal</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Award className="h-4 w-4 text-purple-500" />
+              <span>Füsioterapeudi koostatud</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4 text-orange-500" />
+              <span>500+ treenijat</span>
+            </div>
+          </div>
         </div>
-
-        {/* Trust Indicators */}
-        <TrustIndicators />
-
-        {/* New Subscription Plans */}
-        <PricingCards 
-          onSelectPlan={handleSelectPlan}
-          loading={loading}
-          currentPlan={subscription?.planId}
-          showTrial={!subscription}
-        />
-
-        {/* Feature Comparison Table */}
-        <FeatureComparison />
 
         {/* Current Subscription Info */}
         {subscription && (
-          <Card className="max-w-2xl mx-auto mt-8">
+          <Card className="max-w-2xl mx-auto mb-12 border-primary/20">
             <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-2">
                 <Star className="h-5 w-5 text-yellow-500" />
                 Sinu praegune tellimus
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-center space-y-2">
+            <CardContent className="text-center space-y-3">
               <p className="text-lg font-medium">
                 {subscription.planId === 'trial_self_guided' ? '7-päevane proov' : 
-                 subscription.planId === 'self_guided' ? 'Self-Guided' :
-                 subscription.planId === 'guided' ? 'Guided' :
-                 subscription.planId === 'transformation' ? 'Transformation' : 'Teadmata'}
+                 subscription.planId === 'self_guided' ? 'Iseseisev treening' :
+                 subscription.planId === 'guided' ? 'Juhendatud treening' :
+                 subscription.planId === 'transformation' ? 'Transformatsioon' : 'Teadmata'}
               </p>
               <p className="text-sm text-muted-foreground">
                 Status: {subscription.status}
@@ -284,27 +340,33 @@ export default function Pricing() {
           </Card>
         )}
 
-        <div className="text-center mt-8 space-y-4">
-          <p className="text-sm text-muted-foreground">
-            7-päevane tasuta prooviperiood • Tühista igal ajal • Turvaline makse
-          </p>
-          
-          {status !== "signedIn" && (
-            <div className="space-y-6">
-              <TrialSignupCard />
-              
-              <div className="bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
-                <p className="text-sm text-muted-foreground mb-2">
-                  Juba konto olemas?
-                </p>
-                <Link to="/login">
-                  <Button variant="outline" size="sm" className="w-full">
-                    Logi sisse
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
+        {/* Pricing Cards */}
+        <PricingCards 
+          onSelectPlan={handleSelectPlan}
+          loading={loading}
+          currentPlan={subscription?.planId}
+          showTrial={!subscription}
+        />
+
+        {/* Feature Comparison */}
+        <FeatureComparison />
+
+        {/* FAQ Section */}
+        <FAQ />
+
+        {/* Additional CTA */}
+        <div className="text-center mt-16">
+          <div className="bg-muted/50 rounded-2xl p-8 max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold mb-4">Küsimused?</h2>
+            <p className="text-muted-foreground mb-6">
+              Võta ühendust meie tugimeeskonnaga, kui sul on küsimusi või vajad abi.
+            </p>
+            <Link to="/kontakt">
+              <Button variant="outline" size="lg">
+                Võta ühendust
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

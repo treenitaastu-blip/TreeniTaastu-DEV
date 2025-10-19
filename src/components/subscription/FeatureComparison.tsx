@@ -11,6 +11,13 @@ export function FeatureComparison() {
       transformation: true,
     },
     {
+      name: "Videojuhised kõigile harjutustele",
+      trial: true,
+      selfGuided: true,
+      guided: true,
+      transformation: true,
+    },
+    {
       name: "Progressi jälgimine ja statistika",
       trial: true,
       selfGuided: true,
@@ -18,7 +25,14 @@ export function FeatureComparison() {
       transformation: true,
     },
     {
-      name: "Tervisetõed ja mindfulness",
+      name: "Tervisetõed ja mindfulness-õpped",
+      trial: true,
+      selfGuided: true,
+      guided: true,
+      transformation: true,
+    },
+    {
+      name: "Ligipääs kõigil seadmetel",
       trial: true,
       selfGuided: true,
       guided: true,
@@ -35,9 +49,9 @@ export function FeatureComparison() {
     {
       name: "Email tugi",
       trial: false,
-      selfGuided: "48h",
-      guided: "24h",
-      transformation: "24/7",
+      selfGuided: "48 tunni jooksul",
+      guided: "24 tunni jooksul",
+      transformation: "24/7 tugi",
     },
     {
       name: "Iganädalased personaalsed tagasisided",
@@ -47,18 +61,18 @@ export function FeatureComparison() {
       transformation: true,
     },
     {
-      name: "Kava kohandused progressi järgi",
+      name: "Treeningkava kohandused sinu progressi järgi",
       trial: false,
       selfGuided: false,
       guided: true,
       transformation: true,
     },
     {
-      name: "1:1 videokonsultatsioonid",
+      name: "1:1 konsultatsioonid",
       trial: false,
       selfGuided: false,
-      guided: false,
-      transformation: "5×",
+      guided: "Email ja chat",
+      transformation: "5 videokonsultatsiooni",
     },
     {
       name: "Toitumis- ja elustiilisoovitused",
@@ -67,12 +81,19 @@ export function FeatureComparison() {
       guided: false,
       transformation: true,
     },
+    {
+      name: "Prioriteetne tugi",
+      trial: false,
+      selfGuided: false,
+      guided: true,
+      transformation: true,
+    },
   ];
 
   return (
-    <Card className="max-w-5xl mx-auto mt-12">
+    <Card className="max-w-6xl mx-auto mt-12">
       <CardHeader>
-        <CardTitle className="text-center text-2xl">Mis erineb?</CardTitle>
+        <CardTitle className="text-center text-2xl font-bold">Funktsioonide võrdlus</CardTitle>
         <p className="text-center text-muted-foreground text-sm">
           Võrdle plaane ja vali sulle sobiv
         </p>
@@ -81,36 +102,36 @@ export function FeatureComparison() {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b">
-                <th className="text-left p-3 font-semibold text-sm">Funktsioon</th>
-                <th className="text-center p-3 font-semibold text-sm w-24">
+              <tr className="border-b bg-muted/30">
+                <th className="text-left p-4 font-semibold text-sm">Funktsioon</th>
+                <th className="text-center p-4 font-semibold text-sm min-w-[120px]">
                   <div className="text-xs text-muted-foreground mb-1">Tasuta</div>
-                  Proov
+                  <div className="font-bold">Proov</div>
                 </th>
-                <th className="text-center p-3 font-semibold text-sm w-24">
+                <th className="text-center p-4 font-semibold text-sm min-w-[120px]">
                   <div className="text-xs text-muted-foreground mb-1">19.99€</div>
-                  Self-Guided
+                  <div className="font-bold">Iseseisev</div>
                 </th>
-                <th className="text-center p-3 font-semibold text-sm w-24">
+                <th className="text-center p-4 font-semibold text-sm min-w-[120px] bg-primary/5">
                   <div className="text-xs text-muted-foreground mb-1">49.99€</div>
-                  <div className="text-primary font-bold">Guided</div>
+                  <div className="text-primary font-bold">Juhendatud</div>
                 </th>
-                <th className="text-center p-3 font-semibold text-sm w-24">
+                <th className="text-center p-4 font-semibold text-sm min-w-[120px]">
                   <div className="text-xs text-muted-foreground mb-1">199€</div>
-                  Transform
+                  <div className="font-bold">Transformatsioon</div>
                 </th>
               </tr>
             </thead>
             <tbody>
               {features.map((feature, index) => (
                 <tr key={index} className="border-b hover:bg-muted/30 transition-colors">
-                  <td className="p-3 text-sm">
+                  <td className="p-4 text-sm font-medium">
                     {feature.name}
                     {feature.note && (
-                      <div className="text-xs text-muted-foreground mt-0.5">{feature.note}</div>
+                      <div className="text-xs text-muted-foreground mt-1 font-normal">{feature.note}</div>
                     )}
                   </td>
-                  <td className="text-center p-3">
+                  <td className="text-center p-4">
                     {typeof feature.trial === 'boolean' ? (
                       feature.trial ? (
                         <Check className="h-5 w-5 text-green-500 mx-auto" />
@@ -118,10 +139,10 @@ export function FeatureComparison() {
                         <X className="h-5 w-5 text-muted-foreground/30 mx-auto" />
                       )
                     ) : (
-                      <span className="text-xs text-muted-foreground">{feature.trial}</span>
+                      <span className="text-xs text-muted-foreground font-medium">{feature.trial}</span>
                     )}
                   </td>
-                  <td className="text-center p-3">
+                  <td className="text-center p-4">
                     {typeof feature.selfGuided === 'boolean' ? (
                       feature.selfGuided ? (
                         <Check className="h-5 w-5 text-green-500 mx-auto" />
@@ -132,7 +153,7 @@ export function FeatureComparison() {
                       <span className="text-xs font-medium text-primary">{feature.selfGuided}</span>
                     )}
                   </td>
-                  <td className="text-center p-3 bg-primary/5">
+                  <td className="text-center p-4 bg-primary/5">
                     {typeof feature.guided === 'boolean' ? (
                       feature.guided ? (
                         <Check className="h-5 w-5 text-green-500 mx-auto" />
@@ -143,7 +164,7 @@ export function FeatureComparison() {
                       <span className="text-xs font-medium text-primary">{feature.guided}</span>
                     )}
                   </td>
-                  <td className="text-center p-3">
+                  <td className="text-center p-4">
                     {typeof feature.transformation === 'boolean' ? (
                       feature.transformation ? (
                         <Check className="h-5 w-5 text-green-500 mx-auto" />
