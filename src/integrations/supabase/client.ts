@@ -24,7 +24,7 @@ export const supabase: DBClient =
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storageKey: "treenitaastu_main_auth",
+      storageKey: "treenitaastu_auth",
     },
   });
 

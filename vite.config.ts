@@ -6,17 +6,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => ({
   plugins: [
-    react({
-      // Ignore TypeScript errors during build
-      typescript: {
-        ignoreBuildErrors: true
-      },
-      // Disable TypeScript checking entirely for build
-      babel: {
-        plugins: []
-      }
-    }),
-    // mode === 'development' && componentTagger(),
+    react(),
+    mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'prompt',
       injectRegister: 'script-defer',
@@ -92,6 +83,15 @@ export default defineConfig(({ mode }) => ({
   },
   build: { 
     outDir: "dist", 
-    sourcemap: true
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'supabase': ['@supabase/supabase-js'],
+          'ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu']
+        }
+      }
+    }
   }
 }));

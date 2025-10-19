@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useLevelSystem } from '@/contexts/LevelSystemProvider';
+import { useUserLevel } from '@/hooks/useUserLevel';
 import { User, Trophy, Zap, Target, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +20,7 @@ interface UserLevelDisplayProps {
 }
 
 export function UserLevelDisplay({ children, size = 'md', showBadge = true }: UserLevelDisplayProps) {
-  const { levelData, loading, getTierColor, getTierIcon } = useLevelSystem();
+  const { levelData, loading, getTierColor, getTierIcon } = useUserLevel();
   const [open, setOpen] = useState(false);
 
   if (loading || !levelData) {

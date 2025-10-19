@@ -31,7 +31,7 @@ export function ArchivedHabitsModal() {
       const archived = await getArchivedHabits();
       setArchivedHabits(archived);
     } catch (_e) {
-      console.error("Error loading archived habits:", _e);
+      console.error("Error loading archived habits:", e);
     } finally {
       setLoading(false);
     }

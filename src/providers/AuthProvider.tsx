@@ -1,4 +1,4 @@
-// src/providers/AuthProvider.tsx
+// src/providers/AuthProviderFixed.tsx
 import React, {
   createContext,
   useCallback,

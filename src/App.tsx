@@ -5,9 +5,7 @@ import Header from "@/components/Header";
 import { SupportChatWidget } from "@/components/support/SupportChatWidget";
 import { PWAInstallGuide } from "@/components/PWAInstallGuide";
 import { PullToRefresh } from "@/components/PullToRefresh";
-import { LevelUpToast } from "@/components/LevelUpToast";
 import { DropdownManagerProvider } from "@/contexts/DropdownManager";
-import { LevelSystemProvider } from "@/contexts/LevelSystemProvider";
 import { UpgradePromptManager } from "@/components/subscription/UpgradePromptManager";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -16,7 +14,6 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 export default function App({ children }: { children?: React.ReactNode }) {
-  
   const { user } = useAuth();
   const { subscribe } = useSubscription();
   const navigate = useNavigate();
@@ -85,28 +82,25 @@ export default function App({ children }: { children?: React.ReactNode }) {
   
   return (
     <DropdownManagerProvider>
-      <LevelSystemProvider>
-        <PullToRefresh onRefresh={handleRefresh}>
-          <div 
-            id="root" 
-            className="min-h-screen bg-background text-foreground"
-          >
-            <Header />
-            <main className="w-full">
-              {children ?? <Outlet />}
-            </main>
-            <SupportChatWidget />
-            {user && <PWAInstallGuide />}
-            {user && <LevelUpToast />}
-            {user && (
-              <UpgradePromptManager
-                onUpgrade={handleUpgrade}
-                onDismiss={handleDismissPrompt}
-              />
-            )}
-          </div>
-        </PullToRefresh>
-      </LevelSystemProvider>
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div 
+          id="root" 
+          className="min-h-screen bg-background text-foreground"
+        >
+          <Header />
+          <main className="w-full">
+            {children ?? <Outlet />}
+          </main>
+          <SupportChatWidget />
+          {user && <PWAInstallGuide />}
+          {user && (
+            <UpgradePromptManager
+              onUpgrade={handleUpgrade}
+              onDismiss={handleDismissPrompt}
+            />
+          )}
+        </div>
+      </PullToRefresh>
     </DropdownManagerProvider>
   );
 }

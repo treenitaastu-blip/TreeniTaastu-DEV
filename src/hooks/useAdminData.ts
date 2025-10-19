@@ -23,11 +23,39 @@ export function useAdminData() {
 
       const adminClient = getAdminClient();
 
-      // Use custom RPC function to get all users
-      const { data: users, error: rpcError } = await adminClient.rpc('admin_get_users');
-      if (rpcError) throw rpcError;
+      // Get all users from auth.users
+      const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers();
+      if (authError) throw authError;
 
-      setUsers(users || []);
+      // Get all profiles
+      const { data: profiles, error: profilesError } = await adminClient
+        .from("profiles")
+        .select("*");
+      if (profilesError) throw profilesError;
+
+      // Get all subscribers
+      const { data: subscribers, error: subscribersError } = await adminClient
+        .from("subscribers")
+        .select("*");
+      if (subscribersError) throw subscribersError;
+
+      // Combine the data
+      const combinedUsers = authUsers.users.map(authUser => {
+        const profile = profiles.find(p => p.id === authUser.id);
+        const subscriber = subscribers.find(s => s.user_id === authUser.id);
+
+        return {
+          id: authUser.id,
+          email: authUser.email,
+          role: profile?.role || 'user',
+          created_at: authUser.created_at,
+          is_paid: subscriber?.status === 'active',
+          trial_ends_at: subscriber?.trial_ends_at,
+          current_period_end: subscriber?.expires_at,
+        };
+      });
+
+      setUsers(combinedUsers);
     } catch (err) {
       console.error('Error loading admin data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load users');

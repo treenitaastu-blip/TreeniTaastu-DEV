@@ -1,17 +1,20 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import useAccess from "@/hooks/useAccess";
 import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Target, Lock } from "lucide-react";
+import { Lock, Target } from "lucide-react";
 
 export default function RequirePTOrShowPurchasePrompt() {
   const loc = useLocation();
   const { status, user } = useAuth();
+  const { loading, canPT, isAdmin } = useAccess();
   const trialStatus = useTrialStatus();
 
-  if (status === "loading" || trialStatus.loading) {
+  // Still resolving auth or access
+  if (status === "loading" || loading || trialStatus.loading) {
     return (
       <div className="min-h-[40vh] grid place-items-center p-6 text-sm text-muted-foreground">
         Kontrollin ligipääsu…
@@ -19,8 +22,14 @@ export default function RequirePTOrShowPurchasePrompt() {
     );
   }
 
+  // Not signed in
   if (!user) {
     return <Navigate to="/login" state={{ from: loc }} replace />;
+  }
+
+  // If user has PT access or is admin, allow access
+  if (canPT || isAdmin) {
+    return <Outlet />;
   }
 
   // If user is on trial, show purchase prompt
