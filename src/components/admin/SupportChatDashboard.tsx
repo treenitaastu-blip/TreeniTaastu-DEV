@@ -225,7 +225,7 @@ export function SupportChatDashboard() {
     if (selectedConversationId.startsWith('new-')) {
       const userId = selectedConversationId.replace('new-', '');
       try {
-        const { data: newConversation, error: convError } = await supabase
+        const { data: newConversation, error: convError } = await supabaseAdmin
           .from('support_conversations')
           .insert([{
             user_id: userId,
