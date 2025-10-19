@@ -92,6 +92,32 @@ serve(async (req) => {
           onConflict: 'user_id,product'
         });
 
+      // Update subscribers table
+      await supabaseClient
+        .from('subscribers')
+        .upsert({
+          user_id: userData.user.id,
+          email: userData.user.email,
+          subscribed: true,
+          status: 'active',
+          subscription_tier: 'self_guided',
+          plan: 'self_guided',
+          started_at: new Date().toISOString(),
+          source: 'stripe_self_guided'
+        }, {
+          onConflict: 'user_id'
+        });
+
+      // Store payment record
+      await supabaseClient
+        .from('payments')
+        .insert({
+          user_id: userData.user.id,
+          amount_cents: 1999, // 19.99€ in cents
+          currency: 'EUR',
+          status: 'paid'
+        });
+
       logStep("Granted Self-Guided (static) access");
 
     } else if (priceId === "price_1SBCYgEOy7gy4lEEWJWNz8gW") {
@@ -124,6 +150,32 @@ serve(async (req) => {
           note: `Guided monthly with PT - Session: ${sessionId}`
         }, {
           onConflict: 'user_id,product'
+        });
+
+      // Update subscribers table
+      await supabaseClient
+        .from('subscribers')
+        .upsert({
+          user_id: userData.user.id,
+          email: userData.user.email,
+          subscribed: true,
+          status: 'active',
+          subscription_tier: 'guided',
+          plan: 'guided',
+          started_at: new Date().toISOString(),
+          source: 'stripe_guided'
+        }, {
+          onConflict: 'user_id'
+        });
+
+      // Store payment record
+      await supabaseClient
+        .from('payments')
+        .insert({
+          user_id: userData.user.id,
+          amount_cents: 4999, // 49.99€ in cents
+          currency: 'EUR',
+          status: 'paid'
         });
 
       logStep("Granted Guided (static + PT) access");
@@ -161,6 +213,33 @@ serve(async (req) => {
           note: `Transformation package with PT - Session: ${sessionId}`
         }, {
           onConflict: 'user_id,product'
+        });
+
+      // Update subscribers table
+      await supabaseClient
+        .from('subscribers')
+        .upsert({
+          user_id: userData.user.id,
+          email: userData.user.email,
+          subscribed: true,
+          status: 'active',
+          subscription_tier: 'transformation',
+          plan: 'transformation',
+          started_at: new Date().toISOString(),
+          expires_at: expiresAt.toISOString(),
+          source: 'stripe_transformation'
+        }, {
+          onConflict: 'user_id'
+        });
+
+      // Store payment record
+      await supabaseClient
+        .from('payments')
+        .insert({
+          user_id: userData.user.id,
+          amount_cents: 19900, // 199€ in cents
+          currency: 'EUR',
+          status: 'paid'
         });
 
       logStep("Granted Transformation (static + PT) access for 1 year", { expiresAt });
