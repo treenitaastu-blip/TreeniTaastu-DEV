@@ -248,9 +248,21 @@ serve(async (req) => {
 
       logStep("Granted Transformation (static + PT) access for 1 year", { expiresAt });
     } else {
-      // Unknown price ID - log error and fail
-      logStep("ERROR: Unknown price ID", { priceId });
-      throw new Error(`Unknown price ID: ${priceId}. No entitlements granted.`);
+      // Unknown price ID - log warning but still record payment
+      logStep("WARNING: Unknown price ID, recording payment anyway", { priceId });
+      
+      // Record the payment with the actual amount from the session
+      const amountTotal = session.amount_total || 0;
+      await supabaseClient
+        .from('payments')
+        .insert({
+          user_id: userData.user.id,
+          amount_cents: amountTotal,
+          currency: session.currency || 'EUR',
+          status: 'paid'
+        });
+      
+      logStep("Payment recorded for unknown price ID", { priceId, amountTotal });
     }
 
     return new Response(JSON.stringify({ 
