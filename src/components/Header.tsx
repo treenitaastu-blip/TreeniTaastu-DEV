@@ -154,7 +154,7 @@ export default function Header() {
                 </NavLink>
               ))}
 
-              {user && !accessLoading && (canPT || canStatic || isAdmin) && (
+              {user && !accessLoading && (
                 <div className="relative overflow-visible" ref={ptMenuRef} style={{ zIndex: 1000 }}>
                   <button
                     type="button"
@@ -178,7 +178,7 @@ export default function Header() {
                         zIndex: 1001 
                       }}
                     >
-                      <PTMenuItems onItem={() => setPtMenuOpen(false)} canPT={canPT || isAdmin} />
+                      <PTMenuItems onItem={() => setPtMenuOpen(false)} />
                     </div>
                   )}
                 </div>
@@ -335,7 +335,7 @@ export default function Header() {
                 ))}
 
                 {/* PT expandable section on mobile */}
-                {user && !accessLoading && (canPT || canStatic || isAdmin) && (
+                {user && !accessLoading && (
                   <div className="mt-1">
                     <button
                       type="button"
@@ -355,7 +355,6 @@ export default function Header() {
                     {ptOpen && (
                       <div className="mt-1 ml-3 grid gap-1">
                         <PTMenuItems
-                          canPT={canPT || isAdmin}
                           onItem={() => {
                             setOpen(false);
                             setPtOpen(false);
@@ -429,7 +428,7 @@ export default function Header() {
   );
 }
 
-function PTMenuItems({ onItem, canPT }: { onItem?: () => void; canPT: boolean }) {
+function PTMenuItems({ onItem }: { onItem?: () => void }) {
   const Item = ({
     to,
     children,
@@ -451,11 +450,9 @@ function PTMenuItems({ onItem, canPT }: { onItem?: () => void; canPT: boolean })
 
   return (
     <>
-      {canPT && (
-        <Item to="/programs" icon={Users2}>
-          Minu programmid
-        </Item>
-      )}
+      <Item to="/programs" icon={Users2}>
+        Minu programmid
+      </Item>
       <Item to="/kalkulaatorid" icon={Calculator}>
         Kalkulaatorid
       </Item>
