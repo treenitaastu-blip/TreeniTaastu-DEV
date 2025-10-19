@@ -23,11 +23,7 @@ export function useAdminData() {
 
       const adminClient = getAdminClient();
 
-      // Get all users from auth.users
-      const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers();
-      if (authError) throw authError;
-
-      // Get all profiles
+      // Get all profiles (this includes all users)
       const { data: profiles, error: profilesError } = await adminClient
         .from("profiles")
         .select("*");
@@ -40,15 +36,14 @@ export function useAdminData() {
       if (subscribersError) throw subscribersError;
 
       // Combine the data
-      const combinedUsers = authUsers.users.map(authUser => {
-        const profile = profiles.find(p => p.id === authUser.id);
-        const subscriber = subscribers.find(s => s.user_id === authUser.id);
+      const combinedUsers = profiles.map(profile => {
+        const subscriber = subscribers.find(s => s.user_id === profile.id);
 
         return {
-          id: authUser.id,
-          email: authUser.email,
-          role: profile?.role || 'user',
-          created_at: authUser.created_at,
+          id: profile.id,
+          email: profile.email,
+          role: profile.role || 'user',
+          created_at: profile.created_at,
           is_paid: subscriber?.status === 'active',
           trial_ends_at: subscriber?.trial_ends_at,
           current_period_end: subscriber?.expires_at,
