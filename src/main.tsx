@@ -65,7 +65,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const ProgramsList = lazy(() => import("@/pages/ProgramsList"));
 const ProgramDetail = lazy(() => import("@/pages/ProgramDetail"));
 const ModernWorkoutSession = lazy(() => import("@/pages/ModernWorkoutSession"));
-const PersonalTrainingPage = lazy(() => import("@/pages/personal-training/PersonalTrainingPage"));
+const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
 const PersonalTrainingStats = lazy(() => import("@/pages/PersonalTrainingStats"));
 
 // Calculator and mindfulness pages (lazy loaded)
@@ -300,12 +300,12 @@ if (container) {
                   <Route element={<App />}>
                     <Route path="/personaaltreening" element={
                       <Suspense fallback={<div className="p-6">Laen…</div>}>
-                        <PersonalTrainingPage />
+                        <ServicesPage />
                       </Suspense>
                     } />
                     <Route path="/teenused" element={
                       <Suspense fallback={<div className="p-6">Laen…</div>}>
-                        <PersonalTrainingPage />
+                        <ServicesPage />
                       </Suspense>
                     } />
                     <Route element={<RequirePTOrShowPurchasePrompt />}>
