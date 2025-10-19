@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { RefreshCw, ArrowRight, BarChart3, BookOpen, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useProgramAccess } from "@/hooks/useProgramAccess";
 import type { Database } from "@/integrations/supabase/types";
 
 type UUID = string;
@@ -33,6 +34,15 @@ function fmtDate(d: string | null): string {
 
 export default function ProgramsList() {
   const { user } = useAuth();
+  const { 
+    loading: accessLoading, 
+    hasAssignedPrograms, 
+    isTrialUser, 
+    isPaidUser, 
+    canAccessPrograms, 
+    shouldShowUpgradePrompt,
+    error: accessError 
+  } = useProgramAccess();
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +110,7 @@ export default function ProgramsList() {
     );
   }
 
-  if (loading) {
+  if (loading || accessLoading) {
     return (
       <div className="mx-auto max-w-6xl p-4 md:p-6">
         <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -126,12 +136,12 @@ export default function ProgramsList() {
     );
   }
 
-  if (error) {
+  if (error || accessError) {
     return (
       <div className="mx-auto max-w-4xl p-4 md:p-6">
         <div className="rounded-2xl border-destructive/20 bg-destructive/5 shadow-soft p-6 md:p-8 text-center">
           <div className="text-lg font-medium text-destructive mb-3">Viga laadimisel</div>
-          <p className="text-destructive/80 mb-6">{error}</p>
+          <p className="text-destructive/80 mb-6">{error || accessError}</p>
           <button
             onClick={load}
             className="inline-flex items-center gap-2 rounded-lg bg-destructive text-destructive-foreground px-4 py-2 text-sm font-medium hover:bg-destructive/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive transition-colors"
@@ -141,6 +151,34 @@ export default function ProgramsList() {
             <RefreshCw className={`h-4 w-4 ${reloading ? "animate-spin" : ""}`} />
             Proovi uuesti
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show upgrade prompt for trial users without assigned programs
+  if (shouldShowUpgradePrompt) {
+    return (
+      <div className="mx-auto max-w-6xl p-4 md:p-6">
+        <header className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Minu programmid</h1>
+            <p className="text-sm text-muted-foreground mt-1">Vaata ja jätka oma isiklikke programme</p>
+          </div>
+        </header>
+
+        <div className="rounded-2xl border bg-card shadow-soft p-6 md:p-8 text-center">
+          <div className="text-lg font-medium mb-3">Pole programme</div>
+          <p className="text-muted-foreground mb-6">
+            Hetkel pole ühtegi isiklikku programmi. Vaata meie teenuseid ja vali endale sobiv programm.
+          </p>
+          <Link
+            to="/teenused"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+          >
+            <Target className="h-4 w-4" />
+            Vaata teenuseid
+          </Link>
         </div>
       </div>
     );
@@ -185,15 +223,28 @@ export default function ProgramsList() {
         <div className="rounded-2xl border bg-card shadow-soft p-6 md:p-8 text-center">
           <div className="text-lg font-medium mb-3">Pole programme</div>
           <p className="text-muted-foreground mb-6">
-            Hetkel pole ühtegi isiklikku programmi. Vaata meie teenuseid ja vali endale sobiv programm.
+            {isTrialUser 
+              ? "Hetkel pole ühtegi isiklikku programmi. Vaata meie teenuseid ja vali endale sobiv programm."
+              : "Hetkel pole ühtegi isiklikku programmi. Kontakteeru administraatoriga, et saada programm määratud."
+            }
           </p>
-          <Link
-            to="/teenused"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-          >
-            <Target className="h-4 w-4" />
-            Vaata teenuseid
-          </Link>
+          {isTrialUser ? (
+            <Link
+              to="/teenused"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+            >
+              <Target className="h-4 w-4" />
+              Vaata teenuseid
+            </Link>
+          ) : (
+            <Link
+              to="/kogukond"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-6 py-3 text-sm font-medium hover:bg-secondary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors"
+            >
+              <BookOpen className="h-4 w-4" />
+              Võta ühendust
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3" role="list">
