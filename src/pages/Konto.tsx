@@ -195,13 +195,23 @@ const Konto = () => {
   const handleManageSubscription = async () => {
     setPortalLoading(true);
     try {
+      // Check if user is authenticated
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('User not authenticated');
+      }
+      
+      console.log('User authenticated:', user.email);
+      
       const { data, error } = await supabase.functions.invoke('customer-portal');
       
       if (error) {
+        console.error('Function error:', error);
         throw error;
       }
       
       if (data?.url) {
+        console.log('Portal URL received:', data.url);
         window.open(data.url, '_blank');
       } else {
         throw new Error('No portal URL received');
