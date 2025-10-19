@@ -23,6 +23,11 @@ export function useAdminData() {
 
       const adminClient = getAdminClient();
 
+      // Test RPC function first
+      const { data: testData, error: testError } = await adminClient.rpc('admin_test');
+      if (testError) throw testError;
+      console.log('Test RPC result:', testData);
+
       // Use custom RPC function to get all users
       const { data: users, error: rpcError } = await adminClient.rpc('admin_get_users');
       if (rpcError) throw rpcError;
