@@ -77,32 +77,50 @@ serve(async (req) => {
     if (!customerId) {
       // If no customer exists, create one
       logStep("No customer found, creating new customer");
-      const newCustomer = await stripe.customers.create({
-        email: user.email,
-        name: user.user_metadata?.full_name || user.email,
-      });
-      customerId = newCustomer.id;
-      logStep("Created new Stripe customer", { customerId });
-      
-      // Store the customer ID in our database
-      await supabaseClient
-        .from('subscribers')
-        .upsert({
-          user_id: user.id,
+      try {
+        const newCustomer = await stripe.customers.create({
           email: user.email,
-          stripe_customer_id: customerId,
-          subscribed: true,
-          status: 'active',
-          subscription_tier: 'guided'
+          name: user.user_metadata?.full_name || user.email,
         });
+        customerId = newCustomer.id;
+        logStep("Created new Stripe customer", { customerId });
+        
+        // Store the customer ID in our database
+        const { error: dbError } = await supabaseClient
+          .from('subscribers')
+          .upsert({
+            user_id: user.id,
+            email: user.email,
+            stripe_customer_id: customerId,
+            subscribed: true,
+            status: 'active',
+            subscription_tier: 'guided'
+          });
+          
+        if (dbError) {
+          logStep("Database update error", { error: dbError.message });
+          // Continue anyway, customer was created in Stripe
+        }
+      } catch (stripeError) {
+        logStep("Stripe customer creation error", { error: stripeError.message });
+        throw new Error(`Failed to create Stripe customer: ${stripeError.message}`);
+      }
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${origin}/konto`,
-    });
-    logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
+    logStep("Creating portal session", { customerId, origin });
+    
+    let portalSession;
+    try {
+      portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${origin}/konto`,
+      });
+      logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
+    } catch (portalError) {
+      logStep("Portal session creation error", { error: portalError.message });
+      throw new Error(`Failed to create portal session: ${portalError.message}`);
+    }
 
     return new Response(JSON.stringify({ url: portalSession.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
