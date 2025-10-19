@@ -61,7 +61,7 @@ export default function DayTile({ day, onClick, className = "" }: DayTileProps) 
       return "Tehtud";
     }
     if (day.isWeekend) {
-      return "Mindfulness";
+      return "Lõõgastus";
     }
     if (day.isUnlocked && !day.isCompleted) {
       return "Avatud";

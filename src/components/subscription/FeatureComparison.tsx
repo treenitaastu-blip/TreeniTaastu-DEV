@@ -25,7 +25,7 @@ export function FeatureComparison() {
       transformation: true,
     },
     {
-      name: "Tervisetõed ja mindfulness-õpped",
+      name: "Tervisetõed ja lõõgastus-õpped",
       trial: true,
       selfGuided: true,
       guided: true,

@@ -87,7 +87,7 @@ export default function Header() {
           { to: "/harjutused", label: "Harjutused", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/tervisetood", label: "Tervisetõed", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/kogukond", label: "Kogukond", show: !accessLoading && (canStatic || isAdmin) },
-          { to: "/mindfulness", label: "Mindfulness", show: !accessLoading && (canStatic || isAdmin) },
+          { to: "/mindfulness", label: "Lõõgastus", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/pricing", label: "Hinnad", show: !accessLoading && !canStatic && !isAdmin },
         ]
       : [{ to: "/pricing", label: "Hinnad", show: true }]),

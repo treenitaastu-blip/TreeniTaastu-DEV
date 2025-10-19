@@ -66,7 +66,7 @@ export default function TrialExpired() {
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="mt-0.5">❌</div>
-                  <span>Tervisetõed ja mindfulness-õpped</span>
+                  <span>Tervisetõed ja lõõgastus-õpped</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="mt-0.5">❌</div>

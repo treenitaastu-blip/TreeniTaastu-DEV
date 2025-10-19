@@ -27,7 +27,7 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
       'Täielik ligipääs kõikidele harjutustele',
       'Personaalsed treeningprogrammid',
       'Progressi jälgimine',
-      'Tervisetõed ja mindfulness',
+      'Tervisetõed ja lõõgastus',
       'Mobiilirakendus',
       'Email tugi'
     ],
