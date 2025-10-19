@@ -50,40 +50,38 @@ export default function UserManagement() {
     note: ""
   });
 
-  // Load entitlements and access matrix data
-  useEffect(() => {
-    const loadEntitlementsData = async () => {
-      try {
-        const adminClient = getAdminClient();
-        
-        // Load entitlements
-        const { data: entitlementsData, error: entitlementsError } = await adminClient
-          .from("user_entitlements")
-          .select("*");
-        if (entitlementsError) {
-          console.error("Error loading entitlements:", entitlementsError);
-        } else {
-          setEntitlements(entitlementsData || []);
-        }
+         // Load entitlements and access matrix data
+         useEffect(() => {
+           const loadEntitlementsData = async () => {
+             try {
+               const adminClient = getAdminClient();
+               
+               // Load entitlements using admin function
+               const { data: entitlementsData, error: entitlementsError } = await adminClient
+                 .rpc('get_admin_entitlements');
+               if (entitlementsError) {
+                 console.error("Error loading entitlements:", entitlementsError);
+               } else {
+                 setEntitlements(entitlementsData || []);
+               }
 
-        // Load access matrix
-        const { data: accessData, error: accessError } = await adminClient
-          .from("v_access_matrix")
-          .select("*");
-        if (accessError) {
-          console.error("Error loading access matrix:", accessError);
-        } else {
-          setAccessMatrix(accessData || []);
-        }
-      } catch (err) {
-        console.error("Error loading entitlements data:", err);
-      }
-    };
+               // Load access matrix using admin function
+               const { data: accessData, error: accessError } = await adminClient
+                 .rpc('get_admin_access_matrix');
+               if (accessError) {
+                 console.error("Error loading access matrix:", accessError);
+               } else {
+                 setAccessMatrix(accessData || []);
+               }
+             } catch (err) {
+               console.error("Error loading entitlements data:", err);
+             }
+           };
 
-    if (users.length > 0) {
-      loadEntitlementsData();
-    }
-  }, [users]);
+           if (users.length > 0) {
+             loadEntitlementsData();
+           }
+         }, [users]);
 
 
   // Handle errors from the hook

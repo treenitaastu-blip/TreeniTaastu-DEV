@@ -23,34 +23,27 @@ export function useAdminData() {
 
       const adminClient = getAdminClient();
 
-      // Get all profiles (this includes all users)
-      const { data: profiles, error: profilesError } = await adminClient
-        .from("profiles")
-        .select("*");
-      if (profilesError) throw profilesError;
+      // Use the new admin function that bypasses RLS
+      const { data: usersData, error: usersError } = await adminClient
+        .rpc('get_admin_users');
+      
+      if (usersError) {
+        console.error('Error loading admin users:', usersError);
+        throw usersError;
+      }
 
-      // Get all subscribers
-      const { data: subscribers, error: subscribersError } = await adminClient
-        .from("subscribers")
-        .select("*");
-      if (subscribersError) throw subscribersError;
+      // Transform the data to match our expected format
+      const transformedUsers = (usersData || []).map((user: any) => ({
+        id: user.id,
+        email: user.email,
+        role: user.role || 'user',
+        created_at: user.created_at,
+        is_paid: user.is_paid || false,
+        trial_ends_at: user.trial_ends_at,
+        current_period_end: user.current_period_end,
+      }));
 
-      // Combine the data
-      const combinedUsers = profiles.map(profile => {
-        const subscriber = subscribers.find(s => s.user_id === profile.id);
-
-        return {
-          id: profile.id,
-          email: profile.email,
-          role: profile.role || 'user',
-          created_at: profile.created_at,
-          is_paid: subscriber?.status === 'active',
-          trial_ends_at: subscriber?.trial_ends_at,
-          current_period_end: subscriber?.expires_at,
-        };
-      });
-
-      setUsers(combinedUsers);
+      setUsers(transformedUsers);
     } catch (err) {
       console.error('Error loading admin data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load users');

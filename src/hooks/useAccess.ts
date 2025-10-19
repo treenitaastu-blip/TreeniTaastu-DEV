@@ -41,19 +41,29 @@ export default function useAccess(): UseAccess {
       }
 
       try {
-        // Simplified approach - check profile for admin first
-        const { data: prof, error: profErr } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .maybeSingle<{ role: string | null }>();
+        // Use unified admin check function
+        const { data: isAdminData, error: adminErr } = await supabase.rpc('is_admin_unified');
+        
+        let isAdmin = false;
+        
+        if (adminErr) {
+          console.error("Admin check error:", adminErr);
+          // Fallback to profile check if RPC fails
+          const { data: prof, error: profErr } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle<{ role: string | null }>();
 
-        if (profErr) {
-          console.error("Profile access error:", profErr);
-          throw profErr;
+          if (profErr) {
+            console.error("Profile access error:", profErr);
+            throw profErr;
+          }
+
+          isAdmin = (prof?.role ?? null) === "admin";
+        } else {
+          isAdmin = isAdminData || false;
         }
-
-        const isAdmin = (prof?.role ?? null) === "admin";
 
         // If admin, grant all access immediately
         if (isAdmin) {
