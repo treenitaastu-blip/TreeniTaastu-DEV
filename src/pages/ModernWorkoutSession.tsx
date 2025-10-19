@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { getErrorMessage, getSeverityStyles, getActionButtonText } from '@/utils/errorMessages';
 import { useLoadingState, LOADING_KEYS, getLoadingMessage } from '@/hooks/useLoadingState';
 import { LoadingIndicator, LoadingOverlay } from '@/components/ui/LoadingIndicator';
+import { Button } from '@/components/ui/button';
 import { logWorkoutError, logProgressionError, logDatabaseError, ErrorCategory } from '@/utils/errorLogger';
 import { trackSessionEndFailure, trackProgressionFailure, trackDataSaveFailure, WorkoutFailureType } from '@/utils/workoutFailureTracker';
 import { trackFeatureUsage, trackTaskCompletion, trackMobileInteraction, trackAPIResponseTime } from '@/utils/uxMetricsTracker';
