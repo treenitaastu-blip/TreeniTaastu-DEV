@@ -11,6 +11,7 @@ import { PricingCards } from "@/components/subscription/PricingCards";
 import { FeatureComparison } from "@/components/subscription/FeatureComparison";
 import { TrustIndicators } from "@/components/subscription/TrustIndicators";
 import { FAQ } from "@/components/subscription/FAQ";
+import { Testimonials } from "@/components/subscription/Testimonials";
 import { Check, ArrowRight, Star, Shield, Clock, Award, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -203,36 +204,36 @@ export default function Pricing() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-muted">
         <div className="max-w-7xl mx-auto px-4 py-12">
-          {/* Hero Section */}
-          <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
-              Vali oma treeningplaan
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              Professionaalsed treeningprogrammid, mis sobivad nii algajatele kui kogenud treenijatele. 
-              Alusta tasuta prooviga ja kogeda erinevust.
-            </p>
-            
-            {/* Trust Indicators */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-12">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Shield className="h-4 w-4 text-green-500" />
-                <span>100% Turvaline</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4 text-blue-500" />
-                <span>Tühista igal ajal</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Award className="h-4 w-4 text-purple-500" />
-                <span>Füsioterapeudi koostatud</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4 text-orange-500" />
-                <span>500+ treenijat</span>
-              </div>
+        {/* Hero Section */}
+        <div className="text-center mb-20">
+          <h1 className="text-4xl md:text-6xl font-bold mb-8 bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent leading-tight">
+            Vali oma treeningplaan
+          </h1>
+          <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-4xl mx-auto leading-relaxed">
+            Professionaalsed treeningprogrammid, mis sobivad nii algajatele kui kogenud treenijatele. 
+            Alusta tasuta prooviga ja kogeda erinevust.
+          </p>
+          
+          {/* Enhanced Trust Indicators */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto mb-16">
+            <div className="flex items-center justify-center gap-3 text-sm bg-green-50 dark:bg-green-950/20 px-4 py-3 rounded-lg border border-green-200 dark:border-green-800">
+              <Shield className="h-5 w-5 text-green-600" />
+              <span className="font-medium">100% Turvaline</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm bg-blue-50 dark:bg-blue-950/20 px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              <Clock className="h-5 w-5 text-blue-600" />
+              <span className="font-medium">Tühista igal ajal</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm bg-purple-50 dark:bg-purple-950/20 px-4 py-3 rounded-lg border border-purple-200 dark:border-purple-800">
+              <Award className="h-5 w-5 text-purple-600" />
+              <span className="font-medium">Füsioterapeudi koostatud</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm bg-orange-50 dark:bg-orange-950/20 px-4 py-3 rounded-lg border border-orange-200 dark:border-orange-800">
+              <Users className="h-5 w-5 text-orange-600" />
+              <span className="font-medium">500+ treenijat</span>
             </div>
           </div>
+        </div>
 
           {/* Pricing Cards */}
           <PricingCards 
@@ -242,20 +243,45 @@ export default function Pricing() {
             showTrial={true}
           />
 
+          {/* Testimonials */}
+          <Testimonials />
+
           {/* Feature Comparison */}
           <FeatureComparison />
 
           {/* FAQ Section */}
           <FAQ />
 
-          {/* CTA Section */}
-          <div className="text-center mt-16">
-            <div className="bg-muted/50 rounded-2xl p-8 max-w-2xl mx-auto">
-              <h2 className="text-2xl font-bold mb-4">Valmis alustama?</h2>
-              <p className="text-muted-foreground mb-6">
-                Alusta tasuta prooviga ja kogeda erinevust juba esimese nädala jooksul.
-              </p>
-              <div className="space-y-4">
+          {/* Enhanced CTA Section */}
+          <div className="text-center mt-20">
+            <div className="bg-gradient-to-r from-primary/5 to-primary-foreground/5 rounded-3xl p-12 max-w-4xl mx-auto border border-primary/20 shadow-2xl">
+              <div className="mb-8">
+                <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+                  Valmis alustama oma muutust?
+                </h2>
+                <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+                  Liitu üle 500 inimesega, kes on juba alustanud oma fitness-teekonda. 
+                  Alusta tasuta prooviga ja kogeda erinevust juba esimese nädala jooksul.
+                </p>
+                
+                {/* Urgency indicators */}
+                <div className="flex flex-wrap justify-center gap-4 mb-8">
+                  <div className="flex items-center gap-2 text-sm bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-full">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="font-medium">7 päeva tasuta</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm bg-blue-100 dark:bg-blue-900/30 px-4 py-2 rounded-full">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="font-medium">Tühista igal ajal</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm bg-purple-100 dark:bg-purple-900/30 px-4 py-2 rounded-full">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                    <span className="font-medium">Krediitkaart ei ole vajalik</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-6">
                 <TrialSignupCard />
                 <p className="text-sm text-muted-foreground">
                   Kas sul on juba konto?{' '}
@@ -347,6 +373,9 @@ export default function Pricing() {
           currentPlan={subscription?.planId}
           showTrial={!subscription}
         />
+
+        {/* Testimonials */}
+        <Testimonials />
 
         {/* Feature Comparison */}
         <FeatureComparison />

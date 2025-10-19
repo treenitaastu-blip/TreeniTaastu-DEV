@@ -47,13 +47,13 @@ export function PricingCards({ onSelectPlan, loading, currentPlan, showTrial = t
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-8 max-w-7xl mx-auto mb-20">
       {plans.map((plan) => {
         const isCurrentPlan = currentPlan === plan.id;
         const isLoading = loading === plan.id;
         
         return (
-          <Card key={plan.id} className={`relative ${getCardStyle(plan)} transition-all duration-200 hover:shadow-lg`}>
+          <Card key={plan.id} className={`relative ${getCardStyle(plan)} transition-all duration-300 hover:shadow-xl hover:scale-105`}>
             {/* Popular Badge */}
             {plan.isPopular && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
