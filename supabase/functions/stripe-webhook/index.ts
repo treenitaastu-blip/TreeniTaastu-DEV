@@ -74,6 +74,14 @@ serve(async (req) => {
         await handleSubscriptionDeleted(event, supabaseClient);
         break;
       
+      case "payment_intent.succeeded":
+        await handlePaymentIntentSucceeded(event, supabaseClient);
+        break;
+      
+      case "checkout.session.completed":
+        await handleCheckoutSessionCompleted(event, supabaseClient);
+        break;
+      
       default:
         logStep("Unhandled event type", { type: event.type });
     }
@@ -263,4 +271,28 @@ async function handleSubscriptionDeleted(event: Stripe.Event, supabaseClient: an
     .eq('user_id', subscriber.user_id);
 
   logStep("Subscription cancelled", { userId: subscriber.user_id });
+}
+
+async function handlePaymentIntentSucceeded(event: Stripe.Event, supabaseClient: any) {
+  const paymentIntent = event.data.object as Stripe.PaymentIntent;
+  logStep("Handling payment intent succeeded", { 
+    paymentIntentId: paymentIntent.id,
+    amount: paymentIntent.amount,
+    currency: paymentIntent.currency
+  });
+  
+  // TODO: Implement payment intent processing
+  // This would record one-time payments in the database
+}
+
+async function handleCheckoutSessionCompleted(event: Stripe.Event, supabaseClient: any) {
+  const session = event.data.object as Stripe.Checkout.Session;
+  logStep("Handling checkout session completed", { 
+    sessionId: session.id,
+    customerId: session.customer,
+    amountTotal: session.amount_total
+  });
+  
+  // TODO: Implement checkout session processing
+  // This would record completed checkouts in the database
 }
