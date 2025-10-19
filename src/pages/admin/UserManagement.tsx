@@ -67,7 +67,7 @@ export default function UserManagement() {
     if (!selectedUser) return;
 
     try {
-      const { error } = await getAdminClient().rpc("admin_set_entitlement", {
+      const { error } = await getAdminClient().rpc("admin_set_entitlement_service", {
         p_user: selectedUser.id,
         p_product: grantForm.product,
         p_status: grantForm.status,
@@ -99,7 +99,7 @@ export default function UserManagement() {
   // Pause/unpause entitlement
   const handleTogglePause = async (user: UserProfile, product: string, currentlyPaused: boolean) => {
     try {
-      const { error } = await getAdminClient().rpc("admin_pause_entitlement", {
+      const { error } = await getAdminClient().rpc("admin_pause_entitlement_service", {
         p_user: user.id,
         p_product: product,
         p_pause: !currentlyPaused
@@ -130,7 +130,7 @@ export default function UserManagement() {
     }
 
     try {
-      const { error } = await getAdminClient().rpc("admin_clear_entitlement", {
+      const { error } = await getAdminClient().rpc("admin_clear_entitlement_service", {
         p_user: user.id,
         p_product: product
       });
