@@ -75,7 +75,26 @@ serve(async (req) => {
     }
     
     if (!customerId) {
-      throw new Error("No Stripe customer found for this user. Please make a purchase first to create a customer account.");
+      // If no customer exists, create one
+      logStep("No customer found, creating new customer");
+      const newCustomer = await stripe.customers.create({
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email,
+      });
+      customerId = newCustomer.id;
+      logStep("Created new Stripe customer", { customerId });
+      
+      // Store the customer ID in our database
+      await supabaseClient
+        .from('subscribers')
+        .upsert({
+          user_id: user.id,
+          email: user.email,
+          stripe_customer_id: customerId,
+          subscribed: true,
+          status: 'active',
+          subscription_tier: 'guided'
+        });
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
