@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { RefreshCw, ArrowRight, BarChart3, BookOpen, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useProgramAccess } from "@/hooks/useProgramAccess";
+import { useAccess } from "@/hooks/useAccess";
 import type { Database } from "@/integrations/supabase/types";
 
 type UUID = string;
@@ -34,15 +34,7 @@ function fmtDate(d: string | null): string {
 
 export default function ProgramsList() {
   const { user } = useAuth();
-  const { 
-    loading: accessLoading, 
-    hasAssignedPrograms, 
-    isTrialUser, 
-    isPaidUser, 
-    canAccessPrograms, 
-    shouldShowUpgradePrompt,
-    error: accessError 
-  } = useProgramAccess();
+  const { canStatic, canPT, loading: accessLoading } = useAccess();
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +91,12 @@ export default function ProgramsList() {
     });
   }, [rows]);
 
+  // Determine user status and access logic
+  const isTrialUser = !canStatic && !canPT; // No paid access
+  const isPaidUser = canStatic || canPT; // Has paid access
+  const hasAssignedPrograms = rows.length > 0;
+  const shouldShowUpgradePrompt = isTrialUser && !hasAssignedPrograms;
+
   if (!user) {
     return (
       <div className="mx-auto max-w-4xl p-4 md:p-6">
@@ -136,12 +134,12 @@ export default function ProgramsList() {
     );
   }
 
-  if (error || accessError) {
+  if (error) {
     return (
       <div className="mx-auto max-w-4xl p-4 md:p-6">
         <div className="rounded-2xl border-destructive/20 bg-destructive/5 shadow-soft p-6 md:p-8 text-center">
           <div className="text-lg font-medium text-destructive mb-3">Viga laadimisel</div>
-          <p className="text-destructive/80 mb-6">{error || accessError}</p>
+          <p className="text-destructive/80 mb-6">{error}</p>
           <button
             onClick={load}
             className="inline-flex items-center gap-2 rounded-lg bg-destructive text-destructive-foreground px-4 py-2 text-sm font-medium hover:bg-destructive/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive transition-colors"
