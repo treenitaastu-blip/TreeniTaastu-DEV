@@ -44,12 +44,39 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    
+    // First try to find customer by email
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    if (customers.data.length === 0) {
-      throw new Error("No Stripe customer found for this user");
+    let customerId;
+    
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+      logStep("Found Stripe customer by email", { customerId });
+    } else {
+      // If no customer found by email, check if we have a stored customer ID
+      const { data: subscriberData } = await supabaseClient
+        .from('subscribers')
+        .select('stripe_customer_id')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (subscriberData?.stripe_customer_id) {
+        // Verify the customer exists in Stripe
+        try {
+          const customer = await stripe.customers.retrieve(subscriberData.stripe_customer_id);
+          if (customer && !customer.deleted) {
+            customerId = subscriberData.stripe_customer_id;
+            logStep("Found Stripe customer by stored ID", { customerId });
+          }
+        } catch (error) {
+          logStep("Stored customer ID not found in Stripe", { customerId: subscriberData.stripe_customer_id });
+        }
+      }
     }
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
+    
+    if (!customerId) {
+      throw new Error("No Stripe customer found for this user. Please make a purchase first to create a customer account.");
+    }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
     const portalSession = await stripe.billingPortal.sessions.create({
