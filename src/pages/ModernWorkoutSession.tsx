@@ -215,7 +215,18 @@ export default function ModernWorkoutSession() {
         const { data: exerciseData, error: exerciseError } = await supabase
           .from("client_items")
           .select(`
-            *,
+            id,
+            client_day_id,
+            order_in_day,
+            exercise_name,
+            base_exercise_name,
+            sets,
+            reps,
+            seconds,
+            weight_kg,
+            rest_seconds,
+            coach_notes,
+            video_url,
             exercise_alternatives (
               id,
               alternative_name,
@@ -1036,7 +1047,7 @@ export default function ModernWorkoutSession() {
     if (!ex) return;
     // Determine toggle target: if currently an alternative, revert to original; else use first alternative
     const firstAlt = ex.exercise_alternatives?.[0]?.alternative_name;
-    const originalName = originalExerciseNames[exerciseId] || ex.exercise_name;
+    const originalName = ex.base_exercise_name || originalExerciseNames[exerciseId] || ex.exercise_name;
     const targetName = (ex.exercise_name === firstAlt && originalName) ? originalName : (firstAlt || ex.exercise_name);
     console.log('[AlternativeSwitch] requested', { exerciseId, from: ex.exercise_name, to: targetName, originalName, firstAlt });
 
