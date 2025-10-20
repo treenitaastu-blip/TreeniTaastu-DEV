@@ -98,19 +98,21 @@ export default function Programm() {
   }, [days, navigate, toast, handleWeekendClick]);
 
   // Handle day completion
-  const handleDayCompletion = useCallback(async (dayNumber: number) => {
+  const handleDayCompletion = useCallback(async (dayNumber: number): Promise<boolean> => {
     const success = await markDayCompleted(dayNumber);
     if (success) {
       toast({
         title: "Suurepärane!",
         description: `Päev ${dayNumber} on märgitud lõpetatuks`,
       });
+      return true;
     } else {
       toast({
         title: "Viga",
         description: "Päeva märkimine lõpetatuks ebaõnnestus",
         variant: "destructive",
       });
+      return false;
     }
   }, [markDayCompleted, toast]);
 
@@ -183,7 +185,13 @@ export default function Programm() {
             {routeDayNumber && (
               <div className="flex justify-end">
                 <Button
-                  onClick={() => handleDayCompletion(Number(routeDayNumber))}
+                  onClick={async () => {
+                    const dn = Number(routeDayNumber);
+                    const ok = await handleDayCompletion(dn);
+                    if (ok) {
+                      navigate(`/programm#day-${dn}`);
+                    }
+                  }}
                   className="h-9"
                 >
                   Märgi tehtuks

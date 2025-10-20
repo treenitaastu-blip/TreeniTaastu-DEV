@@ -101,6 +101,7 @@ export default function DayTile({ day, onClick, className = "", isStarted }: Day
         isClickable ? 'hover:scale-105 hover:shadow-lg active:scale-95' : ''
       } ${className}`}
       onClick={isClickable ? onClick : undefined}
+      id={`day-${day.dayNumber}`}
     >
       <CardContent className="p-2 sm:p-3 text-center min-h-[70px] sm:min-h-[80px] flex flex-col justify-center">
         {/* Day Number and Icon */}
