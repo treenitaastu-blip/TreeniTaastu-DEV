@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import EnhancedProgressChart from "@/components/analytics/EnhancedProgressChart";
+import ProgressChart from "@/components/analytics/ProgressChart";
 import { ArrowLeft, Users, TrendingUp, Activity, BookOpen, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,10 +27,10 @@ type ClientStats = {
   active_programs: number;
 };
 
-type MonthlyData = {
-  month: string;
+type WeeklyData = {
+  week_start: string;
   sessions: number;
-  total_volume_kg: number;
+  volume_kg: number;
   avg_rpe: number;
 };
 
@@ -54,7 +54,7 @@ export default function ClientSpecificAnalytics() {
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
   const [stats, setStats] = useState<ClientStats | null>(null);
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
 
   useEffect(() => {
@@ -170,48 +170,39 @@ export default function ClientSpecificAnalytics() {
 
       setStats(clientStats);
 
-      // Process monthly data for charts
-      const monthlyStats: Record<string, { sessions: number; volume: number; rpe_sum: number; rpe_count: number }> = {};
-      
+      // Build weekly data for charts (last 12 weeks, fill gaps)
+      const weeklyStats: Record<string, { sessions: number; volume: number; rpe_sum: number; rpe_count: number }> = {};
+
       sessions?.forEach(session => {
         if (!session.started_at) return;
-        
-        const monthKey = new Date(session.started_at).toLocaleDateString("et-EE", { 
-          year: "numeric", 
-          month: "short" 
-        });
-        
-        if (!monthlyStats[monthKey]) {
-          monthlyStats[monthKey] = { sessions: 0, volume: 0, rpe_sum: 0, rpe_count: 0 };
+        const weekStart = getWeekStart(new Date(session.started_at));
+        const weekKey = weekStart.toISOString().slice(0, 10);
+        if (!weeklyStats[weekKey]) {
+          weeklyStats[weekKey] = { sessions: 0, volume: 0, rpe_sum: 0, rpe_count: 0 };
         }
-        
         if (session.ended_at) {
-          monthlyStats[monthKey].sessions += 1;
+          weeklyStats[weekKey].sessions += 1;
         }
-        
         session.set_logs?.forEach(setLog => {
           if (setLog.weight_kg_done && setLog.reps_done) {
-            monthlyStats[monthKey].volume += setLog.weight_kg_done * setLog.reps_done;
+            weeklyStats[weekKey].volume += setLog.weight_kg_done * setLog.reps_done;
           }
         });
       });
 
-      const monthlyFormatted: MonthlyData[] = Object.entries(monthlyStats)
-        .sort(([a], [b]) => {
-          const dateA = new Date(a + " 1");
-          const dateB = new Date(b + " 1");
-          return dateB.getTime() - dateA.getTime();
-        })
-        .slice(0, 6)
-        .reverse()
-        .map(([month, stats]) => ({
-          month,
-          sessions: stats.sessions,
-          total_volume_kg: stats.volume,
-          avg_rpe: stats.rpe_count > 0 ? stats.rpe_sum / stats.rpe_count : 0,
-        }));
-        
-      setMonthlyData(monthlyFormatted);
+      const last12Weeks = getLastNWeeks(12);
+      const weeklyFormatted: WeeklyData[] = last12Weeks.map(d => {
+        const key = d.toISOString().slice(0, 10);
+        const s = weeklyStats[key] || { sessions: 0, volume: 0, rpe_sum: 0, rpe_count: 0 };
+        return {
+          week_start: d.toLocaleDateString("et-EE"),
+          sessions: s.sessions,
+          volume_kg: s.volume,
+          avg_rpe: s.rpe_count > 0 ? s.rpe_sum / s.rpe_count : 0,
+        };
+      });
+
+      setWeeklyData(weeklyFormatted);
 
       // Load journal entries
       const { data: journalData, error: journalError } = await supabase
@@ -243,6 +234,30 @@ export default function ClientSpecificAnalytics() {
       hour: "2-digit",
       minute: "2-digit"
     });
+  };
+
+  // Helper: get Monday of the week for a given date
+  const getWeekStart = (date: Date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const day = d.getUTCDay();
+    const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff));
+  };
+
+  // Helper: last N week starts (ascending)
+  const getLastNWeeks = (n: number) => {
+    const weeks: Date[] = [];
+    const today = new Date();
+    let current = getWeekStart(today);
+    // go back n-1 weeks
+    const start = new Date(current);
+    start.setUTCDate(current.getUTCDate() - (n - 1) * 7);
+    for (let i = 0; i < n; i++) {
+      const d = new Date(start);
+      d.setUTCDate(start.getUTCDate() + i * 7);
+      weeks.push(d);
+    }
+    return weeks;
   };
 
   if (loading) {
@@ -320,18 +335,18 @@ export default function ClientSpecificAnalytics() {
           </div>
         ) : stats ? (
           <div className="space-y-8">
-            {/* Progress Charts */}
-            {monthlyData.length > 0 && (
+            {/* Weekly Progress Charts */}
+            {weeklyData.length > 0 && (
               <Card className="rounded-2xl shadow-soft">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
-                    6-kuu progressi analüütika
+                    12 nädala progressi analüütika
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <EnhancedProgressChart 
-                    monthlyData={monthlyData}
+                  <ProgressChart 
+                    weeklyData={weeklyData}
                     stats={stats}
                   />
                 </CardContent>
@@ -374,7 +389,7 @@ export default function ClientSpecificAnalytics() {
               </Card>
             )}
 
-            {monthlyData.length === 0 && journalEntries.length === 0 && (
+            {weeklyData.length === 0 && journalEntries.length === 0 && (
               <div className="text-center py-12">
                 <div className="rounded-full bg-muted/50 w-16 h-16 flex items-center justify-center mx-auto mb-4">
                   <Activity className="h-8 w-8 text-muted-foreground" />
