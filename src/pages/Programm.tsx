@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +31,7 @@ export default function Programm() {
 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [activeDayData, setActiveDayData] = useState<any | null>(null);
+  const firstExerciseRef = useRef<HTMLDivElement | null>(null);
 
   const loadProgramDayByNumber = useCallback(async (dayNum: number) => {
     // derive week/day from linear day number (1-based)
@@ -61,6 +62,16 @@ export default function Programm() {
       setActiveDayData(null);
     }
   }, [routeDayNumber, loadProgramDayByNumber]);
+
+  // Auto-scroll to first exercise when day loads
+  useEffect(() => {
+    if (activeDayData && firstExerciseRef.current) {
+      // small delay to ensure layout is ready
+      setTimeout(() => {
+        firstExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+  }, [activeDayData]);
 
   // Handle day click
   const handleDayClick = useCallback(async (dayNumber: number, isWeekend: boolean) => {
@@ -167,6 +178,17 @@ export default function Programm() {
                 <p className="text-sm text-muted-foreground">{activeDayData.notes}</p>
               )}
             </div>
+            {/* Mark as done button */}
+            {routeDayNumber && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => handleDayCompletion(Number(routeDayNumber))}
+                  className="h-9"
+                >
+                  Märgi tehtuks
+                </Button>
+              </div>
+            )}
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => {
                 const n = i + 1;
@@ -178,7 +200,7 @@ export default function Programm() {
                 const video = activeDayData[`videolink${n}`];
                 if (!name) return null;
                 return (
-                  <div key={n} className="rounded-lg border p-3">
+                  <div key={n} className="rounded-lg border p-3" ref={n === 1 ? firstExerciseRef : undefined}>
                     <div className="flex items-center justify-between">
                       <div className="font-medium">{name}</div>
                       <div className="text-sm text-muted-foreground">
