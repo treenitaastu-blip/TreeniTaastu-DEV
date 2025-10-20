@@ -84,6 +84,8 @@ export default function ModernWorkoutSession() {
   // Alternative exercises management
   const [openAlternativesFor, setOpenAlternativesFor] = useState<Record<string, boolean>>({});
   const [selectedAlternative, setSelectedAlternative] = useState<Record<string, string>>({});
+  // Store original names to support toggle back from alternative
+  const [originalExerciseNames, setOriginalExerciseNames] = useState<Record<string, string>>({});
   
   // UI state
   const [loading, setLoading] = useState(true);
@@ -236,6 +238,12 @@ export default function ModernWorkoutSession() {
         }
 
         setExercises(exerciseData);
+        // Capture originals for toggle behavior
+        const originals: Record<string, string> = {};
+        for (const ex of exerciseData) {
+          originals[ex.id] = ex.exercise_name;
+        }
+        setOriginalExerciseNames(originals);
 
         // Find or create session
         let sessionData;
@@ -1023,18 +1031,24 @@ export default function ModernWorkoutSession() {
   }, [session, exercises, exerciseNotes, exerciseRPE, dayId, programId, user, applyAutomaticProgression, trackFeatureUsage, completedExerciseIds.size]);
 
   // Function to automatically switch to alternative exercise (optimistic update)
-  const switchToAlternative = useCallback(async (exerciseId: string, alternativeName: string) => {
-    console.log('[AlternativeSwitch] requested', { exerciseId, alternativeName });
-    const prevExercise = exercises.find(e => e.id === exerciseId);
-    const previousName = prevExercise?.exercise_name;
+  const switchToAlternative = useCallback(async (exerciseId: string, _alternativeName: string) => {
+    const ex = exercises.find(e => e.id === exerciseId);
+    if (!ex) return;
+    // Determine toggle target: if currently an alternative, revert to original; else use first alternative
+    const firstAlt = ex.exercise_alternatives?.[0]?.alternative_name;
+    const originalName = originalExerciseNames[exerciseId] || ex.exercise_name;
+    const targetName = (ex.exercise_name === firstAlt && originalName) ? originalName : (firstAlt || ex.exercise_name);
+    console.log('[AlternativeSwitch] requested', { exerciseId, from: ex.exercise_name, to: targetName, originalName, firstAlt });
+
+    const previousName = ex.exercise_name;
 
     // Optimistic UI update
-    setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, exercise_name: alternativeName } : ex));
+    setExercises(prev => prev.map(row => row.id === exerciseId ? { ...row, exercise_name: targetName } : row));
 
     try {
       const { error } = await supabase
         .from("client_items")
-        .update({ exercise_name: alternativeName })
+        .update({ exercise_name: targetName })
         .eq("id", exerciseId);
 
       if (error) {
@@ -1044,15 +1058,15 @@ export default function ModernWorkoutSession() {
 
       trackMobileInteraction('alternative_exercise_selected', {
         exerciseId,
-        alternativeName,
+        alternativeName: targetName,
         sessionId: session?.id
       });
       console.log('[AlternativeSwitch] success');
-      toast.success(`Harjutus vahetatud: ${alternativeName}`);
+      toast.success(`Harjutus vahetatud: ${targetName}`);
     } catch (error) {
       // Revert optimistic update
       if (previousName) {
-        setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, exercise_name: previousName } : ex));
+        setExercises(prev => prev.map(row => row.id === exerciseId ? { ...row, exercise_name: previousName } : row));
       }
       logWorkoutError(error, {
         userId: user?.id,
