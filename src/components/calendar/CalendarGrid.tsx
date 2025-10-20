@@ -64,7 +64,8 @@ export default function CalendarGrid({
             key={day.dayNumber}
             day={day}
             onClick={() => onDayClick(day.dayNumber, day.isWeekend)}
-            className="touch-manipulation" // Optimize for touch
+            className="touch-manipulation"
+            isStarted={day.isUnlocked && !day.isCompleted}
           />
         ))}
       </div>

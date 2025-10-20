@@ -27,12 +27,17 @@ interface DayTileProps {
   day: CalendarDay;
   onClick: () => void;
   className?: string;
+  isStarted?: boolean; // opened but not completed yet
 }
 
-export default function DayTile({ day, onClick, className = "" }: DayTileProps) {
+export default function DayTile({ day, onClick, className = "", isStarted }: DayTileProps) {
   const getTileStyles = () => {
     if (day.isCompleted) {
       return "bg-success text-success-foreground border-success hover:bg-success/90 shadow-success/20";
+    }
+    // started but not completed: highlight in red
+    if (isStarted && !day.isWeekend) {
+      return "bg-red-50 text-red-800 border-red-300 hover:bg-red-100 shadow-red-100 cursor-pointer";
     }
     if (day.isWeekend) {
       return "bg-accent text-accent-foreground border-accent hover:bg-accent/90 shadow-accent/20";
@@ -60,6 +65,9 @@ export default function DayTile({ day, onClick, className = "" }: DayTileProps) 
     if (day.isCompleted) {
       return "Tehtud";
     }
+    if (isStarted && !day.isWeekend) {
+      return "Alustatud";
+    }
     if (day.isWeekend) {
       return "Lõõgastus";
     }
@@ -72,6 +80,9 @@ export default function DayTile({ day, onClick, className = "" }: DayTileProps) 
   const getStatusColor = () => {
     if (day.isCompleted) {
       return "text-success-foreground";
+    }
+    if (isStarted && !day.isWeekend) {
+      return "text-red-700";
     }
     if (day.isWeekend) {
       return "text-accent-foreground";
