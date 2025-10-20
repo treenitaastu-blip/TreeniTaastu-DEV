@@ -304,11 +304,18 @@ export default function SmartExerciseCard({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onToggleAlternatives?.(exercise.id)}
+                onClick={() => {
+                  // Single-click quick switch to the first alternative
+                  const nextAlt = exercise.exercise_alternatives?.[0]?.alternative_name;
+                  if (nextAlt) {
+                    onSwitchToAlternative?.(exercise.id, nextAlt);
+                  }
+                }}
                 className={cn(
                   "h-8 w-8 p-0",
                   showAlternatives && "bg-accent/10 text-accent"
                 )}
+                title="Vaheta alternatiivse harjutuse vastu"
               >
                 <Repeat className="h-4 w-4" />
               </Button>
@@ -534,44 +541,7 @@ export default function SmartExerciseCard({
       )}
 
       {/* Alternative Exercises */}
-      {showAlternatives && exercise.exercise_alternatives && exercise.exercise_alternatives.length > 0 && (
-        <div className="p-4 border-t bg-muted/30">
-          <h4 className="font-medium mb-3 text-sm flex items-center gap-2">
-            <Repeat className="h-4 w-4" />
-            Alternatiivsed harjutused
-          </h4>
-          <div className="space-y-2">
-            {exercise.exercise_alternatives.map((alt, index) => (
-              <div key={alt.id} className="flex items-center justify-between p-3 border rounded-lg bg-background">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm">{alt.alternative_name}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      alt.difficulty_level === 'easier' ? 'bg-green-100 text-green-700' :
-                      alt.difficulty_level === 'harder' ? 'bg-red-100 text-red-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>
-                      {alt.difficulty_level === 'easier' ? 'Lihtsam' :
-                       alt.difficulty_level === 'harder' ? 'Raskem' : 'Sama'}
-                    </span>
-                  </div>
-                  {alt.alternative_description && (
-                    <p className="text-xs text-muted-foreground">{alt.alternative_description}</p>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onSwitchToAlternative?.(exercise.id, alt.alternative_name)}
-                  className="ml-2"
-                >
-                  Vali
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Alternatives list removed: quick-switch happens on single click in header */}
 
       {/* Video Modal */}
       {showVideo && exercise.video_url && (
