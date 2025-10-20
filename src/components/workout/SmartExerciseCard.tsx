@@ -305,10 +305,16 @@ export default function SmartExerciseCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  // Single-click quick switch to the first alternative
-                  const nextAlt = exercise.exercise_alternatives?.[0]?.alternative_name;
+                  // Single-click quick switch: choose first alternative different from current name
+                  const nextAlt = exercise.exercise_alternatives?.find(a => a.alternative_name !== exercise.exercise_name)?.alternative_name;
                   if (nextAlt) {
                     onSwitchToAlternative?.(exercise.id, nextAlt);
+                  } else {
+                    // If none found, fallback to first available
+                    const firstAlt = exercise.exercise_alternatives?.[0]?.alternative_name;
+                    if (firstAlt) {
+                      onSwitchToAlternative?.(exercise.id, firstAlt);
+                    }
                   }
                 }}
                 className={cn(
