@@ -1045,11 +1045,22 @@ export default function ModernWorkoutSession() {
   const switchToAlternative = useCallback(async (exerciseId: string, _alternativeName: string) => {
     const ex = exercises.find(e => e.id === exerciseId);
     if (!ex) return;
-    // Determine toggle target: if currently an alternative, revert to original; else use first alternative
-    const firstAlt = ex.exercise_alternatives?.[0]?.alternative_name;
     const originalName = ex.base_exercise_name || originalExerciseNames[exerciseId] || ex.exercise_name;
-    const targetName = (ex.exercise_name === firstAlt && originalName) ? originalName : (firstAlt || ex.exercise_name);
-    console.log('[AlternativeSwitch] requested', { exerciseId, from: ex.exercise_name, to: targetName, originalName, firstAlt });
+    const altNames = (ex.exercise_alternatives || [])
+      .map(a => a.alternative_name)
+      .filter(Boolean);
+    // Build unique candidate list: original first, then distinct alternatives
+    const seen = new Set<string>();
+    const candidates = [originalName, ...altNames].filter(name => {
+      if (seen.has(name)) return false;
+      seen.add(name);
+      return true;
+    });
+    // Find next different name in cycle
+    const currentIdx = Math.max(0, candidates.indexOf(ex.exercise_name));
+    const nextIdx = (currentIdx + 1) % Math.max(1, candidates.length);
+    const targetName = candidates[nextIdx] || ex.exercise_name;
+    console.log('[AlternativeSwitch] requested', { exerciseId, from: ex.exercise_name, to: targetName, originalName, candidates });
 
     const previousName = ex.exercise_name;
 
