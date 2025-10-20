@@ -159,7 +159,7 @@ if (container) {
                 {/* ---------- ADMIN ROUTES ---------- */}
                 <Route element={<App />}>
                   <Route element={<RequireAdmin />}>
-                    <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
+                    <Route path="/admin" element={<Navigate to="/admin/analytics" replace />} />
                     <Route path="/admin/analytics" element={
                       <Suspense fallback={<div className="p-6">Laen…</div>}>
                         <Analytics />
