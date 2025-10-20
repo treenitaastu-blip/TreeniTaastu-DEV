@@ -48,19 +48,28 @@ export default function ServicesPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
+          // Required by Web3Forms
           access_key: "43bdd7e8-c2c4-4680-b0cf-eb7b49a6275e",
-          name: formData.name,
-          email: formData.email,
+          subject: `Uus teenuse päring: ${formData.service || "Teenused"}`,
+          from_name: formData.name,
+          from_email: formData.email,
+          replyto: formData.email,
+          botcheck: "",
+
+          // Optional/Custom fields
           phone: formData.phone,
           service: formData.service,
           message: formData.message,
-          subject: `Uus teenuse taotlus: ${formData.service}`,
+          source: "treeni-taastu-dev",
         }),
       });
 
-      if (response.ok) {
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data?.success) {
         toast({
           title: "Taotlus saadetud!",
           description: "Võtame teiega ühendust 24 tunni jooksul.",
@@ -73,12 +82,13 @@ export default function ServicesPage() {
           message: ""
         });
       } else {
-        throw new Error("Failed to submit");
+        const errMsg = data?.message || "Saatmine ebaõnnestus. Palun kontrolli välju ja proovi uuesti.";
+        throw new Error(errMsg);
       }
     } catch (error) {
       toast({
         title: "Viga",
-        description: "Taotluse saatmine ebaõnnestus. Palun proovige uuesti.",
+        description: error instanceof Error ? error.message : "Taotluse saatmine ebaõnnestus. Palun proovige uuesti.",
         variant: "destructive",
       });
     } finally {
