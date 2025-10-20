@@ -6,24 +6,38 @@ interface VideoPlayerProps {
   className?: string;
 }
 
-// Convert YouTube URLs to embeddable format
+// Convert various video URLs to embeddable format (YouTube, Vimeo)
 function toEmbedUrl(url: string): string {
   if (!url) return "";
 
-  // YouTube watch URL
-  if (url.includes("youtube.com/watch?v=")) {
-    const videoId = url.split("v=")[1]?.split("&")[0];
-    return `https://www.youtube.com/embed/${videoId}`;
+  const trimmed = url.trim();
+
+  // Already an embed URL
+  if (trimmed.includes("/embed/")) return trimmed;
+
+  // YouTube patterns
+  // - Standard watch: https://www.youtube.com/watch?v=VIDEO_ID
+  // - Short link:     https://youtu.be/VIDEO_ID
+  // - Shorts:         https://www.youtube.com/shorts/VIDEO_ID
+  // - Live:           https://www.youtube.com/live/VIDEO_ID
+  // - Mobile:         https://m.youtube.com/watch?v=VIDEO_ID
+  const ytMatch = trimmed.match(
+    /(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/)|youtu\.be\/|m\.youtube\.com\/watch\?v=)([A-Za-z0-9_-]{6,})/
+  );
+  if (ytMatch && ytMatch[1]) {
+    const id = ytMatch[1];
+    // Use privacy-enhanced domain to reduce cookies
+    return `https://www.youtube-nocookie.com/embed/${id}`;
   }
 
-  // YouTube short URL
-  if (url.includes("youtu.be/")) {
-    const videoId = url.split("youtu.be/")[1]?.split("?")[0];
-    return `https://www.youtube.com/embed/${videoId}`;
+  // Vimeo: https://vimeo.com/VIDEO_ID -> https://player.vimeo.com/video/VIDEO_ID
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
   }
 
-  // Already embedded or other video
-  return url;
+  // Fallback to original
+  return trimmed;
 }
 
 export function VideoPlayer({
@@ -49,13 +63,26 @@ export function VideoPlayer({
   return (
     <div className={`relative rounded-lg overflow-hidden bg-black ${className}`}>
       <iframe
-        src={`${embedUrl}?autoplay=0&mute=0&controls=1&rel=0`}
+        src={`${embedUrl}${embedUrl.includes("?") ? "&" : "?"}autoplay=0&mute=0&controls=1&rel=0`}
         title={title}
         className="w-full h-full min-h-[240px] lg:min-h-[320px]"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
         loading="lazy"
       />
+      <div className="bg-black/70 text-xs text-muted-foreground px-3 py-2">
+        Kui video ei kuva, 
+        <a
+          href={src}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline ml-1"
+          title="Ava video uues vahelehes"
+        >
+          ava YouTube'is
+        </a>
+        .
+      </div>
     </div>
   );
 }
