@@ -106,3 +106,5 @@ if (require.main === module) {
 
 module.exports = { removeConsoleStatements, processFile };
 
+
+

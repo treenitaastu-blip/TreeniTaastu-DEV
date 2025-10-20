@@ -104,6 +104,7 @@ BEGIN
             INSERT INTO client_items (
                 client_day_id,
                 exercise_name,
+                base_exercise_name,
                 sets,
                 reps,
                 seconds,
@@ -114,6 +115,7 @@ BEGIN
                 order_in_day
             ) VALUES (
                 v_client_day_id,
+                v_template_item.exercise_name,
                 v_template_item.exercise_name,
                 v_template_item.sets,
                 v_template_item.reps,
