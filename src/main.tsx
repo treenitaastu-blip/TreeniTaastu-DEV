@@ -240,6 +240,12 @@ if (container) {
                       <Home />
                     </Suspense>
                   } />
+                {/* Static program day route (prevents 404 on day open) */}
+                <Route path="/programm/day/:dayNumber" element={
+                  <Suspense fallback={<div className="p-6">Laen…</div>}>
+                    <Programm />
+                  </Suspense>
+                } />
                 </Route>
 
                 {/* ---------- STATIC SUBSCRIPTION ROUTES ---------- */}
