@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useCalendarState } from '@/hooks/useCalendarState';
@@ -10,12 +10,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import CalendarGrid from '@/components/calendar/CalendarGrid';
 import QuoteDisplay from '@/components/calendar/QuoteDisplay';
 import { getTallinnDate, isAfterUnlockTime } from '@/lib/workweek';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function Programm() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { handleWeekendClick } = useWeekendRedirect();
+  const { dayNumber: routeDayNumber } = useParams();
   
   const {
     days,
@@ -28,6 +30,37 @@ export default function Programm() {
   } = useCalendarState();
 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [activeDayData, setActiveDayData] = useState<any | null>(null);
+
+  const loadProgramDayByNumber = useCallback(async (dayNum: number) => {
+    // derive week/day from linear day number (1-based)
+    const week = Math.ceil(dayNum / 5);
+    const day = ((dayNum - 1) % 5) + 1;
+    const { data, error } = await supabase
+      .from('programday')
+      .select('*')
+      .eq('week', week)
+      .eq('day', day)
+      .single();
+    if (error) {
+      console.error('programday load error', error);
+      toast({ title: 'Viga', description: 'Päeva laadimine ebaõnnestus', variant: 'destructive' });
+      setActiveDayData(null);
+      return;
+    }
+    setActiveDayData(data);
+  }, [toast]);
+
+  useEffect(() => {
+    if (routeDayNumber) {
+      const dayNum = Number(routeDayNumber);
+      if (!Number.isNaN(dayNum) && dayNum >= 1 && dayNum <= 20) {
+        loadProgramDayByNumber(dayNum);
+      }
+    } else {
+      setActiveDayData(null);
+    }
+  }, [routeDayNumber, loadProgramDayByNumber]);
 
   // Handle day click
   const handleDayClick = useCallback(async (dayNumber: number, isWeekend: boolean) => {
@@ -123,6 +156,59 @@ export default function Programm() {
         completedDays={completedDays}
         onDayClick={handleDayClick}
       />
+
+      {/* Inline Day Viewer when routed */}
+      {activeDayData && (
+        <Card>
+          <CardContent className="p-4 sm:p-6 space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold">{activeDayData.title || `Nädal ${activeDayData.week} - Päev ${activeDayData.day}`}</h3>
+              {activeDayData.notes && (
+                <p className="text-sm text-muted-foreground">{activeDayData.notes}</p>
+              )}
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => {
+                const n = i + 1;
+                const name = activeDayData[`exercise${n}`];
+                const reps = activeDayData[`reps${n}`];
+                const seconds = activeDayData[`seconds${n}`];
+                const sets = activeDayData[`sets${n}`];
+                const hint = activeDayData[`hint${n}`];
+                const video = activeDayData[`videolink${n}`];
+                if (!name) return null;
+                return (
+                  <div key={n} className="rounded-lg border p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">{name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {sets ? `${sets} seeriat` : ''}
+                        {reps ? ` • ${reps} kordust` : ''}
+                        {seconds ? ` • ${seconds}s` : ''}
+                      </div>
+                    </div>
+                    {hint && <div className="text-sm text-muted-foreground mt-1">{hint}</div>}
+                    {video && (
+                      <div className="mt-3">
+                        <iframe
+                          src={video.includes('youtube.com') || video.includes('youtu.be') ?
+                            (video.includes('embed') ? `${video}` : `https://www.youtube-nocookie.com/embed/${(video.split('v=')[1]||'').split('&')[0] || video.split('youtu.be/')[1] || ''}`)
+                            : video
+                          }
+                          className="w-full h-[200px]"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          title={`${name} video`}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quote Display Modal */}
       {selectedDay && (
