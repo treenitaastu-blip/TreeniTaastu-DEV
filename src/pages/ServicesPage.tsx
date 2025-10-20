@@ -58,6 +58,8 @@ export default function ServicesPage() {
           from_email: formData.email,
           replyto: formData.email,
           botcheck: "",
+          // Ensure recipient (falls back to dashboard default if omitted)
+          to: "treenitaastu@gmail.com",
 
           // Optional/Custom fields
           phone: formData.phone,
@@ -68,6 +70,7 @@ export default function ServicesPage() {
       });
 
       const data = await response.json().catch(() => null);
+      console.log("Web3Forms response", { status: response.status, ok: response.ok, data });
 
       if (response.ok && data?.success) {
         toast({
