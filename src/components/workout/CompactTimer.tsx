@@ -24,6 +24,21 @@ export const CompactTimer: React.FC<CompactTimerProps> = ({ className }) => {
         setTimeLeft(prev => {
           if (prev <= 1) {
             setIsRunning(false);
+            // simple beep using Web Audio API
+            try {
+              const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+              const o = ctx.createOscillator();
+              const g = ctx.createGain();
+              o.connect(g);
+              g.connect(ctx.destination);
+              o.type = 'sine';
+              o.frequency.value = 880;
+              g.gain.value = 0.001;
+              o.start();
+              g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+              g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.2);
+              o.stop(ctx.currentTime + 0.22);
+            } catch {}
             return 0;
           }
           return prev - 1;

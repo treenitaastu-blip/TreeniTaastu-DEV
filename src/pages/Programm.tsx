@@ -11,6 +11,7 @@ import CalendarGrid from '@/components/calendar/CalendarGrid';
 import QuoteDisplay from '@/components/calendar/QuoteDisplay';
 import { getTallinnDate, isAfterUnlockTime } from '@/lib/workweek';
 import { supabase } from '@/integrations/supabase/client';
+import { CompactTimer } from '@/components/workout/CompactTimer';
 
 export default function Programm() {
   const { user } = useAuth();
@@ -307,6 +308,9 @@ export default function Programm() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Quick access timer for static holds */}
+      <CompactTimer />
     </div>
   );
 }
