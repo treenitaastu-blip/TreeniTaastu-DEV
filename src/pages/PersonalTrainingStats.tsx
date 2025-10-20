@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import EnhancedProgressChart from "@/components/analytics/EnhancedProgressChart";
+import ProgressChart from "@/components/analytics/ProgressChart";
 import { 
   ArrowLeft, 
   TrendingUp, 
@@ -45,10 +45,10 @@ type WeeklySummary = {
   avg_minutes_per_session: number;
 };
 
-type MonthlyData = {
-  month: string;
+type WeeklyChartData = {
+  week_start: string;
   sessions: number;
-  total_volume_kg: number;
+  volume_kg: number;
   avg_rpe: number;
 };
 
@@ -60,7 +60,7 @@ export default function PersonalTrainingStats() {
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklySummary[]>([]);
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [weeklyChartData, setWeeklyChartData] = useState<WeeklyChartData[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,67 +102,32 @@ export default function PersonalTrainingStats() {
         if (sessionError2) throw sessionError2;
         setSessions((sessionData as SessionSummary[]) || []);
 
-        // Load weekly statistics
+        // Load weekly rollup for charts from extended weekly view
+        const { data: weeklyRollup, error: weeklyRollupError } = await supabase
+          .from("v_user_weekly_extended")
+          .select("week_start, sessions_count, weekly_volume_kg, weekly_avg_rpe")
+          .eq("user_id", user.id)
+          .order("week_start", { ascending: false })
+          .limit(12);
+
+        if (weeklyRollupError) throw weeklyRollupError;
+        const weeklyChart: WeeklyChartData[] = (weeklyRollup || []).map((w: any) => ({
+          week_start: new Date(w.week_start).toLocaleDateString("et-EE"),
+          sessions: Number(w.sessions_count) || 0,
+          volume_kg: Number(w.weekly_volume_kg) || 0,
+          avg_rpe: Number(w.weekly_avg_rpe) || 0,
+        }));
+        setWeeklyChartData(weeklyChart);
+
+        // Also keep simple weekly stats if needed elsewhere
         const { data: weeklyData, error: weeklyError } = await supabase
           .from("v_user_weekly")
           .select("*")
           .eq("user_id", user.id)
           .order("iso_week", { ascending: false })
           .limit(12);
-
         if (weeklyError) throw weeklyError;
         setWeeklyStats((weeklyData as unknown as WeeklySummary[]) || []);
-
-        // Process monthly data for 6-month charts with actual volume calculations
-        const monthlyStats: Record<string, { sessions: number; volume: number; rpe_sum: number; rpe_count: number }> = {};
-        
-        sessionData?.forEach(session => {
-          if (!session.started_at) return;
-          
-          const monthKey = new Date(session.started_at).toLocaleDateString("et-EE", { 
-            year: "numeric", 
-            month: "short" 
-          });
-          
-          if (!monthlyStats[monthKey]) {
-            monthlyStats[monthKey] = { sessions: 0, volume: 0, rpe_sum: 0, rpe_count: 0 };
-          }
-          
-          if (session.ended_at) {
-            monthlyStats[monthKey].sessions += 1;
-          }
-          
-          // Calculate actual volume from set logs
-          if (session.set_logs && Array.isArray(session.set_logs)) {
-            session.set_logs.forEach((setLog: any) => {
-              if (setLog.weight_kg_done && setLog.reps_done) {
-                monthlyStats[monthKey].volume += setLog.weight_kg_done * setLog.reps_done;
-              }
-            });
-          }
-          
-          if (session.avg_rpe && session.avg_rpe > 0) {
-            monthlyStats[monthKey].rpe_sum += session.avg_rpe;
-            monthlyStats[monthKey].rpe_count += 1;
-          }
-        });
-
-        const monthlyFormatted: MonthlyData[] = Object.entries(monthlyStats)
-          .sort(([a], [b]) => {
-            const dateA = new Date(a + " 1");
-            const dateB = new Date(b + " 1");
-            return dateB.getTime() - dateA.getTime();
-          })
-          .slice(0, 6)
-          .reverse()
-          .map(([month, stats]) => ({
-            month,
-            sessions: stats.sessions,
-            total_volume_kg: stats.volume,
-            avg_rpe: stats.rpe_count > 0 ? stats.rpe_sum / stats.rpe_count : 0,
-          }));
-          
-        setMonthlyData(monthlyFormatted);
 
       } catch (err) {
         setError(err instanceof Error ? err.message : "Viga statistika laadimisel");
@@ -407,23 +372,23 @@ export default function PersonalTrainingStats() {
           </Card>
         </div>
 
-        {/* Enhanced Progress Charts */}
-        {monthlyData.length > 0 && (
+        {/* Weekly Progress Charts */}
+        {weeklyChartData.length > 0 && (
           <Card className="rounded-2xl shadow-soft">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                6-kuu progressi ülevaade
+                12 nädala progressi ülevaade
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <EnhancedProgressChart 
-                monthlyData={monthlyData}
+              <ProgressChart 
+                weeklyData={weeklyChartData}
                 stats={{
                   total_sessions: overallStats.totalSessions,
                   completion_rate: overallStats.totalSessions > 0 ? overallStats.totalSessions / sessions.length : 0,
                   total_volume_kg: overallStats.totalVolumeKg,
-                  current_streak: 0, // We don't have streak data in PersonalTrainingStats
+                  current_streak: 0,
                   avg_rpe: overallStats.avgRPE
                 }}
               />
