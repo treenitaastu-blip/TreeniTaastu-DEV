@@ -1022,36 +1022,38 @@ export default function ModernWorkoutSession() {
     }
   }, [session, exercises, exerciseNotes, exerciseRPE, dayId, programId, user, applyAutomaticProgression, trackFeatureUsage, completedExerciseIds.size]);
 
-  // Function to automatically switch to alternative exercise
+  // Function to automatically switch to alternative exercise (optimistic update)
   const switchToAlternative = useCallback(async (exerciseId: string, alternativeName: string) => {
+    console.log('[AlternativeSwitch] requested', { exerciseId, alternativeName });
+    const prevExercise = exercises.find(e => e.id === exerciseId);
+    const previousName = prevExercise?.exercise_name;
+
+    // Optimistic UI update
+    setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, exercise_name: alternativeName } : ex));
+
     try {
-      // Update the exercise name in the database
       const { error } = await supabase
         .from("client_items")
         .update({ exercise_name: alternativeName })
         .eq("id", exerciseId);
 
-      if (error) throw error;
+      if (error) {
+        console.warn('[AlternativeSwitch] db error', error);
+        throw error;
+      }
 
-      // Update local state
-      setExercises(prev => prev.map(ex => 
-        ex.id === exerciseId 
-          ? { ...ex, exercise_name: alternativeName }
-          : ex
-      ));
-
-      // Track the interaction
       trackMobileInteraction('alternative_exercise_selected', {
         exerciseId,
         alternativeName,
         sessionId: session?.id
       });
-
-      // Show success message
+      console.log('[AlternativeSwitch] success');
       toast.success(`Harjutus vahetatud: ${alternativeName}`);
-      
     } catch (error) {
-      // Log the error with context
+      // Revert optimistic update
+      if (previousName) {
+        setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, exercise_name: previousName } : ex));
+      }
       logWorkoutError(error, {
         userId: user?.id,
         sessionId: session?.id,
@@ -1060,10 +1062,9 @@ export default function ModernWorkoutSession() {
         exerciseId,
         action: 'alternative_exercise_switch'
       });
-      
       toast.error("Viga harjutuse vahetamisel");
     }
-  }, [supabase, exercises, session?.id, trackMobileInteraction, logWorkoutError, user?.id, programId, dayId]);
+  }, [supabase, exercises, session?.id, trackMobileInteraction, logWorkoutError, user?.id, programId, dayId, setExercises]);
 
 
   if (loading) {
