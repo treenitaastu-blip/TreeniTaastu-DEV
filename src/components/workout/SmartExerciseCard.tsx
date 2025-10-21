@@ -336,50 +336,23 @@ export default function SmartExerciseCard({
   }
 
   return (
-    <div className="rounded-2xl border bg-card shadow-soft overflow-hidden">
-      {/* Quick Glance Header - Key metrics at a glance */}
-      <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 border-b">
-        <div className="grid grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-primary">
-              {allSetsCompleted ? exercise.sets : currentSet}/{exercise.sets}
-            </div>
-            <div className="text-xs text-muted-foreground">Seeria</div>
-          </div>
-          <div>
-            <div className="text-xl font-bold">{exercise.weight_kg || 0}kg</div>
-            <div className="text-xs text-muted-foreground">Kaal</div>
-          </div>
-          <div>
-            <div className="text-xl font-bold">{exercise.reps}</div>
-            <div className="text-xs text-muted-foreground">Kordused</div>
-          </div>
-          <div>
-            <div className="text-xl font-bold">{exercise.rest_seconds || 60}s</div>
-            <div className="text-xs text-muted-foreground">Puhkus</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Exercise Header - Simplified */}
-      <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-accent/5">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-foreground mb-2">
-              {exercise.exercise_name}
-            </h3>
-            {/* Removed detailed stats - they're now in QuickGlanceHeader */}
-          </div>
-
-          <div className="flex gap-2">
+    <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+      {/* Exercise Title - First and prominent */}
+      <div className="p-3 border-b bg-muted/30">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-foreground">
+            {exercise.exercise_name}
+          </h3>
+          
+          <div className="flex items-center gap-1">
             {exercise.video_url && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowVideo(true)}
-                className="h-11 w-11 p-0"
+                className="h-7 w-7 p-0"
               >
-                <Play className="h-4 w-4" />
+                <Play className="h-3 w-3" />
               </Button>
             )}
             <Button
@@ -387,12 +360,12 @@ export default function SmartExerciseCard({
               size="sm"
               onClick={() => setShowNotes(!showNotes)}
               className={cn(
-                "h-11 w-11 p-0",
+                "h-7 w-7 p-0",
                 showNotes && "bg-primary/10 text-primary",
                 notes && !showNotes && "text-primary"
               )}
             >
-              <MessageSquare className="h-4 w-4" />
+              <MessageSquare className="h-3 w-3" />
             </Button>
             {/* Collapse/Expand button - only show when all sets are completed */}
             {allSetsCompleted && (
@@ -400,10 +373,10 @@ export default function SmartExerciseCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="h-11 w-11 p-0"
+                className="h-7 w-7 p-0"
                 title={isCollapsed ? "Näita seeriad" : "Peida seeriad"}
               >
-                {isCollapsed ? <Activity className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                {isCollapsed ? <Activity className="h-3 w-3" /> : <Check className="h-3 w-3" />}
               </Button>
             )}
             {exercise.exercise_alternatives && exercise.exercise_alternatives.length > 0 && (
@@ -424,12 +397,12 @@ export default function SmartExerciseCard({
                   }
                 }}
                 className={cn(
-                  "h-11 w-11 p-0",
+                  "h-7 w-7 p-0",
                   showAlternatives && "bg-accent/10 text-accent"
                 )}
                 title="Vaheta alternatiivse harjutuse vastu"
               >
-                <Repeat className="h-4 w-4" />
+                <Repeat className="h-3 w-3" />
               </Button>
             )}
           </div>
@@ -446,21 +419,41 @@ export default function SmartExerciseCard({
         )}
       </div>
 
-      {/* Visual Progress Indicator */}
-      <div className="px-4 py-3 bg-muted/20">
-        <div className="flex items-center gap-3">
-          {/* Large visual progress indicator */}
-          <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-primary to-accent h-full transition-all duration-500"
-              style={{ width: `${(completedSets / exercise.sets) * 100}%` }}
-            />
+      {/* Clean exercise details - sets, weight, reps, rest */}
+      <div className="p-3 bg-muted/10">
+        <div className="grid grid-cols-4 gap-3 text-center">
+          <div>
+            <div className="text-sm font-medium text-muted-foreground">Seeriad</div>
+            <div className="text-lg font-semibold text-foreground">
+              {allSetsCompleted ? exercise.sets : completedSets}/{exercise.sets}
+            </div>
           </div>
-          
-          {/* Simplified counter */}
-          <div className="text-lg font-bold text-primary">
-            {allSetsCompleted ? exercise.sets : completedSets}/{exercise.sets}
+          <div>
+            <div className="text-sm font-medium text-muted-foreground">Kaal</div>
+            <div className="text-lg font-semibold text-foreground">
+              {exercise.weight_kg || 0}kg
+            </div>
           </div>
+          <div>
+            <div className="text-sm font-medium text-muted-foreground">Kordused</div>
+            <div className="text-lg font-semibold text-foreground">
+              {exercise.reps}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-medium text-muted-foreground">Puhkus</div>
+            <div className="text-lg font-semibold text-foreground">
+              {exercise.rest_seconds || 60}s
+            </div>
+          </div>
+        </div>
+        
+        {/* Minimal progress bar */}
+        <div className="mt-3 w-full bg-muted rounded-full h-1.5 overflow-hidden">
+          <div 
+            className="bg-primary h-full transition-all duration-300"
+            style={{ width: `${(completedSets / exercise.sets) * 100}%` }}
+          />
         </div>
       </div>
 

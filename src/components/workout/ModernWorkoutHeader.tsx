@@ -40,26 +40,32 @@ export default function ModernWorkoutHeader({
   const progressPercentage = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
 
   return (
-    <div className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
-      <div className="px-4 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Tagasi
+    <div className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-sm">
+      <div className="px-4 py-2">
+        {/* Ultra-minimal header - just title and progress */}
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={onBack} className="h-8 px-2">
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Timer className="h-4 w-4" />
-              {elapsedMinutes} min
+          <div className="flex-1 text-center">
+            <h1 className="text-sm font-medium text-foreground truncate">
+              {dayTitle}
+            </h1>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {completedSets}/{totalSets} seeriat
             </div>
-            
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="text-xs text-muted-foreground">
+              {elapsedMinutes}m
+            </div>
             {!isFinished && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive/10">
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Lõpeta
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                    <XCircle className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -89,47 +95,28 @@ export default function ModernWorkoutHeader({
             )}
           </div>
         </div>
-
-        {/* Streamlined Header */}
-        <div className="space-y-3">
-          {/* Minimalistic Title */}
-          <div className="text-center">
-            <h1 className="text-lg font-semibold text-foreground">
-              {dayTitle}
-            </h1>
-            <div className="flex items-center justify-center gap-2 mt-1">
-              <div className="text-sm text-muted-foreground">
-                {completedSets}/{totalSets} seeriat tehtud
-              </div>
-              <div className="w-1 h-1 bg-muted-foreground rounded-full"></div>
-              <div className="text-sm text-muted-foreground">
-                {Math.round(progressPercentage)}% valmis
-              </div>
-            </div>
-          </div>
-
-          {/* Compact Progress Bar */}
-          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 ease-out"
-              style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-            />
-          </div>
-
-          {/* Completion Button */}
-          {progressPercentage >= 100 && !isFinished && (
-            <div className="flex justify-center">
-              <Button 
-                onClick={onFinish}
-                size="sm"
-                className="bg-green-600 text-white hover:bg-green-700"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Lõpeta treening
-              </Button>
-            </div>
-          )}
+        
+        {/* Minimal progress bar */}
+        <div className="mt-2 w-full bg-muted rounded-full h-1 overflow-hidden">
+          <div 
+            className="h-full bg-primary transition-all duration-300 ease-out"
+            style={{ width: `${Math.min(progressPercentage, 100)}%` }}
+          />
         </div>
+        
+        {/* Completion button - only show when 100% */}
+        {progressPercentage >= 100 && !isFinished && (
+          <div className="flex justify-center mt-2">
+            <Button 
+              onClick={onFinish}
+              size="sm"
+              className="h-7 px-3 text-xs bg-green-600 text-white hover:bg-green-700"
+            >
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Lõpeta
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
