@@ -5,6 +5,137 @@ import { Link } from "react-router-dom";
 import LoginForm from "@/components/auth/LoginForm";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
+import { PricingCards } from "@/components/subscription/PricingCards";
+import { FeatureComparison } from "@/components/subscription/FeatureComparison";
+import { FAQ } from "@/components/subscription/FAQ";
+import { Testimonials } from "@/components/subscription/Testimonials";
+import { Shield, Clock, Award, Users } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+// Trial signup component
+function TrialSignupCard() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleTrialSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Viga",
+        description: "Palun sisesta email ja parool",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Viga", 
+        description: "Parool peab olema vähemalt 6 tähemärki pikk",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Use standard signup flow (same as SignupPage.tsx) to ensure 7-day trial
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login?confirmed=true`,
+        },
+      });
+
+      if (error) throw error;
+
+      // If auto-confirmed and session created
+      if (data.session) {
+        toast({
+          title: "Konto loodud!",
+          description: "7-päevane tasuta proov on käivitatud!",
+        });
+        navigate("/home", { replace: true });
+        return;
+      }
+
+      // Email confirmation required
+      toast({
+        title: "Konto loodud!",
+        description: "7-päevane tasuta proov on käivitatud. Kontrolli oma emaili kinnituslingi saamiseks.",
+      });
+      
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 3000);
+
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast({
+        title: "Viga konto loomisel",
+        description: error instanceof Error ? error.message : "Proovi hiljem uuesti",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="max-w-md mx-auto border-primary/20">
+      <CardContent className="p-6">
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-semibold mb-2">7-päevane tasuta proov</h3>
+          <p className="text-sm text-muted-foreground">
+            Loo konto ja saa ligipääs programmidele
+          </p>
+        </div>
+        <form onSubmit={handleTrialSignup} className="space-y-4">
+          <div>
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <Input
+              type="password"
+              placeholder="Parool (min 6 tähemärki)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={loading}
+          >
+            {loading ? "Konto loomine..." : "Alusta tasuta proovi"}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            Sisaldab täieliku ligipääsu programmidele 7 päeva jooksul
+          </p>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function IndexPublic() {
   const { user } = useAuth();
@@ -21,78 +152,99 @@ export default function IndexPublic() {
   if (user) return <Navigate to="/home" replace />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-primary/5">
-      <div className="max-w-5xl mx-auto px-4 py-12">
-        {/* Hero Section - Optimized for LCP */}
-        <div className="hero-container text-center mb-12">
-          <h1 className="hero-title text-6xl font-bold mb-6 leading-tight">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* Hero Section - Keep original */}
+        <div className="text-center mb-20">
+          <h1 className="text-4xl md:text-6xl font-bold mb-8 bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent leading-tight">
             <span className="bg-gradient-to-r from-primary via-primary to-primary-foreground bg-clip-text text-transparent">
               Muuda oma elu
             </span>
             <br />
             <span className="text-5xl text-foreground font-bold">28 päevaga</span>
           </h1>
-          <p className="hero-subtitle text-xl text-foreground/80 mb-8 max-w-2xl mx-auto font-medium">
-            Personaalsed treeningkavad + ekspertide tugi. Tulemused garanteeritud.
+          <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-4xl mx-auto leading-relaxed">
+            Professionaalsed treeningprogrammid, mis sobivad nii algajatele kui kogenud treenijatele. 
+            Alusta tasuta prooviga ja kogeda erinevust.
           </p>
-        </div>
-
-        {/* CTA Button */}
-        <div className="text-center mb-12">
-          <Link
-            to="/pricing"
-            className="inline-block px-8 py-4 bg-primary text-primary-foreground rounded-lg font-bold text-lg hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-          >
-            Vaata hinnakirja ja alusta
-          </Link>
-          <p className="text-sm text-muted-foreground mt-4">
-            Alusta tasuta prooviga • Tühista igal ajal
-          </p>
-        </div>
-
-        {/* What's Included */}
-        <div className="text-center mb-8">
-          <div className="max-w-xl mx-auto space-y-3">
-            <div className="flex items-center justify-center gap-3 text-left">
-              <div className="text-primary font-bold">✓</div>
-              <span>Personaalsed treeningkavad igaks nädalaks</span>
-            </div>
-            <div className="flex items-center justify-center gap-3 text-left">
-              <div className="text-primary font-bold">✓</div>
-              <span>Video juhendid iga harjutuse jaoks</span>
-            </div>
-            <div className="flex items-center justify-center gap-3 text-left">
-              <div className="text-primary font-bold">✓</div>
-              <span>Progressi jälgimine ja analüütika</span>
-            </div>
-          </div>
           
-          <p className="text-sm text-muted-foreground mt-6 max-w-md mx-auto">
-            <strong>Personaaltreening, nõustamine ja individuaalplaanid</strong> saadaval pärast tellimust jaotises "Hinnad"
-          </p>
+          {/* Enhanced Trust Indicators */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto mb-16">
+            <div className="flex items-center justify-center gap-3 text-sm bg-green-50 dark:bg-green-950/20 px-4 py-3 rounded-lg border border-green-200 dark:border-green-800">
+              <Shield className="h-5 w-5 text-green-600" />
+              <span className="font-medium">100% Turvaline</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm bg-blue-50 dark:bg-blue-950/20 px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              <Clock className="h-5 w-5 text-blue-600" />
+              <span className="font-medium">Tühista igal ajal</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm bg-purple-50 dark:bg-purple-950/20 px-4 py-3 rounded-lg border border-purple-200 dark:border-purple-800">
+              <Award className="h-5 w-5 text-purple-600" />
+              <span className="font-medium">Füsioterapeudi koostatud</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-sm bg-orange-50 dark:bg-orange-950/20 px-4 py-3 rounded-lg border border-orange-200 dark:border-orange-800">
+              <Users className="h-5 w-5 text-orange-600" />
+              <span className="font-medium">500+ treenijat</span>
+            </div>
+          </div>
         </div>
 
-        {/* Social Proof */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center items-center gap-2 text-yellow-500 mb-2">
-            {"★".repeat(5)}
-          </div>
-          <p className="text-muted-foreground">
-            "Uskumatu muutus 4 nädalaga!" - Liis, 31
-          </p>
-        </div>
+        {/* Pricing Cards */}
+        <PricingCards 
+          onSelectPlan={() => {}}
+          loading={null}
+          currentPlan={null}
+          showTrial={true}
+        />
 
-        {/* Login Section */}
-        <div className="max-w-md mx-auto">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Juba liige?</h2>
-            <p className="text-muted-foreground text-sm">Logi sisse ja jätka treeningut</p>
+        {/* Testimonials */}
+        <Testimonials />
+
+        {/* Feature Comparison */}
+        <FeatureComparison />
+
+        {/* FAQ Section */}
+        <FAQ />
+
+        {/* Enhanced CTA Section */}
+        <div className="text-center mt-20">
+          <div className="bg-gradient-to-r from-primary/5 to-primary-foreground/5 rounded-3xl p-12 max-w-4xl mx-auto border border-primary/20 shadow-2xl">
+            <div className="mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
+                Valmis alustama oma muutust?
+              </h2>
+              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+                Liitu üle 500 inimesega, kes on juba alustanud oma fitness-teekonda. 
+                Alusta tasuta prooviga ja kogeda erinevust juba esimese nädala jooksul.
+              </p>
+              
+              {/* Urgency indicators */}
+              <div className="flex flex-wrap justify-center gap-4 mb-8">
+                <div className="flex items-center gap-2 text-sm bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-full">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="font-medium">7 päeva tasuta</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm bg-blue-100 dark:bg-blue-900/30 px-4 py-2 rounded-full">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="font-medium">Tühista igal ajal</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm bg-purple-100 dark:bg-purple-900/30 px-4 py-2 rounded-full">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                  <span className="font-medium">Krediitkaart ei ole vajalik</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <TrialSignupCard />
+              <p className="text-sm text-muted-foreground">
+                Kas sul on juba konto?{' '}
+                <Link to="/login" className="text-primary hover:underline font-medium">
+                  Logi sisse
+                </Link>
+              </p>
+            </div>
           </div>
-          <Card className="shadow-lg">
-            <CardContent className="p-6">
-              <LoginForm redirectTo="/home" />
-            </CardContent>
-          </Card>
         </div>
 
         {/* Footer Links */}
@@ -106,7 +258,7 @@ export default function IndexPublic() {
             </Link>
           </div>
           <p className="text-xs text-muted-foreground mt-4">
-            © 2024 Treenitaastu. Kõik õigused kaitstud.
+            © 2025 Treenitaastu. Kõik õigused kaitstud.
           </p>
         </div>
       </div>
