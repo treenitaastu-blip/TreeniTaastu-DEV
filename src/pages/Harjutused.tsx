@@ -482,4 +482,3 @@ const Harjutused = () => {
 };
 
 export default Harjutused;
-export default Harjutused;
