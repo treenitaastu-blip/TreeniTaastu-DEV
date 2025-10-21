@@ -17,6 +17,7 @@ import {
   Activity,
   MessageCircle,
   Clock,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -527,6 +528,9 @@ function AdminMenuItems({ onItem }: { onItem?: () => void }) {
       </Item>
       <Item to="/admin/articles" icon={BookOpen}>
         Artiklid
+      </Item>
+      <Item to="/admin/tt-beta" icon={Zap}>
+        TT Beta
       </Item>
     </>
   );

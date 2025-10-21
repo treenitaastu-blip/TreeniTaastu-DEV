@@ -93,6 +93,7 @@ const AdminArticles = lazy(() => import("@/pages/admin/ArticlesList"));
 const AdminArticleForm = lazy(() => import("@/pages/admin/ArticleForm"));
 const UserManagement = lazy(() => import("@/pages/admin/UserManagement"));
 const ExerciseArchive = lazy(() => import("@/pages/admin/ExerciseArchive"));
+const TTBeta = lazy(() => import("@/pages/admin/TTBeta"));
 
 // Training Journal
 import TrainingJournal from "@/pages/TrainingJournal";
@@ -228,6 +229,11 @@ if (container) {
                     <Route path="/admin/templates/:id" element={
                       <Suspense fallback={<div className="p-6">Laen…</div>}>
                         <TemplateDetail />
+                      </Suspense>
+                    } />
+                    <Route path="/admin/tt-beta" element={
+                      <Suspense fallback={<div className="p-6">Laen…</div>}>
+                        <TTBeta />
                       </Suspense>
                     } />
                   </Route>
