@@ -39,6 +39,8 @@ export default function Header() {
   const [ptOpen, setPtOpen] = useState(false);       // mobile "PT" accordion
   const [adminMenuOpen, setAdminMenuOpen] = useState(false); // desktop dropdown
   const [ptMenuOpen, setPtMenuOpen] = useState(false); // PT dropdown
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true); // mobile header visibility
+  const [lastScrollY, setLastScrollY] = useState(0);
   const adminMenuRef = useRef<HTMLDivElement | null>(null);
   const ptMenuRef = useRef<HTMLDivElement | null>(null);
   const loc = useLocation();
@@ -52,6 +54,31 @@ export default function Header() {
     setPtMenuOpen(false);
     closeAllDropdowns();
   }, [loc.pathname, closeAllDropdowns]);
+
+  // Mobile header scroll behavior
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Only apply on mobile screens (width < 768px)
+      if (window.innerWidth >= 768) {
+        setIsHeaderVisible(true);
+        return;
+      }
+      
+      // Hide header when scrolling down, show when scrolling up
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsHeaderVisible(false);
+      } else if (currentScrollY < lastScrollY || currentScrollY <= 100) {
+        setIsHeaderVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   // Close dropdowns on outside click / Escape
   useEffect(() => {
@@ -257,7 +284,7 @@ export default function Header() {
         </header>
 
         {/* Mobile Header - Minimal Design */}
-        <div className="md:hidden">
+        <div className={`md:hidden transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="flex items-center justify-between px-4 py-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}>
             {/* Left: Account Icon (replaces logo) */}
             {user ? (
