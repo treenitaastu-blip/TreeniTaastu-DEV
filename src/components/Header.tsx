@@ -90,7 +90,7 @@ export default function Header() {
           { to: "/mindfulness", label: "Lõõgastus", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/pricing", label: "Hinnad", show: !accessLoading && !canStatic && !isAdmin },
         ]
-      : [{ to: "/pricing", label: "Hinnad", show: true }]),
+      : []),
   ].filter((n) => n.show !== false);
 
   const linkBase = "px-3 py-2 rounded-lg text-sm font-medium transition-smooth";
