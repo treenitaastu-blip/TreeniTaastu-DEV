@@ -392,8 +392,8 @@ export default function SmartExerciseCard({
                 <CardContent className="p-3">
                   {/* Current set gets special treatment */}
                   {isCurrent && !isCompleted && (
-                    <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-10">
-                      NÜÜD
+                    <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold z-10">
+                      N
                     </div>
                   )}
                   
@@ -415,7 +415,7 @@ export default function SmartExerciseCard({
                         disabled={!inputs.reps && !parseRepsToNumber(exercise.reps)}
                       >
                         <Check className="h-4 w-4 mr-2" />
-                        ✅ Seeria tehtud
+                        Seeria tehtud
                       </Button>
                     )}
                   </div>
