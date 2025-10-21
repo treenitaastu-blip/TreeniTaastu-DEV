@@ -101,31 +101,9 @@ export default function Header() {
 
   return (
     <>
-      {/* PWA-specific fixes for header layering */}
-      <style>{`
-        @media all and (display-mode: standalone) {
-          body {
-            padding-top: calc(env(safe-area-inset-top, 0px) + 4rem) !important;
-          }
-          .pwa-header {
-            padding-top: env(safe-area-inset-top, 0px) !important;
-          }
-          .pwa-safe-area {
-            height: env(safe-area-inset-top, 0px) !important;
-          }
-        }
-        @media not all and (display-mode: standalone) {
-          .pwa-safe-area {
-            height: 0 !important;
-          }
-        }
-      `}</style>
-      
-      {/* PWA Header Container */}
-      <div className="fixed top-0 left-0 right-0 z-50">
-        {/* iOS Safe Area Background - only in PWA mode */}
-        <div className="bg-card/95 backdrop-blur-xl pwa-safe-area" />
-        <header className="bg-card/95 backdrop-blur-xl border-b shadow-soft overflow-visible pwa-header">
+      {/* PWA Header Container with proper safe area handling */}
+      <div className="fixed top-0 left-0 right-0 z-50" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <header className="bg-card/95 backdrop-blur-xl border-b shadow-soft overflow-visible">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 overflow-visible">
             {/* Logo → goes to /home if logged in, else / */}
             <Link
@@ -423,7 +401,7 @@ export default function Header() {
       </div>
       
       {/* Spacer for fixed header */}
-      <div className="h-16" style={{ marginTop: 'env(safe-area-inset-top, 0px)' }} />
+      <div className="h-16" style={{ marginTop: 'calc(env(safe-area-inset-top, 0px) + 4rem)' }} />
     </>
   );
 }

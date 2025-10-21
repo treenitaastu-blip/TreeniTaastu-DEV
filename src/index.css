@@ -287,6 +287,8 @@
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     font-variation-settings: normal;
     line-height: var(--leading-normal);
+    /* Ensure no content bleeds into safe area */
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   #root {
