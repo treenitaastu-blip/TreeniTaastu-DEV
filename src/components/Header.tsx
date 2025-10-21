@@ -105,7 +105,9 @@ export default function Header() {
       <div className="fixed top-0 left-0 right-0 z-50">
         {/* Safe area background to prevent content bleeding */}
         <div className="bg-card/95 backdrop-blur-xl" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
-        <header className="bg-card/95 backdrop-blur-xl border-b shadow-soft overflow-visible">
+        
+        {/* Desktop Header */}
+        <header className="bg-card/95 backdrop-blur-xl border-b shadow-soft overflow-visible hidden md:block">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 overflow-visible">
             {/* Logo → goes to /home if logged in, else / */}
             <Link
@@ -251,13 +253,32 @@ export default function Header() {
               )}
             </div>
 
-            {/* Mobile burger */}
+          </div>
+        </header>
+
+        {/* Mobile Header - Minimal Design */}
+        <div className="md:hidden">
+          <div className="flex items-center justify-between px-4 py-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}>
+            {/* Left: Account Icon (replaces logo) */}
+            {user ? (
+              <UserMenu mobileMinimal />
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <UserIcon className="h-5 w-5" />
+                <span className="hidden sm:inline">Logi sisse</span>
+              </Link>
+            )}
+
+            {/* Right: Burger Menu */}
             <button
               aria-label={open ? "Sulge menüü" : "Ava menüü"}
               aria-expanded={open}
               aria-controls="mobile-nav"
               onClick={() => setOpen((v) => !v)}
-              className="grid h-10 w-10 place-items-center rounded-lg border transition-colors hover:bg-muted/50 md:hidden"
+              className="grid h-10 w-10 place-items-center rounded-lg border transition-colors hover:bg-muted/50"
             >
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -403,7 +424,8 @@ export default function Header() {
       </div>
       
       {/* Spacer for fixed header */}
-      <div className="h-16" style={{ marginTop: 'calc(env(safe-area-inset-top, 0px) + 4rem)' }} />
+      <div className="hidden md:block h-16" style={{ marginTop: 'calc(env(safe-area-inset-top, 0px) + 4rem)' }} />
+      <div className="md:hidden h-12" style={{ marginTop: 'calc(env(safe-area-inset-top, 0px) + 3rem)' }} />
     </>
   );
 }
@@ -484,7 +506,7 @@ function AdminMenuItems({ onItem }: { onItem?: () => void }) {
   );
 }
 
-function UserMenu({ mobile = false }: { mobile?: boolean }) {
+function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean; mobileMinimal?: boolean }) {
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const popRef = useRef<HTMLDivElement | null>(null);
@@ -537,6 +559,44 @@ function UserMenu({ mobile = false }: { mobile?: boolean }) {
           <LogOut className="h-4 w-4" />
           Logi välja
         </button>
+      </div>
+    );
+  }
+
+  if (mobileMinimal) {
+    return (
+      <div className="relative overflow-visible" ref={popRef} style={{ zIndex: 1000 }}>
+        <button
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors shadow-soft hover:bg-muted/50"
+        >
+          <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-primary text-white">
+            <UserIcon className="h-4 w-4" />
+          </div>
+        </button>
+        {open && (
+          <div
+            role="menu"
+            className="absolute left-0 mt-2 w-48 rounded-xl border bg-card p-1 backdrop-blur-xl shadow-medium"
+            style={{ 
+              position: 'absolute', 
+              top: '100%', 
+              left: 0, 
+              zIndex: 1001 
+            }}
+          >
+            <Link to="/konto" className={itemBase} onClick={() => setOpen(false)}>
+              <UserIcon className="h-4 w-4" />
+              Konto
+            </Link>
+            <button onClick={() => { handleSignOut(); setOpen(false); }} className={itemBase}>
+              <LogOut className="h-4 w-4" />
+              Logi välja
+            </button>
+          </div>
+        )}
       </div>
     );
   }
