@@ -14,6 +14,12 @@ import {
 } from 'lucide-react';
 
 interface WorkoutFeedbackProps {
+  workoutSummary?: {
+    setsCompleted: number;
+    totalReps: number;
+    totalWeight: number;
+    duration: number;
+  };
   onComplete: (feedback: {
     energy: 'low' | 'normal' | 'high';
     soreness: 'none' | 'mild' | 'high';
@@ -25,7 +31,7 @@ interface WorkoutFeedbackProps {
   onSkip?: () => void;
 }
 
-export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackProps) {
+export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: WorkoutFeedbackProps) {
   const [energy, setEnergy] = useState<'low' | 'normal' | 'high' | null>(null);
   const [soreness, setSoreness] = useState<'none' | 'mild' | 'high' | null>(null);
   const [pump, setPump] = useState<'poor' | 'good' | 'excellent' | null>(null);
@@ -48,194 +54,136 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
 
   const isComplete = energy && soreness && pump && jointPain !== null && difficulty;
 
-  const getEnergyIcon = (level: string) => {
-    switch(level) {
-      case 'low': return <Moon className="h-4 w-4" />;
-      case 'normal': return <Activity className="h-4 w-4" />;
-      case 'high': return <Zap className="h-4 w-4" />;
-      default: return null;
-    }
-  };
-
-  const getSorenessIcon = (level: string) => {
-    switch(level) {
-      case 'none': return <CheckCircle className="h-4 w-4" />;
-      case 'mild': return <AlertTriangle className="h-4 w-4" />;
-      case 'high': return <Heart className="h-4 w-4" />;
-      default: return null;
-    }
-  };
-
-  const getPumpIcon = (level: string) => {
-    switch(level) {
-      case 'poor': return <TrendingDown className="h-4 w-4" />;
-      case 'good': return <Activity className="h-4 w-4" />;
-      case 'excellent': return <TrendingUp className="h-4 w-4" />;
-      default: return null;
-    }
-  };
-
-  const getDifficultyIcon = (level: string) => {
-    switch(level) {
-      case 'too_easy': return <TrendingUp className="h-4 w-4" />;
-      case 'just_right': return <CheckCircle className="h-4 w-4" />;
-      case 'too_hard': return <TrendingDown className="h-4 w-4" />;
-      default: return null;
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-lg">
+        <CardHeader className="text-center pb-4">
           <CardTitle className="text-xl">Kuidas treening läks?</CardTitle>
-          <p className="text-muted-foreground">
-            See aitab meil sinu treeningprogrammi optimeerida
-          </p>
+          {workoutSummary && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+              <div className="text-sm text-green-800 font-medium">
+                ✅ {workoutSummary.setsCompleted} seeriat tehtud • {workoutSummary.duration} minutit • {workoutSummary.totalWeight}kg tõstetud
+              </div>
+            </div>
+          )}
         </CardHeader>
         
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {/* Energy Level */}
-          <div className="space-y-3">
-            <label className="text-lg font-semibold flex items-center gap-2">
-              <Zap className="h-5 w-5 text-primary" />
-              Kuidas oli sinu üldine energiatase?
-            </label>
-            <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Kuidas oli energiatase?</label>
+            <div className="grid grid-cols-3 gap-2">
               {[
-                { value: 'low', label: 'Madal', desc: 'Tundsin väsimust' },
-                { value: 'normal', label: 'Normaalne', desc: 'Tundsin hästi' },
-                { value: 'high', label: 'Kõrge', desc: 'Tundsin energiliselt' }
+                { value: 'low', label: 'Madal' },
+                { value: 'normal', label: 'Normaalne' },
+                { value: 'high', label: 'Kõrge' }
               ].map((option) => (
                 <Button
                   key={option.value}
                   variant={energy === option.value ? "default" : "outline"}
                   onClick={() => setEnergy(option.value as any)}
-                  className="h-16 flex flex-col gap-1"
+                  className="h-10"
                 >
-                  {getEnergyIcon(option.value)}
-                  <span className="font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.desc}</span>
+                  {option.label}
                 </Button>
               ))}
             </div>
           </div>
 
           {/* Soreness Level */}
-          <div className="space-y-3">
-            <label className="text-lg font-semibold flex items-center gap-2">
-              <Heart className="h-5 w-5 text-primary" />
-              Kui valulik oled eelmistest treeningutest?
-            </label>
-            <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Kui valulik oled?</label>
+            <div className="grid grid-cols-3 gap-2">
               {[
-                { value: 'none', label: 'Pole valulik', desc: 'Valulikkus puudub' },
-                { value: 'mild', label: 'Kergelt valulik', desc: 'Natuke valulikkust' },
-                { value: 'high', label: 'Väga valulik', desc: 'Kõrge valulikkus' }
+                { value: 'none', label: 'Pole valu' },
+                { value: 'mild', label: 'Kergelt' },
+                { value: 'high', label: 'Väga' }
               ].map((option) => (
                 <Button
                   key={option.value}
                   variant={soreness === option.value ? "default" : "outline"}
                   onClick={() => setSoreness(option.value as any)}
-                  className="h-16 flex flex-col gap-1"
+                  className="h-10"
                 >
-                  {getSorenessIcon(option.value)}
-                  <span className="font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.desc}</span>
+                  {option.label}
                 </Button>
               ))}
             </div>
           </div>
 
           {/* Muscle Pump Quality */}
-          <div className="space-y-3">
-            <label className="text-lg font-semibold flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Kuidas oli sinu lihaspumba kvaliteet?
-            </label>
-            <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Kui tugevalt tajusid lihaste paisumist?</label>
+            <div className="grid grid-cols-3 gap-2">
               {[
-                { value: 'poor', label: 'Nõrk', desc: 'Pump puudub' },
-                { value: 'good', label: 'Hea', desc: 'Mõistlik pump' },
-                { value: 'excellent', label: 'Suurepärane', desc: 'Suurepärane pump' }
+                { value: 'poor', label: 'Nõrk' },
+                { value: 'good', label: 'Hea' },
+                { value: 'excellent', label: 'Tugev' }
               ].map((option) => (
                 <Button
                   key={option.value}
                   variant={pump === option.value ? "default" : "outline"}
                   onClick={() => setPump(option.value as any)}
-                  className="h-16 flex flex-col gap-1"
+                  className="h-10"
                 >
-                  {getPumpIcon(option.value)}
-                  <span className="font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.desc}</span>
+                  {option.label}
                 </Button>
               ))}
             </div>
           </div>
 
           {/* Joint Pain */}
-          <div className="space-y-3">
-            <label className="text-lg font-semibold flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-primary" />
-              Kas oli liigesevalu või ebamugavustunnet?
-            </label>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Liigesevalu?</label>
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 variant={jointPain === false ? "default" : "outline"}
                 onClick={() => setJointPain(false)}
-                className="h-12"
+                className="h-10"
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Pole valu
+                Pole
               </Button>
               <Button
                 variant={jointPain === true ? "default" : "outline"}
                 onClick={() => setJointPain(true)}
-                className="h-12"
+                className="h-10"
               >
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Natuke valu
+                Natuke
               </Button>
             </div>
           </div>
 
           {/* Overall Difficulty */}
-          <div className="space-y-3">
-            <label className="text-lg font-semibold flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Kuidas oli üldine treeningu raskus?
-            </label>
-            <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Kuidas oli raskus?</label>
+            <div className="grid grid-cols-3 gap-2">
               {[
-                { value: 'too_easy', label: 'Liiga kerge', desc: 'Pole väljakutset' },
-                { value: 'just_right', label: 'Paras', desc: 'Täiuslik väljakutse' },
-                { value: 'too_hard', label: 'Liiga raske', desc: 'Liiga väljakutset' }
+                { value: 'too_easy', label: 'Liiga kerge' },
+                { value: 'just_right', label: 'Paras' },
+                { value: 'too_hard', label: 'Liiga raske' }
               ].map((option) => (
                 <Button
                   key={option.value}
                   variant={difficulty === option.value ? "default" : "outline"}
                   onClick={() => setDifficulty(option.value as any)}
-                  className="h-16 flex flex-col gap-1"
+                  className="h-10"
                 >
-                  {getDifficultyIcon(option.value)}
-                  <span className="font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.desc}</span>
+                  {option.label}
                 </Button>
               ))}
             </div>
           </div>
 
           {/* Notes */}
-          <div className="space-y-3">
-            <label className="text-lg font-semibold">
-              Lisamärkused (valikuline)
-            </label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Lisamärkused (valikuline)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Kuidas tundus? Kas on konkreetset tagasisidet?"
-              className="w-full p-3 border rounded-lg resize-none"
-              rows={3}
+              placeholder="Kuidas tundus?"
+              className="w-full p-3 border rounded-lg resize-none text-sm"
+              rows={2}
             />
           </div>
 
@@ -244,16 +192,15 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
             <Button
               onClick={handleSubmit}
               disabled={!isComplete}
-              className="flex-1 h-12"
+              className="flex-1 h-10"
             >
-              <CheckCircle className="h-4 w-4 mr-2" />
               Saada tagasiside
             </Button>
             {onSkip && (
               <Button
                 variant="outline"
                 onClick={onSkip}
-                className="h-12"
+                className="h-10"
               >
                 Jäta vahele
               </Button>

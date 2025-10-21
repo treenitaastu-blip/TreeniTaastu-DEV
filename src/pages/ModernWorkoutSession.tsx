@@ -22,6 +22,13 @@ import ErrorRecovery from "@/components/ErrorRecovery";
 import WorkoutFeedback from "@/components/workout/WorkoutFeedback";
 import { calculateExerciseProgression, calculateWorkoutProgression, ExerciseType, WorkoutFeedback as WorkoutFeedbackType } from "@/utils/progressionLogic";
 
+// Helper function to parse reps string to number
+const parseRepsToNumber = (reps: string): number | null => {
+  if (!reps) return null;
+  const match = reps.match(/(\d+)/);
+  return match ? parseInt(match[1], 10) : null;
+};
+
 type ClientProgram = {
   id: string;
   title_override?: string | null;
@@ -593,6 +600,31 @@ export default function ModernWorkoutSession() {
     }
   }, [session, user, dayId, programId]);
 
+  // Calculate workout summary
+  const getWorkoutSummary = useCallback(() => {
+    if (!session?.started_at) return null;
+    
+    const startTime = new Date(session.started_at);
+    const endTime = session.ended_at ? new Date(session.ended_at) : new Date();
+    const duration = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)); // minutes
+    
+    const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets || 0), 0);
+    const totalReps = exercises.reduce((sum, ex) => {
+      const reps = parseRepsToNumber(ex.reps) || 0;
+      return sum + (reps * (ex.sets || 0));
+    }, 0);
+    const totalWeight = exercises.reduce((sum, ex) => {
+      return sum + ((ex.weight_kg || 0) * (ex.sets || 0) * (parseRepsToNumber(ex.reps) || 0));
+    }, 0);
+    
+    return {
+      setsCompleted: totalSets,
+      totalReps,
+      totalWeight: Math.round(totalWeight),
+      duration
+    };
+  }, [session, exercises]);
+
   // Handle workout-level feedback
   const handleWorkoutFeedback = useCallback(async (feedback: WorkoutFeedbackType) => {
     if (!session || !user) return;
@@ -1105,6 +1137,7 @@ export default function ModernWorkoutSession() {
         {/* Workout Feedback */}
         {showWorkoutFeedback && (
           <WorkoutFeedback
+            workoutSummary={getWorkoutSummary()}
             onComplete={handleWorkoutFeedback}
             onSkip={() => setShowWorkoutFeedback(false)}
           />
