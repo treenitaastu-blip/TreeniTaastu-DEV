@@ -436,15 +436,6 @@ export default function ModernWorkoutSession() {
           description: "Hinda oma sooritust - see aitab järgmist treeningut kohandada"
         });
         
-        // Show RPE/RIR dialog with slight delay for better UX
-        setTimeout(() => {
-          setRpeRirDialog({
-            isOpen: true,
-            exerciseId,
-            exerciseName: exercise.exercise_name,
-            setNumber
-          });
-        }, 500); // Slightly longer delay for better user experience
       }
 
     } catch (err) {
@@ -499,8 +490,6 @@ export default function ModernWorkoutSession() {
             program_id: programId!,
             user_id: user.id,
             notes: notes.trim()
-          }, {
-            onConflict: "session_id,client_item_id"
           });
         } else {
           // If notes are empty, delete the record for this session
@@ -824,8 +813,6 @@ export default function ModernWorkoutSession() {
             user_id: user!.id,
             notes: notes || undefined,
             rpe: rpe || undefined
-          }, {
-            onConflict: "session_id,client_item_id"
           });
         }
       }

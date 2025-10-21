@@ -18,6 +18,12 @@ class SecureLogger {
     // Safely check environment variables
     this.isDevelopment = typeof import.meta !== 'undefined' && import.meta.env?.DEV === true;
     this.isProduction = typeof import.meta !== 'undefined' && import.meta.env?.PROD === true;
+    
+    // Fallback if import.meta is not available
+    if (typeof this.isDevelopment === 'undefined') {
+      this.isDevelopment = process.env.NODE_ENV === 'development';
+      this.isProduction = process.env.NODE_ENV === 'production';
+    }
   }
 
   private formatMessage(level: LogLevel, message: string, data?: any): LogEntry {
