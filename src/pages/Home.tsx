@@ -31,7 +31,8 @@ import {
   CheckCircle,
   ArrowRight,
   Dumbbell,
-  BookOpen
+  BookOpen,
+  BarChart3
 } from "lucide-react";
 
 type Stats = {
