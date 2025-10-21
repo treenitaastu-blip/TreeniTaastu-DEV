@@ -101,8 +101,10 @@ export default function Header() {
 
   return (
     <>
-      {/* PWA Header Container with proper safe area handling */}
-      <div className="fixed top-0 left-0 right-0 z-50" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      {/* Header Container - starts at very top of viewport */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        {/* Safe area background to prevent content bleeding */}
+        <div className="bg-card/95 backdrop-blur-xl" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
         <header className="bg-card/95 backdrop-blur-xl border-b shadow-soft overflow-visible">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 overflow-visible">
             {/* Logo → goes to /home if logged in, else / */}
