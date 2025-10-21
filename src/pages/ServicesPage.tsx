@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, Mail, Phone, User, MessageSquare } from "lucide-react";
+import { CheckCircle, Mail, Phone, User, MessageSquare, Package } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { Link } from "react-router-dom";
 
 export default function ServicesPage() {
   const [formData, setFormData] = useState({
@@ -117,7 +118,15 @@ export default function ServicesPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Services */}
           <div className="space-y-6">
-            <h2 className="text-2xl font-semibold mb-6">Saadaolevad teenused</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold">Teenused</h2>
+              <Button asChild variant="outline" className="flex items-center gap-2">
+                <Link to="/pricing">
+                  <Package className="h-4 w-4" />
+                  Vaata kõiki pakette
+                </Link>
+              </Button>
+            </div>
             {services.map((service) => (
               <Card key={service.id} className="border-2 hover:border-primary/50 transition-colors">
                 <CardHeader>
