@@ -90,43 +90,45 @@ export default function ModernWorkoutHeader({
           </div>
         </div>
 
+        {/* Streamlined Header */}
         <div className="space-y-3">
-          <div>
-            <h1 className="text-xl font-bold text-foreground truncate">
-              {dayOrder ? `Päev ${dayOrder}: ` : ""}{dayTitle}
+          {/* Minimalistic Title */}
+          <div className="text-center">
+            <h1 className="text-lg font-semibold text-foreground">
+              {dayTitle}
             </h1>
-            <p className="text-sm text-muted-foreground truncate">
-              {programTitle}
-            </p>
+            <div className="flex items-center justify-center gap-2 mt-1">
+              <div className="text-sm text-muted-foreground">
+                {completedSets}/{totalSets} seeriat tehtud
+              </div>
+              <div className="w-1 h-1 bg-muted-foreground rounded-full"></div>
+              <div className="text-sm text-muted-foreground">
+                {Math.round(progressPercentage)}% valmis
+              </div>
+            </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">
-                {completedSets}/{totalSets} seeriat
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-primary to-primary-foreground transition-all duration-500 ease-out"
-                style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-              />
-            </div>
-            {progressPercentage >= 100 && !isFinished && (
-              <div className="flex justify-end mt-2">
-                <Button 
-                  onClick={onFinish}
-                  size="sm"
-                  className="bg-success text-success-foreground hover:bg-success/90"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Lõpeta treening
-                </Button>
-              </div>
-            )}
+          {/* Compact Progress Bar */}
+          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 ease-out"
+              style={{ width: `${Math.min(progressPercentage, 100)}%` }}
+            />
           </div>
+
+          {/* Completion Button */}
+          {progressPercentage >= 100 && !isFinished && (
+            <div className="flex justify-center">
+              <Button 
+                onClick={onFinish}
+                size="sm"
+                className="bg-green-600 text-white hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Lõpeta treening
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -20,6 +20,8 @@ import PersonalTrainingCompletionDialog from "@/components/workout/PersonalTrain
 import PTAccessValidator from "@/components/PTAccessValidator";
 import ErrorRecovery from "@/components/ErrorRecovery";
 import RPERIRDialog from "@/components/workout/EnhancedRPERIRDialog";
+import WorkoutFeedback from "@/components/workout/WorkoutFeedback";
+import { calculateExerciseProgression, calculateWorkoutProgression, ExerciseType, WorkoutFeedback as WorkoutFeedbackType } from "@/utils/progressionLogic";
 
 type ClientProgram = {
   id: string;
@@ -117,6 +119,15 @@ export default function ModernWorkoutSession() {
     exerciseName: "",
     setNumber: 0
   });
+
+  // New feedback system state
+  const [showWorkoutFeedback, setShowWorkoutFeedback] = useState(false);
+  const [exerciseFeedbackEnabled, setExerciseFeedbackEnabled] = useState(true);
+  const [exerciseProgression, setExerciseProgression] = useState<Record<string, {
+    newWeight: number;
+    change: number;
+    reason: string;
+  }>>({});
 
   const totalSets = useMemo(() => {
     return exercises.reduce((total, ex) => total + ex.sets, 0);
@@ -537,6 +548,103 @@ export default function ModernWorkoutSession() {
       // Silently handle RPE saving error
     }
   }, [session, user, dayId, programId]);
+
+  // Handle exercise feedback from new system
+  const handleExerciseFeedback = useCallback(async (exerciseId: string, feedback: {
+    feedback: 'too_easy' | 'just_right' | 'too_hard';
+    newWeight?: number;
+    change?: number;
+    reason: string;
+  }) => {
+    if (!session || !user) return;
+
+    try {
+      // Store progression data
+      setExerciseProgression(prev => ({
+        ...prev,
+        [exerciseId]: {
+          newWeight: feedback.newWeight || 0,
+          change: feedback.change || 0,
+          reason: feedback.reason
+        }
+      }));
+
+      // Save feedback to database
+      await supabase.from("exercise_notes").upsert({
+        session_id: session.id,
+        client_day_id: dayId!,
+        client_item_id: exerciseId,
+        program_id: programId!,
+        user_id: user.id,
+        exercise_feedback: feedback.feedback,
+        progression_reason: feedback.reason
+      }, {
+        onConflict: "session_id,client_item_id"
+      });
+
+      // Update exercise weight if provided
+      if (feedback.newWeight !== undefined && feedback.newWeight !== 0) {
+        await supabase
+          .from("client_items")
+          .update({ weight_kg: feedback.newWeight })
+          .eq("id", exerciseId);
+
+        // Update local state
+        setExercises(prev => prev.map(ex => 
+          ex.id === exerciseId 
+            ? { ...ex, weight_kg: feedback.newWeight! }
+            : ex
+        ));
+      }
+
+      toast.success("Feedback saved!", {
+        description: feedback.reason
+      });
+
+    } catch (error) {
+      console.error('Error saving exercise feedback:', error);
+      toast.error("Failed to save feedback");
+    }
+  }, [session, user, dayId, programId]);
+
+  // Handle workout-level feedback
+  const handleWorkoutFeedback = useCallback(async (feedback: WorkoutFeedbackType) => {
+    if (!session || !user) return;
+
+    try {
+      // Calculate workout progression
+      const progression = calculateWorkoutProgression(feedback);
+
+      // Save workout feedback to database
+      await supabase.from("workout_feedback").insert({
+        session_id: session.id,
+        user_id: user.id,
+        program_id: programId!,
+        energy: feedback.energy,
+        soreness: feedback.soreness,
+        pump: feedback.pump,
+        joint_pain: feedback.joint_pain,
+        overall_difficulty: feedback.overall_difficulty,
+        notes: feedback.notes,
+        volume_multiplier: progression.volumeMultiplier,
+        intensity_multiplier: progression.intensityMultiplier,
+        recommendations: progression.recommendations
+      });
+
+      toast.success("Workout feedback saved!", {
+        description: `Volume: ${((progression.volumeMultiplier - 1) * 100).toFixed(1)}%, Intensity: ${((progression.intensityMultiplier - 1) * 100).toFixed(1)}%`
+      });
+
+      setShowWorkoutFeedback(false);
+      
+      // Show completion dialog after feedback is submitted
+      setShowCompletionDialog(true);
+
+    } catch (error) {
+      console.error('Error saving workout feedback:', error);
+      toast.error("Failed to save workout feedback");
+    }
+  }, [session, user, programId]);
 
   const handleRPERIRSubmit = useCallback(async (rpe: number, rir: number) => {
     if (!session || !user || !rpeRirDialog.exerciseId) return;
@@ -961,7 +1069,9 @@ export default function ModernWorkoutSession() {
 
       // Show success message immediately
       toast.success("Treening lõpetatud!");
-      setShowCompletionDialog(true);
+      
+      // Show workout feedback first, then completion dialog
+      setShowWorkoutFeedback(true);
 
       // Apply automatic progression based on RPE/RIR data (truly non-blocking)
       // Use setTimeout to ensure it doesn't block the UI
@@ -1147,6 +1257,20 @@ export default function ModernWorkoutSession() {
           totalSets={totalSets}
         />
 
+        {/* Rest Timer - Positioned below header */}
+        {restTimer.isOpen && (
+          <div className="sticky top-16 z-30 bg-background/95 backdrop-blur-sm border-b">
+            <div className="px-4 py-3">
+              <ModernRestTimer
+                isOpen={restTimer.isOpen}
+                initialSeconds={restTimer.seconds}
+                exerciseName={restTimer.exerciseName}
+                onClose={() => setRestTimer(prev => ({ ...prev, isOpen: false }))}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Day Notes */}
         {day?.note && (
           <div className="px-4 py-3 border-b bg-muted/30">
@@ -1189,17 +1313,13 @@ export default function ModernWorkoutSession() {
               onSwitchToAlternative={switchToAlternative}
               showAlternatives={openAlternativesFor[exercise.id] || false}
               onToggleAlternatives={(exerciseId) => setOpenAlternativesFor(prev => ({ ...prev, [exerciseId]: !prev[exerciseId] }))}
+              // New feedback system props
+              onExerciseFeedback={handleExerciseFeedback}
+              showExerciseFeedback={exerciseFeedbackEnabled}
             />
           ))}
         </div>
 
-        {/* Rest Timer */}
-        <ModernRestTimer
-          isOpen={restTimer.isOpen}
-          initialSeconds={restTimer.seconds}
-          exerciseName={restTimer.exerciseName}
-          onClose={() => setRestTimer(prev => ({ ...prev, isOpen: false }))}
-        />
 
         {/* Completion Dialog */}
         <PersonalTrainingCompletionDialog
@@ -1222,6 +1342,14 @@ export default function ModernWorkoutSession() {
         />
 
         {/* Alternative Exercise Auto-Switch - No confirmation needed */}
+
+        {/* Workout Feedback */}
+        {showWorkoutFeedback && (
+          <WorkoutFeedback
+            onComplete={handleWorkoutFeedback}
+            onSkip={() => setShowWorkoutFeedback(false)}
+          />
+        )}
 
         {/* Loading Overlay */}
         {saving && (

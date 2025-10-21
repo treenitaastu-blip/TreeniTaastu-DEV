@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { Play, Check, Clock, Weight, Repeat, MessageSquare, Star, TrendingUp, Zap, Activity, Info, Target, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoModal } from "./VideoModal";
 import { RIRInput } from "./RIRInput";
+import { ExerciseFeedback } from "./ExerciseFeedback";
 import { cn } from "@/lib/utils";
+import { determineExerciseType, ExerciseType } from "@/utils/progressionLogic";
 
 // Helper to parse reps string to number (e.g., "12x" -> 12, "8-10" -> 8)
 const parseRepsToNumber = (reps: string): number | null => {
@@ -58,6 +60,14 @@ interface SmartExerciseCardProps {
   onSwitchToAlternative?: (exerciseId: string, alternativeName: string) => void;
   showAlternatives?: boolean;
   onToggleAlternatives?: (exerciseId: string) => void;
+  // New feedback system props
+  onExerciseFeedback?: (exerciseId: string, feedback: {
+    feedback: 'too_easy' | 'just_right' | 'too_hard';
+    newWeight?: number;
+    change?: number;
+    reason: string;
+  }) => void;
+  showExerciseFeedback?: boolean;
 }
 
 export default function SmartExerciseCard({
@@ -76,11 +86,28 @@ export default function SmartExerciseCard({
   progressionSuggestion,
   onSwitchToAlternative,
   showAlternatives = false,
-  onToggleAlternatives
+  onToggleAlternatives,
+  onExerciseFeedback,
+  showExerciseFeedback = false
 }: SmartExerciseCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [currentSet, setCurrentSet] = useState(completedSets + 1);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Auto-collapse when all sets are completed
+  const allSetsCompleted = completedSets >= exercise.sets;
+  
+  // Auto-collapse when all sets are done
+  React.useEffect(() => {
+    if (allSetsCompleted && !isCollapsed) {
+      const timer = setTimeout(() => {
+        setIsCollapsed(true);
+      }, 1000); // Collapse after 1 second
+      return () => clearTimeout(timer);
+    }
+  }, [allSetsCompleted, isCollapsed]);
 
   // Smart auto-fill based on progression suggestion
   const handleSetInputChangeWithSuggestion = useCallback((setNumber: number, field: string, value: number) => {
@@ -98,13 +125,36 @@ export default function SmartExerciseCard({
     onSetComplete(setNumber);
     setCurrentSet(setNumber + 1);
     
+    // Show feedback if this is the last set and feedback is enabled
+    if (setNumber === exercise.sets && showExerciseFeedback && onExerciseFeedback) {
+      setShowFeedback(true);
+    }
+    
     // Auto-start rest timer if it's not the last set
     if (setNumber < exercise.sets) {
       setTimeout(() => {
         onStartRest();
       }, 500);
     }
-  }, [onSetComplete, onStartRest, exercise.sets]);
+  }, [onSetComplete, onStartRest, exercise.sets, showExerciseFeedback, onExerciseFeedback]);
+
+  // Handle exercise feedback completion
+  const handleExerciseFeedback = useCallback((feedback: {
+    feedback: 'too_easy' | 'just_right' | 'too_hard';
+    newWeight?: number;
+    change?: number;
+    reason: string;
+  }) => {
+    if (onExerciseFeedback) {
+      onExerciseFeedback(exercise.id, feedback);
+    }
+    setShowFeedback(false);
+  }, [onExerciseFeedback, exercise.id]);
+
+  // Skip feedback
+  const handleSkipFeedback = useCallback(() => {
+    setShowFeedback(false);
+  }, []);
 
   const getSuggestedValue = (field: string) => {
     if (!progressionSuggestion || progressionSuggestion.type !== field) return null;
@@ -254,13 +304,46 @@ export default function SmartExerciseCard({
     );
   };
 
+  // Show collapsed state when all sets are completed
+  if (allSetsCompleted && isCollapsed) {
+    return (
+      <div className="rounded-2xl border bg-green-50 border-green-200 shadow-soft overflow-hidden animate-in slide-in-from-top-2 duration-300">
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300">
+              <Check className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-green-800">
+                {exercise.exercise_name}
+              </h3>
+              <p className="text-sm text-green-600">
+                {exercise.sets} seeriat tehtud
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsCollapsed(false)}
+            className="text-green-600 hover:text-green-700 hover:bg-green-100 transition-colors"
+          >
+            Näita
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border bg-card shadow-soft overflow-hidden">
       {/* Quick Glance Header - Key metrics at a glance */}
       <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 border-b">
         <div className="grid grid-cols-4 gap-4 text-center">
           <div>
-            <div className="text-2xl font-bold text-primary">{currentSet}/{exercise.sets}</div>
+            <div className="text-2xl font-bold text-primary">
+              {allSetsCompleted ? exercise.sets : currentSet}/{exercise.sets}
+            </div>
             <div className="text-xs text-muted-foreground">Seeria</div>
           </div>
           <div>
@@ -311,6 +394,18 @@ export default function SmartExerciseCard({
             >
               <MessageSquare className="h-4 w-4" />
             </Button>
+            {/* Collapse/Expand button - only show when all sets are completed */}
+            {allSetsCompleted && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="h-11 w-11 p-0"
+                title={isCollapsed ? "Näita seeriad" : "Peida seeriad"}
+              >
+                {isCollapsed ? <Activity className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+              </Button>
+            )}
             {exercise.exercise_alternatives && exercise.exercise_alternatives.length > 0 && (
               <Button
                 variant="ghost"
@@ -364,7 +459,7 @@ export default function SmartExerciseCard({
           
           {/* Simplified counter */}
           <div className="text-lg font-bold text-primary">
-            {completedSets}/{exercise.sets}
+            {allSetsCompleted ? exercise.sets : completedSets}/{exercise.sets}
           </div>
         </div>
       </div>
@@ -540,6 +635,17 @@ export default function SmartExerciseCard({
           src={exercise.video_url}
           title={exercise.exercise_name}
           onClose={() => setShowVideo(false)}
+        />
+      )}
+
+      {/* Exercise Feedback */}
+      {showFeedback && (
+        <ExerciseFeedback
+          exerciseName={exercise.exercise_name}
+          exerciseType={determineExerciseType(exercise.exercise_name)}
+          currentWeight={exercise.weight_kg || 0}
+          onComplete={handleExerciseFeedback}
+          onSkip={handleSkipFeedback}
         />
       )}
     </div>
