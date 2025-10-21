@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoModal } from "./VideoModal";
-import { RIRInput } from "./RIRInput";
 import ExerciseFeedback from "./ExerciseFeedback";
 import { cn } from "@/lib/utils";
 import { determineExerciseType, ExerciseType } from "@/utils/progressionLogic";

@@ -19,7 +19,6 @@ import ModernRestTimer from "@/components/workout/ModernRestTimer";
 import PersonalTrainingCompletionDialog from "@/components/workout/PersonalTrainingCompletionDialog";
 import PTAccessValidator from "@/components/PTAccessValidator";
 import ErrorRecovery from "@/components/ErrorRecovery";
-import RPERIRDialog from "@/components/workout/EnhancedRPERIRDialog";
 import WorkoutFeedback from "@/components/workout/WorkoutFeedback";
 import { calculateExerciseProgression, calculateWorkoutProgression, ExerciseType, WorkoutFeedback as WorkoutFeedbackType } from "@/utils/progressionLogic";
 
@@ -107,22 +106,9 @@ export default function ModernWorkoutSession() {
     exerciseName: ""
   });
 
-  // RPE/RIR dialog state
-  const [rpeRirDialog, setRpeRirDialog] = useState<{
-    isOpen: boolean;
-    exerciseId: string;
-    exerciseName: string;
-    setNumber: number;
-  }>({
-    isOpen: false,
-    exerciseId: "",
-    exerciseName: "",
-    setNumber: 0
-  });
-
   // New feedback system state
-  const [showWorkoutFeedback, setShowWorkoutFeedback] = useState(false);
   const [exerciseFeedbackEnabled, setExerciseFeedbackEnabled] = useState(true);
+  const [showWorkoutFeedback, setShowWorkoutFeedback] = useState(false);
   const [exerciseProgression, setExerciseProgression] = useState<Record<string, {
     newWeight: number;
     change: number;
@@ -1330,16 +1316,6 @@ export default function ModernWorkoutSession() {
           }}
         />
 
-        {/* RPE/RIR Dialog */}
-        <RPERIRDialog
-          isOpen={rpeRirDialog.isOpen}
-          onClose={() => setRpeRirDialog(prev => ({ ...prev, isOpen: false }))}
-          onSubmit={handleRPERIRSubmit}
-          exerciseName={rpeRirDialog.exerciseName}
-          setNumber={rpeRirDialog.setNumber}
-          currentWeight={exercises.find(ex => ex.id === rpeRirDialog.exerciseId)?.weight_kg || undefined}
-          previousRPE={exerciseRPE[rpeRirDialog.exerciseId] || undefined}
-        />
 
         {/* Alternative Exercise Auto-Switch - No confirmation needed */}
 
