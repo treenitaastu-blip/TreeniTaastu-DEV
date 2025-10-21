@@ -66,19 +66,19 @@ export default function ExerciseFeedback({
       case "too_easy":
         const increase = Math.max(currentWeight * baseIncrease, minIncrement);
         newWeight = Math.round((currentWeight + increase) * 2) / 2; // Round to 0.5kg
-        reason = `Too easy - increasing by ${(newWeight - currentWeight).toFixed(1)}kg`;
+        reason = `Liiga kerge - tõstame ${(newWeight - currentWeight).toFixed(1)}kg`;
         break;
         
       case "too_hard":
         const decrease = Math.max(currentWeight * baseIncrease, minIncrement);
         newWeight = Math.round((currentWeight - decrease) * 2) / 2; // Round to 0.5kg
         newWeight = Math.max(newWeight, 0); // Never go below 0
-        reason = `Too hard - decreasing by ${(currentWeight - newWeight).toFixed(1)}kg`;
+        reason = `Liiga raske - langetame ${(currentWeight - newWeight).toFixed(1)}kg`;
         break;
         
       case "just_right":
         newWeight = currentWeight;
-        reason = 'Perfect difficulty - maintaining weight';
+        reason = 'Paras raskus - kaal jääb samaks';
         break;
     }
     
@@ -93,11 +93,11 @@ export default function ExerciseFeedback({
   const getBodyweightReason = (feedback: string) => {
     switch(feedback) {
       case "too_easy":
-        return "Too easy - add 1 rep per set next time";
+        return "Liiga kerge - lisa järgmine kord 1 kordus seeria kohta";
       case "too_hard":
-        return "Too hard - reduce 1 rep per set next time";
+        return "Liiga raske - vähenda järgmine kord 1 kordus seeria kohta";
       default:
-        return "Perfect difficulty - maintain current reps";
+        return "Paras raskus - jäta kordused samaks";
     }
   };
 
@@ -134,10 +134,10 @@ export default function ExerciseFeedback({
         <CardContent className="p-4">
           <div className="text-center mb-4">
             <h3 className="text-lg font-semibold text-foreground">
-              How did <span className="text-primary">{exerciseName}</span> feel?
+              Kuidas <span className="text-primary">{exerciseName}</span> tundus?
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
-              This helps us adjust your next workout
+              See aitab meil järgmist treeningut kohandada
             </p>
           </div>
           
@@ -150,7 +150,7 @@ export default function ExerciseFeedback({
             >
               <div className="flex items-center gap-2">
                 {getFeedbackIcon("too_easy")}
-                <span className="font-medium">Too Easy</span>
+                <span className="font-medium">Liiga kerge</span>
               </div>
             </Button>
             
@@ -162,7 +162,7 @@ export default function ExerciseFeedback({
             >
               <div className="flex items-center gap-2">
                 {getFeedbackIcon("just_right")}
-                <span className="font-medium">Just Right</span>
+                <span className="font-medium">Paras</span>
               </div>
             </Button>
             
@@ -174,7 +174,7 @@ export default function ExerciseFeedback({
             >
               <div className="flex items-center gap-2">
                 {getFeedbackIcon("too_hard")}
-                <span className="font-medium">Too Hard</span>
+                <span className="font-medium">Liiga raske</span>
               </div>
             </Button>
           </div>
@@ -187,7 +187,7 @@ export default function ExerciseFeedback({
                 onClick={onSkip}
                 className="text-muted-foreground hover:text-foreground"
               >
-                Skip feedback
+                Jäta vahele
               </Button>
             </div>
           )}

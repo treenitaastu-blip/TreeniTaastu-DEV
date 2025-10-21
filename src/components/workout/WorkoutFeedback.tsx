@@ -88,9 +88,9 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">How was your workout?</CardTitle>
+          <CardTitle className="text-xl">Kuidas treening läks?</CardTitle>
           <p className="text-muted-foreground">
-            This helps us optimize your training program
+            See aitab meil sinu treeningprogrammi optimeerida
           </p>
         </CardHeader>
         
@@ -99,13 +99,13 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
           <div className="space-y-3">
             <label className="text-lg font-semibold flex items-center gap-2">
               <Zap className="h-5 w-5 text-primary" />
-              How was your overall energy?
+              Kuidas oli sinu üldine energiatase?
             </label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: 'low', label: 'Low', desc: 'Felt tired' },
-                { value: 'normal', label: 'Normal', desc: 'Felt good' },
-                { value: 'high', label: 'High', desc: 'Felt energetic' }
+                { value: 'low', label: 'Madal', desc: 'Tundsin väsimust' },
+                { value: 'normal', label: 'Normaalne', desc: 'Tundsin hästi' },
+                { value: 'high', label: 'Kõrge', desc: 'Tundsin energiliselt' }
               ].map((option) => (
                 <Button
                   key={option.value}
@@ -125,13 +125,13 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
           <div className="space-y-3">
             <label className="text-lg font-semibold flex items-center gap-2">
               <Heart className="h-5 w-5 text-primary" />
-              How sore are you from previous workouts?
+              Kui valulik oled eelmistest treeningutest?
             </label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: 'none', label: 'Not Sore', desc: 'No soreness' },
-                { value: 'mild', label: 'Mildly Sore', desc: 'Some soreness' },
-                { value: 'high', label: 'Very Sore', desc: 'High soreness' }
+                { value: 'none', label: 'Pole valulik', desc: 'Valulikkus puudub' },
+                { value: 'mild', label: 'Kergelt valulik', desc: 'Natuke valulikkust' },
+                { value: 'high', label: 'Väga valulik', desc: 'Kõrge valulikkus' }
               ].map((option) => (
                 <Button
                   key={option.value}
@@ -151,13 +151,13 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
           <div className="space-y-3">
             <label className="text-lg font-semibold flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
-              How was your muscle pump quality?
+              Kuidas oli sinu lihaspumba kvaliteet?
             </label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: 'poor', label: 'Poor', desc: 'No pump' },
-                { value: 'good', label: 'Good', desc: 'Decent pump' },
-                { value: 'excellent', label: 'Excellent', desc: 'Great pump' }
+                { value: 'poor', label: 'Nõrk', desc: 'Pump puudub' },
+                { value: 'good', label: 'Hea', desc: 'Mõistlik pump' },
+                { value: 'excellent', label: 'Suurepärane', desc: 'Suurepärane pump' }
               ].map((option) => (
                 <Button
                   key={option.value}
@@ -177,7 +177,7 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
           <div className="space-y-3">
             <label className="text-lg font-semibold flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-primary" />
-              Any joint pain or discomfort?
+              Kas oli liigesevalu või ebamugavustunnet?
             </label>
             <div className="grid grid-cols-2 gap-3">
               <Button
@@ -186,7 +186,7 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
                 className="h-12"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
-                No pain
+                Pole valu
               </Button>
               <Button
                 variant={jointPain === true ? "default" : "outline"}
@@ -194,7 +194,7 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
                 className="h-12"
               >
                 <AlertTriangle className="h-4 w-4 mr-2" />
-                Some pain
+                Natuke valu
               </Button>
             </div>
           </div>
@@ -203,13 +203,13 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
           <div className="space-y-3">
             <label className="text-lg font-semibold flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
-              How was the overall workout difficulty?
+              Kuidas oli üldine treeningu raskus?
             </label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: 'too_easy', label: 'Too Easy', desc: 'Not challenging' },
-                { value: 'just_right', label: 'Just Right', desc: 'Perfect challenge' },
-                { value: 'too_hard', label: 'Too Hard', desc: 'Too challenging' }
+                { value: 'too_easy', label: 'Liiga kerge', desc: 'Pole väljakutset' },
+                { value: 'just_right', label: 'Paras', desc: 'Täiuslik väljakutse' },
+                { value: 'too_hard', label: 'Liiga raske', desc: 'Liiga väljakutset' }
               ].map((option) => (
                 <Button
                   key={option.value}
@@ -228,12 +228,12 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
           {/* Notes */}
           <div className="space-y-3">
             <label className="text-lg font-semibold">
-              Additional notes (optional)
+              Lisamärkused (valikuline)
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="How did you feel? Any specific feedback?"
+              placeholder="Kuidas tundus? Kas on konkreetset tagasisidet?"
               className="w-full p-3 border rounded-lg resize-none"
               rows={3}
             />
@@ -247,7 +247,7 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
               className="flex-1 h-12"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              Submit Feedback
+              Saada tagasiside
             </Button>
             {onSkip && (
               <Button
@@ -255,7 +255,7 @@ export default function WorkoutFeedback({ onComplete, onSkip }: WorkoutFeedbackP
                 onClick={onSkip}
                 className="h-12"
               >
-                Skip
+                Jäta vahele
               </Button>
             )}
           </div>

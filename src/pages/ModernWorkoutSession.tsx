@@ -583,13 +583,13 @@ export default function ModernWorkoutSession() {
         ));
       }
 
-      toast.success("Feedback saved!", {
+      toast.success("Tagasiside salvestatud!", {
         description: feedback.reason
       });
 
     } catch (error) {
       console.error('Error saving exercise feedback:', error);
-      toast.error("Failed to save feedback");
+      toast.error("Tagasiside salvestamine ebaõnnestus");
     }
   }, [session, user, dayId, programId]);
 
@@ -617,8 +617,8 @@ export default function ModernWorkoutSession() {
         recommendations: progression.recommendations
       });
 
-      toast.success("Workout feedback saved!", {
-        description: `Volume: ${((progression.volumeMultiplier - 1) * 100).toFixed(1)}%, Intensity: ${((progression.intensityMultiplier - 1) * 100).toFixed(1)}%`
+      toast.success("Treeningu tagasiside salvestatud!", {
+        description: `Maht: ${((progression.volumeMultiplier - 1) * 100).toFixed(1)}%, Intensiivsus: ${((progression.intensityMultiplier - 1) * 100).toFixed(1)}%`
       });
 
       setShowWorkoutFeedback(false);
@@ -628,7 +628,7 @@ export default function ModernWorkoutSession() {
 
     } catch (error) {
       console.error('Error saving workout feedback:', error);
-      toast.error("Failed to save workout feedback");
+      toast.error("Treeningu tagasiside salvestamine ebaõnnestus");
     }
   }, [session, user, programId]);
 
@@ -651,9 +651,9 @@ export default function ModernWorkoutSession() {
         if (result?.success && result.updates_made > 0) {
           // Show success message
           toast.success(
-            result.deload_exercises && result.deload_exercises > 0 ? "Deload Applied!" : "Program Optimized!",
+            result.deload_exercises && result.deload_exercises > 0 ? "Koormuse vähendamine rakendatud!" : "Programm optimeeritud!",
             {
-              description: `${result.updates_made} exercises automatically adjusted based on your RPE/RIR data${result.deload_exercises ? ` (${result.deload_exercises} deloaded)` : ''}.`,
+              description: `${result.updates_made} harjutust automaatselt kohandatud sinu RPE/RIR andmete põhjal${result.deload_exercises ? ` (${result.deload_exercises} koormust vähendatud)` : ''}.`,
             }
           );
         }

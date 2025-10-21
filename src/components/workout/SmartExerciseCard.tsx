@@ -91,7 +91,7 @@ export default function SmartExerciseCard({
 }: SmartExerciseCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
-  const [currentSet, setCurrentSet] = useState(completedSets + 1);
+  const [currentSet, setCurrentSet] = useState((completedSets || 0) + 1);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -478,11 +478,6 @@ export default function SmartExerciseCard({
               >
                 <CardContent className="p-3">
                   {/* Current set gets special treatment */}
-                  {isCurrent && !isCompleted && (
-                    <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold z-10">
-                      N
-                    </div>
-                  )}
                   
                   {/* Set Header */}
                   <div className="flex items-center justify-between mb-3">
