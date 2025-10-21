@@ -1,280 +1,134 @@
-import React, { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Play, Clock, Target, Plus, Edit2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { toast } from "@/hooks/use-toast";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { ExerciseForm } from "@/components/admin/ExerciseForm";
-import { VideoModal } from "@/components/workout/VideoModal";
+import { Play, Clock, Target, Lock } from "lucide-react";
 
-const exerciseCategories = [
-  { id: "all", name: "Kõik harjutused" },
-  { id: "neck", name: "Kael" },
-  { id: "shoulders", name: "Õlad" },
-  { id: "back", name: "Selg" }, 
-  { id: "hips", name: "Puusad" },
-  { id: "breathing", name: "Hingamine" },
-];
-
-interface Exercise {
+interface VideoRoutine {
   id: string;
   title: string;
   description: string;
-  category: string;
   duration: string;
-  difficulty: string;
-  video_url?: string | null;
+  category: string;
+  isComingSoon: boolean;
 }
 
-const Harjutused = () => {
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
-  const [videoModal, setVideoModal] = useState<{ src: string; title: string } | null>(null);
-  const isAdmin = useIsAdmin();
-
-  useEffect(() => {
-    fetchExercises();
-  }, []);
-
-  const fetchExercises = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("exercises")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      
-      setExercises(data || []);
-    } catch (error) {
-      console.error("Error fetching exercises:", error);
-      toast({
-        title: "Viga",
-        description: "Harjutuste laadimine ebaõnnestus",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFormSuccess = () => {
-    setShowForm(false);
-    setEditingExercise(null);
-    fetchExercises();
-  };
-
-  const handleEditExercise = (exercise: Exercise) => {
-    setEditingExercise(exercise);
-    setShowForm(true);
-  };
-
-  const handleCancelForm = () => {
-    setShowForm(false);
-    setEditingExercise(null);
-  };
-
-  const handleVideoPlay = (exercise: Exercise) => {
-    if (exercise.video_url) {
-      setVideoModal({ src: exercise.video_url, title: exercise.title });
-    } else {
-      toast({
-        title: "Video pole saadaval",
-        description: "Selle harjutuse jaoks ei ole videot lisatud",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const filteredExercises = exercises.filter(exercise => {
-    const matchesCategory = selectedCategory === "all" || exercise.category === selectedCategory;
-    const matchesSearch = exercise.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         exercise.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Algaja": return "bg-success/20 text-success";
-      case "Keskmine": return "bg-warning/20 text-warning";
-      case "Edasijõudnud": return "bg-destructive/20 text-destructive";
-      default: return "bg-muted/20 text-muted-foreground";
-    }
-  };
-
-  if (showForm) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <ExerciseForm
-          onSuccess={handleFormSuccess}
-          onCancel={handleCancelForm}
-          editingExercise={editingExercise}
-        />
-      </div>
-    );
+const videoRoutines: VideoRoutine[] = [
+  {
+    id: "warmup-legs",
+    title: "Jalapäeva soojendus",
+    description: "5-10 minutit jalapäeva soojendamist kontoritöö jaoks",
+    duration: "5-10 min",
+    category: "Soojendus",
+    isComingSoon: true
+  },
+  {
+    id: "warmup-upper",
+    title: "Ülakeha soojendus", 
+    description: "Õlgade, kaela ja selja soojendamine enne tööd",
+    duration: "5-10 min",
+    category: "Soojendus",
+    isComingSoon: true
+  },
+  {
+    id: "hip-mobility",
+    title: "Puusade liikuvus",
+    description: "Puusade liigutavuse parandamine ja pingete leevendamine",
+    duration: "5-10 min", 
+    category: "Liikuvus",
+    isComingSoon: true
+  },
+  {
+    id: "back-mobility",
+    title: "Alaselja liikuvus",
+    description: "Alaselja pingete leevendamine ja liigutavuse parandamine",
+    duration: "5-10 min",
+    category: "Liikuvus", 
+    isComingSoon: true
   }
+];
+
+const Harjutused = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Harjutuste kogu
-          </h1>
-          <p className="text-muted-foreground">
-            Leia endale sobivad harjutused kontoritöö kahjustuste ennetamiseks ja leevendamiseks.
-          </p>
-        </div>
-        {isAdmin && (
-          <Button onClick={() => setShowForm(true)} className="ml-4">
-            <Plus className="w-4 h-4 mr-2" />
-            Lisa harjutus
-          </Button>
-        )}
-      </div>
-
-      {/* Search and Filters */}
-      <div className="mb-8 space-y-4">
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Otsi harjutusi..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-
-        {/* Category Filters */}
-        <div className="flex flex-wrap gap-2">
-          {exerciseCategories.map((category) => (
-            <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory(category.id)}
-            >
-              {category.name}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Results count */}
-      <div className="mb-6">
-        <p className="text-sm text-muted-foreground">
-          Leitud {filteredExercises.length} harjutust
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          Lühikesed harjutusrutiinid
+        </h1>
+        <p className="text-muted-foreground">
+          5-10 minutit pikkused videorutiinid, mida saad järgida häälega. Kontoritöö kahjustuste ennetamiseks ja leevendamiseks.
         </p>
       </div>
 
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="text-muted-foreground">Harjutuste laadimine...</div>
-        </div>
-      ) : (
-        <>
-          {/* Exercises Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredExercises.map((exercise) => (
-              <Card key={exercise.id} className="group hover:shadow-medium transition-all duration-200">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-1 group-hover:text-brand-primary transition-colors">
-                        {exercise.title}
-                      </CardTitle>
-                      <CardDescription className="text-sm">
-                        {exercise.description}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Exercise Details */}
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1 text-muted-foreground">
-                        <Clock className="w-4 h-4" />
-                        <span>{exercise.duration}</span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-muted-foreground">
-                        <Target className="w-4 h-4" />
-                        <span className="capitalize">
-                          {exerciseCategories.find(c => c.id === exercise.category)?.name}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Difficulty Badge */}
-                  <div className="flex items-center justify-between">
-                    <Badge className={`text-xs ${getDifficultyColor(exercise.difficulty)}`}>
-                      {exercise.difficulty}
-                    </Badge>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="space-y-2">
-                    <Button 
-                      variant="hero" 
-                      className="w-full group-hover:shadow-glow transition-all"
-                      onClick={() => handleVideoPlay(exercise)}
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      Vaata videot
-                    </Button>
-                    
-                    {isAdmin && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="w-full"
-                        onClick={() => handleEditExercise(exercise)}
-                      >
-                        <Edit2 className="w-4 h-4 mr-2" />
-                        Muuda
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* No results */}
-          {filteredExercises.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-muted-foreground" />
+      {/* Video Routines Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {videoRoutines.map((routine) => (
+          <Card key={routine.id} className="group hover:shadow-medium transition-all duration-200">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-lg mb-1 group-hover:text-primary transition-colors">
+                    {routine.title}
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    {routine.description}
+                  </CardDescription>
+                </div>
+                {routine.isComingSoon && (
+                  <Badge variant="secondary" className="ml-2">
+                    <Lock className="w-3 h-3 mr-1" />
+                    Tulekul
+                  </Badge>
+                )}
               </div>
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                Harjutusi ei leitud
-              </h3>
-              <p className="text-muted-foreground">
-                Proovi muuta otsingusõna või vali muu kategooria.
-              </p>
-            </div>
-          )}
-        </>
-      )}
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              {/* Routine Details */}
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-1 text-muted-foreground">
+                    <Clock className="w-4 h-4" />
+                    <span>{routine.duration}</span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-muted-foreground">
+                    <Target className="w-4 h-4" />
+                    <span>{routine.category}</span>
+                  </div>
+                </div>
+              </div>
 
-      {/* Video Modal */}
-      {videoModal && (
-        <VideoModal
-          src={videoModal.src}
-          title={videoModal.title}
-          onClose={() => setVideoModal(null)}
-        />
-      )}
+              {/* Action Button */}
+              <div className="space-y-2">
+                <button 
+                  className={`w-full py-2 px-4 rounded-lg font-medium transition-all ${
+                    routine.isComingSoon 
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed' 
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  }`}
+                  disabled={routine.isComingSoon}
+                >
+                  <Play className="w-4 h-4 mr-2 inline" />
+                  {routine.isComingSoon ? 'Tulekul' : 'Alusta harjutust'}
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Coming Soon Notice */}
+      <div className="mt-12 text-center">
+        <div className="bg-muted/50 rounded-lg p-6 max-w-2xl mx-auto">
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            Videod tulevad varsti!
+          </h3>
+          <p className="text-muted-foreground">
+            Töötame praegu lühikeste harjutusvideode kallal, mida saad järgida häälega. 
+            Iga video on 5-10 minutit pikk ja keskendub kontoritöö kahjustuste ennetamisele.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
