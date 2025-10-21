@@ -284,10 +284,12 @@ export default function Header() {
             </button>
           </div>
 
-          {/* Mobile drawer */}
-          {open && (
-            <div id="mobile-nav" className="border-t bg-card/95 shadow-soft backdrop-blur-xl md:hidden">
-              <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3" aria-label="Mobiilne navigatsioon">
+        </div>
+
+        {/* Mobile drawer */}
+        {open && (
+          <div id="mobile-nav" className="border-t bg-card/95 shadow-soft backdrop-blur-xl md:hidden">
+            <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3" aria-label="Mobiilne navigatsioon">
                 {/* Grace Period Badge (Mobile) */}
                 {user && trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (
                   <Link
@@ -420,7 +422,6 @@ export default function Header() {
               </nav>
             </div>
           )}
-        </header>
       </div>
       
       {/* Spacer for fixed header */}
