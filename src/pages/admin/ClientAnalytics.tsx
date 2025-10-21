@@ -77,12 +77,6 @@ export default function ClientAnalytics() {
 
         if (sessionsError) throw sessionsError;
 
-        // Get user streaks
-        const { data: streaks } = await supabase
-          .from("user_streaks")
-          .select("current_streak, best_streak, last_workout_date")
-          .eq("user_id", userId)
-          .single();
 
         // Get active programs count
         const { data: programs, error: programsError } = await supabase
@@ -133,9 +127,9 @@ export default function ClientAnalytics() {
           total_reps: totalReps,
           total_sets: totalSets,
           avg_rpe: avgRpe,
-          current_streak: streaks?.current_streak || 0,
-          best_streak: streaks?.best_streak || 0,
-          last_workout_date: streaks?.last_workout_date || null,
+          current_streak: 0,
+          best_streak: 0,
+          last_workout_date: null,
           first_workout_date: sessions?.[sessions.length - 1]?.started_at || null,
           active_programs: programs?.length || 0,
         };

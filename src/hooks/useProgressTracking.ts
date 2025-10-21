@@ -259,18 +259,12 @@ export function useProgressTracking(opts?: { clientDayId?: UUID }) {
         if (wErr) throw wErr;
         if (alive) setWeekly((weeklyRows?.[0] as unknown as VUserWeekly) ?? null);
 
-        // user_streaks: single row per user
-        const { data: streakRow, error: sErr } = await supabase
-          .from("user_streaks")
-          .select("current_streak, best_streak, last_workout_date")
-          .eq("user_id", userId)
-          .maybeSingle();
-        if (sErr) throw sErr;
+        // Set default streak values since user_streaks table is removed
         if (alive) {
           setStreaks({
-            current_streak: streakRow?.current_streak ?? 0,
-            best_streak: streakRow?.best_streak ?? 0,
-            last_workout_date: streakRow?.last_workout_date ?? null,
+            current_streak: 0,
+            best_streak: 0,
+            last_workout_date: null,
           });
         }
       } catch (e: unknown) {

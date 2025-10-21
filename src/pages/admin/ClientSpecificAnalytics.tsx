@@ -110,12 +110,6 @@ export default function ClientSpecificAnalytics() {
 
       if (sessionsError) throw sessionsError;
 
-      // Get streaks
-      const { data: streaks } = await supabase
-        .from("user_streaks")
-        .select("current_streak, best_streak")
-        .eq("user_id", clientId)
-        .single();
 
       // Get active programs
       const { data: programs, error: programsError } = await supabase
@@ -163,8 +157,8 @@ export default function ClientSpecificAnalytics() {
         total_reps: totalReps,
         total_sets: totalSets,
         avg_rpe: avgRpe,
-        current_streak: streaks?.current_streak || 0,
-        best_streak: streaks?.best_streak || 0,
+        current_streak: 0,
+        best_streak: 0,
         active_programs: programs?.length || 0,
       };
 

@@ -14,14 +14,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useProgressTracking } from "@/hooks/useProgressTracking";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
-import { useCustomHabits } from "@/hooks/useCustomHabits";
 import { supabase } from "@/integrations/supabase/client";
 import { calcProgramStreak } from "@/lib/workweek";
-import { HabitStatsModal } from "@/components/HabitStatsModal";
-import { AddHabitModal } from "@/components/AddHabitModal";
-import { ArchivedHabitsModal } from "@/components/ArchivedHabitsModal";
-import { UserLevelDisplay } from "@/components/UserLevelDisplay";
-import { LevelUpToast } from "@/components/LevelUpToast";
 import { TrialStatusBanner } from "@/components/TrialStatusBanner";
 import { TrialWarningBanner } from "@/components/TrialWarningBanner";
 import { GracePeriodBanner } from "@/components/GracePeriodBanner";
@@ -29,7 +23,6 @@ import { TrialModal } from "@/components/TrialModal";
 import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { useTrialPopupManager } from "@/hooks/useTrialPopupManager";
 import { 
-  Trophy, 
   TrendingUp, 
   Target, 
   Calendar,
@@ -38,14 +31,7 @@ import {
   CheckCircle,
   ArrowRight,
   Dumbbell,
-  BookOpen,
-  BarChart3,
-  Zap,
-  Heart,
-  Coffee,
-  Book,
-  Settings,
-  X
+  BookOpen
 } from "lucide-react";
 
 type Stats = {
@@ -60,26 +46,11 @@ type Stats = {
   lastWorkout: string | null;
 };
 
-// Icon mapping for custom habits
-const getHabitIcon = (iconName: string) => {
-  const iconMap: Record<string, React.ReactNode> = {
-    Trophy: <Trophy className="h-4 w-4" />,
-    Zap: <Zap className="h-4 w-4" />,
-    Activity: <Activity className="h-4 w-4" />,
-    CheckCircle: <CheckCircle className="h-4 w-4" />,
-    Heart: <Heart className="h-4 w-4" />,
-    Coffee: <Coffee className="h-4 w-4" />,
-    Book: <Book className="h-4 w-4" />,
-    Target: <Target className="h-4 w-4" />,
-  };
-  return iconMap[iconName] || <CheckCircle className="h-4 w-4" />;
-};
 
 export default function Home() {
   const { status, user } = useAuth();
   const { streaks, totalVolumeKg, summary, weekly } = useProgressTracking();
   const { trackButtonClick, trackPageView } = useTrackEvent();
-  const { habits, loading: habitsLoading, toggleHabit, removeHabit } = useCustomHabits();
   
   // Trial status using new hook
   const trialStatus = useTrialStatus();
@@ -127,14 +98,9 @@ export default function Home() {
     }
   }, [user, trackPageView, progressPct]);
 
-  const habitCompletionPct = useMemo(() => {
-    const completed = habits.filter(h => h.done).length;
-    return habits.length > 0 ? Math.round((completed / habits.length) * 100) : 0;
-  }, [habits]);
 
   const getMotivationalMessage = () => {
     const currentStreak = streaks?.current_streak ?? stats.streak;
-    const habitsPct = habitCompletionPct;
     
     if (currentStreak >= 7) {
       return {
@@ -147,12 +113,6 @@ export default function Home() {
         title: "Suurepärane tempo!",
         message: `${currentStreak} päeva järjest - jätka samas vaimus!`,
         color: "text-green-600"
-      };
-    } else if (habitsPct >= 75) {
-      return {
-        title: "Suurepärane päev!",
-        message: "Enamik harjumusi täidetud - tubli töö!",
-        color: "text-blue-600"
       };
     } else {
       return {
@@ -328,9 +288,8 @@ export default function Home() {
     }
   }, [user, trialStatus.isExpired, trialStatus.isInGracePeriod, trialStatus.loading]);
 
-  // Remove old habits loading logic - now handled by useCustomHabits hook
 
-  if (status === "loading" || loading || habitsLoading) {
+  if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -345,7 +304,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
-      <LevelUpToast />
       <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
         
         {/* Smart Trial Popup System */}
@@ -398,10 +356,6 @@ export default function Home() {
 
         {/* Welcome Header - Clean and Warm */}
         <div className="text-center space-y-6 pt-8">
-          <div className="flex justify-center mb-6">
-            <UserLevelDisplay size="lg" />
-          </div>
-          
           <div className="space-y-4">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent animate-fade-in">
               Tere tulemast tagasi!
@@ -513,107 +467,6 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Daily Habits with Management */}
-          <Card className="rounded-2xl shadow-soft border-0 bg-gradient-to-br from-secondary/10 to-secondary/5 animate-scale-in">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-secondary-foreground flex-shrink-0" />
-                    <span className="truncate">Päeva harjumused</span>
-                  </CardTitle>
-                  <CardDescription className="text-sm mt-1">
-                    {habitCompletionPct === 100 ? (
-                      <span className="text-green-600 font-semibold">
-                        Kõik harjumused täidetud! Suurepärane päev!
-                      </span>
-                    ) : (
-                      `${habitCompletionPct}% täidetud täna`
-                    )}
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <HabitStatsModal />
-                  <ArchivedHabitsModal />
-                  <AddHabitModal />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ProgressBar 
-                value={habitCompletionPct} 
-                className="h-2 bg-muted" 
-              />
-              {habitCompletionPct === 100 && (
-                <div className="text-center py-2">
-                  <div className="inline-block px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg font-medium animate-scale-in">
-                    Päev täielikult täidetud!
-                  </div>
-                </div>
-              )}
-              <div className="space-y-3">
-                {habits.length > 0 ? habits.map((habit) => (
-                  <div 
-                    key={habit.id}
-                    className={`group relative w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-200 min-h-[60px] ${
-                      habit.done 
-                        ? "bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800 shadow-lg" 
-                        : "bg-muted/50 hover:bg-muted border-2 border-transparent hover:border-muted-foreground/20"
-                    }`}
-                  >
-                    <button
-                    onClick={() => {
-                      trackButtonClick('habit_toggle', 'habit_completion', 'home');
-                      toggleHabit(habit.id);
-                    }}
-                      className="flex items-center gap-4 flex-1 hover:scale-[1.01] active:scale-[0.99] transition-transform"
-                    >
-                      <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                        habit.done 
-                          ? "bg-green-600 border-green-600 text-white" 
-                          : "border-muted-foreground/30 hover:border-primary"
-                      }`}>
-                        {habit.done && <CheckCircle className="h-4 w-4" />}
-                      </div>
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className={`transition-colors ${habit.done ? "text-green-600" : "text-muted-foreground"}`}>
-                          {getHabitIcon(habit.icon_name)}
-                        </div>
-                        <span 
-                          className={`text-base font-medium transition-colors text-left ${
-                            habit.done 
-                              ? "line-through text-muted-foreground" 
-                              : "text-foreground"
-                          }`}
-                        >
-                          {habit.title}
-                        </span>
-                      </div>
-                    </button>
-                    
-                    {/* Remove button - only show on hover for custom habits */}
-                    <button
-                          onClick={() => {
-                            trackButtonClick('remove_habit', 'habit_management', 'home');
-                            removeHabit(habit.id);
-                          }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-destructive"
-                      title="Eemalda harjumus"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                )) : (
-                  <div className="text-center py-6 space-y-3">
-                    <CheckCircle className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <p className="text-muted-foreground text-sm">
-                      Lisa oma esimene harjumus!
-                    </p>
-                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
         </div>
 
