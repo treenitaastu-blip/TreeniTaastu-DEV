@@ -134,6 +134,7 @@ export default function PersonalTraining() {
       ]);
 
       console.log("Optimized data loaded:", { programsData, templatesData, usersData, statsData });
+      console.log("Users loaded:", usersData?.length, "users");
       
       setPrograms(programsData);
       setTemplates(templatesData);

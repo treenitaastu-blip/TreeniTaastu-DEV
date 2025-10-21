@@ -149,8 +149,12 @@ export async function getUsersOptimized() {
       `)
       .order("email");
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching users:', error);
+      throw error;
+    }
 
+    console.log('getUsersOptimized: Loaded', data?.length, 'users');
     setCachedData(cacheKey, data, CACHE_TTL.LONG);
     return data;
   } catch (error) {
