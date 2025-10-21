@@ -400,9 +400,7 @@ export default function Header() {
                 )}
 
                 <div className="mt-2 border-t pt-2">
-                  {user ? (
-                    <UserMenu mobile />
-                  ) : (
+                  {!user && (
                     <div className="grid gap-2">
                       <Link
                         to="/login"
@@ -571,11 +569,9 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
           aria-haspopup="menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors shadow-soft hover:bg-muted/50"
+          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
-          <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-primary text-white">
-            <UserIcon className="h-4 w-4" />
-          </div>
+          <UserIcon className="h-5 w-5" />
         </button>
         {open && (
           <div
