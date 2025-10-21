@@ -267,9 +267,11 @@ export default function Home() {
 
         // Calculate actual Kontorikeha program metrics from userprogress data
         // Use sets/reps/seconds columns (current data) and total_* columns (new format)
+        console.log("[Home] Progress data:", progressResult.data);
         const actualSets = progressResult.data?.reduce((sum, p) => sum + Math.max(p.sets || 0, p.total_sets || 0), 0) || 0;
         const actualReps = progressResult.data?.reduce((sum, p) => sum + Math.max(p.reps || 0, p.total_reps || 0), 0) || 0;
         const actualSeconds = progressResult.data?.reduce((sum, p) => sum + (p.total_seconds || 0), 0) || 0;
+        console.log("[Home] Calculated stats:", { actualSets, actualReps, actualSeconds, completedDays: progressResult.data?.length });
 
         let totalDays = 20;
         try {
