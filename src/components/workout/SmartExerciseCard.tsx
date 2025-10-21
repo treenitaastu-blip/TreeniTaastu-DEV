@@ -99,15 +99,15 @@ export default function SmartExerciseCard({
   // Auto-collapse when all sets are completed
   const allSetsCompleted = completedSets >= exercise.sets;
   
-  // Auto-collapse when all sets are done
+  // Auto-collapse when all sets are done (only if not manually expanded)
   React.useEffect(() => {
-    if (allSetsCompleted && !isCollapsed) {
+    if (allSetsCompleted && !isCollapsed && !showFeedback) {
       const timer = setTimeout(() => {
         setIsCollapsed(true);
-      }, 1000); // Collapse after 1 second
+      }, 2000); // Collapse after 2 seconds to allow user to see completion
       return () => clearTimeout(timer);
     }
-  }, [allSetsCompleted, isCollapsed]);
+  }, [allSetsCompleted, isCollapsed, showFeedback]);
 
   // Smart auto-fill based on progression suggestion
   const handleSetInputChangeWithSuggestion = useCallback((setNumber: number, field: string, value: number) => {
@@ -422,26 +422,26 @@ export default function SmartExerciseCard({
       {/* Clean exercise details - sets, weight, reps, rest */}
       <div className="p-3 bg-muted/10">
         <div className="grid grid-cols-4 gap-3 text-center">
-          <div>
-            <div className="text-sm font-medium text-muted-foreground">Seeriad</div>
+          <div className="min-h-[3rem] flex flex-col justify-center">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Seeriad</div>
             <div className="text-lg font-semibold text-foreground">
               {allSetsCompleted ? exercise.sets : completedSets}/{exercise.sets}
             </div>
           </div>
-          <div>
-            <div className="text-sm font-medium text-muted-foreground">Kaal</div>
+          <div className="min-h-[3rem] flex flex-col justify-center">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Kaal</div>
             <div className="text-lg font-semibold text-foreground">
               {exercise.weight_kg || 0}kg
             </div>
           </div>
-          <div>
-            <div className="text-sm font-medium text-muted-foreground">Kordused</div>
+          <div className="min-h-[3rem] flex flex-col justify-center">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Kordused</div>
             <div className="text-lg font-semibold text-foreground">
               {exercise.reps}
             </div>
           </div>
-          <div>
-            <div className="text-sm font-medium text-muted-foreground">Puhkus</div>
+          <div className="min-h-[3rem] flex flex-col justify-center">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Puhkus</div>
             <div className="text-lg font-semibold text-foreground">
               {exercise.rest_seconds || 60}s
             </div>

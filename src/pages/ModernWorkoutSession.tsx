@@ -1259,8 +1259,8 @@ export default function ModernWorkoutSession() {
 
         {/* Rest Timer - Positioned below header */}
         {restTimer.isOpen && (
-          <div className="sticky top-16 z-30 bg-background/95 backdrop-blur-sm border-b">
-            <div className="px-4 py-3">
+          <div className="sticky top-20 z-30 bg-background/95 backdrop-blur-sm border-b">
+            <div className="px-4 py-2">
               <ModernRestTimer
                 isOpen={restTimer.isOpen}
                 initialSeconds={restTimer.seconds}
