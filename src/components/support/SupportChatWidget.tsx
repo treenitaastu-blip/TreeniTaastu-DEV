@@ -8,18 +8,12 @@ import { useSupportChat } from '@/hooks/useSupportChat';
 import { useSupportNotifications } from '@/hooks/useSupportNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 import { supportMessageSchema, validateAndSanitize } from '@/lib/validations';
 
 export function SupportChatWidget() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(() => {
     const saved = localStorage.getItem('supportChatOpen');
-    return saved === 'true';
-  });
-  const [isAnnounced, setIsAnnounced] = useState(() => {
-    const saved = localStorage.getItem('supportChatAnnounced');
     return saved === 'true';
   });
   const [newMessage, setNewMessage] = useState('');
@@ -68,36 +62,7 @@ export function SupportChatWidget() {
   }, [isOpen]);
 
   if (!user) {
-    if (isAnnounced) {
-      return null;
-    }
-    return (
-      <div className="fixed bottom-6 right-6 z-[100]">
-        <Alert className="w-80 border-warning/50 relative">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <button
-              onClick={() => {
-                setIsAnnounced(true);
-                localStorage.setItem('supportChatAnnounced', 'true');
-              }}
-              className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Sulge teadaanne"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <strong>Pole sisse logitud:</strong> Kliendiabi kasutamiseks palun logi sisse.
-            <Button
-              onClick={() => window.location.href = '/login'}
-              className="mt-2 w-full"
-              size="sm"
-            >
-              Mine sisselogimisse
-            </Button>
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return null;
   }
 
   const handleSendMessage = async (e: React.FormEvent) => {
