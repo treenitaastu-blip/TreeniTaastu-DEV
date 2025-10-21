@@ -66,7 +66,7 @@ export default function DayTile({ day, onClick, className = "", isStarted }: Day
       return "Tehtud";
     }
     if (isStarted && !day.isWeekend) {
-      return "Alustatud";
+      return "Tegemata";
     }
     if (day.isWeekend) {
       return "Lõõgastus";
