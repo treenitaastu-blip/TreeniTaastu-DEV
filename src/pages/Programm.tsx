@@ -2,11 +2,12 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useCalendarState } from '@/hooks/useCalendarState';
+import { useProgramCalendarState } from '@/hooks/useProgramCalendarState';
 import { useWeekendRedirect } from '@/hooks/useWeekendRedirect';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, ArrowLeft, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import CalendarGrid from '@/components/calendar/CalendarGrid';
 import QuoteDisplay from '@/components/calendar/QuoteDisplay';
 import { getTallinnDate, isAfterUnlockTime } from '@/lib/workweek';
@@ -21,37 +22,53 @@ export default function Programm() {
   const { dayNumber: routeDayNumber } = useParams();
   
   const {
+    program,
     days,
     totalDays,
     completedDays,
     loading,
     error,
+    hasActiveProgram,
     refreshCalendar,
     markDayCompleted
-  } = useCalendarState();
+  } = useProgramCalendarState();
 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [activeDayData, setActiveDayData] = useState<any | null>(null);
   const firstExerciseRef = useRef<HTMLDivElement | null>(null);
 
   const loadProgramDayByNumber = useCallback(async (dayNum: number) => {
-    // derive week/day from linear day number (1-based)
-    const week = Math.ceil(dayNum / 5);
-    const day = ((dayNum - 1) % 5) + 1;
-    const { data, error } = await supabase
-      .from('programday')
-      .select('*')
-      .eq('week', week)
-      .eq('day', day)
-      .single();
-    if (error) {
-      console.error('programday load error', error);
-      toast({ title: 'Viga', description: 'Päeva laadimine ebaõnnestus', variant: 'destructive' });
-      setActiveDayData(null);
-      return;
+    if (!program) return;
+
+    // For "Kontorikeha Reset" program, use existing programday structure
+    if (program.title === 'Kontorikeha Reset') {
+      const week = Math.ceil(dayNum / 5);
+      const day = ((dayNum - 1) % 5) + 1;
+      const { data, error } = await supabase
+        .from('programday')
+        .select('*')
+        .eq('week', week)
+        .eq('day', day)
+        .single();
+      if (error) {
+        console.error('programday load error', error);
+        toast({ title: 'Viga', description: 'Päeva laadimine ebaõnnestus', variant: 'destructive' });
+        setActiveDayData(null);
+        return;
+      }
+      setActiveDayData(data);
+    } else {
+      // For future programs, this would load from a different structure
+      // For now, show a placeholder
+      setActiveDayData({
+        note: `${program.title} - Päev ${dayNum}`,
+        exercise1: 'Harjutus 1',
+        reps1: '10',
+        sets1: '3',
+        hint1: 'See programm on veel arendamisel'
+      });
     }
-    setActiveDayData(data);
-  }, [toast]);
+  }, [program, toast]);
 
   useEffect(() => {
     if (routeDayNumber) {
@@ -99,22 +116,40 @@ export default function Programm() {
 
   // Handle day completion
   const handleDayCompletion = useCallback(async (dayNumber: number): Promise<boolean> => {
-    const success = await markDayCompleted(dayNumber);
-    if (success) {
-      toast({
-        title: "Suurepärane!",
-        description: `Päev ${dayNumber} on märgitud lõpetatuks`,
-      });
-      return true;
-    } else {
-      toast({
-        title: "Viga",
-        description: "Päeva märkimine lõpetatuks ebaõnnestus",
-        variant: "destructive",
-      });
-      return false;
+    if (!user || !program) return false;
+    
+    try {
+      // For "Kontorikeha Reset" program, use existing function
+      if (program.title === 'Kontorikeha Reset') {
+        const { data, error } = await supabase.rpc('complete_static_program_day', {
+          p_user_id: user.id,
+          p_programday_id: activeDayData?.id
+        });
+        if (error) {
+          console.error('Error completing day:', error);
+          toast({ title: 'Viga', description: 'Päeva märkimine ebaõnnestus', variant: 'destructive' });
+          return false;
+        }
+        if (data?.success) {
+          const success = await markDayCompleted(dayNumber);
+          if (success) {
+            toast({ title: 'Suurepärane!', description: `Päev ${dayNumber} on märgitud lõpetatuks` });
+            setActiveDayData(null);
+            navigate('/programm');
+            return true;
+          }
+        }
+      } else {
+        // For future programs, this would use a different completion logic
+        toast({ title: 'Info', description: 'See programm on veel arendamisel' });
+        return false;
+      }
+    } catch (error) {
+      console.error('Error completing day:', error);
+      toast({ title: 'Viga', description: 'Päeva märkimine ebaõnnestus', variant: 'destructive' });
     }
-  }, [markDayCompleted, toast]);
+    return false;
+  }, [user, program, activeDayData, markDayCompleted, navigate, toast]);
 
   // Show quote for locked days
   const showQuoteForDay = useCallback((dayNumber: number) => {
@@ -153,14 +188,51 @@ export default function Programm() {
     );
   }
 
+  // Redirect if no active program
+  if (!loading && !hasActiveProgram) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Pole aktiivset programmi
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Vali programm, et alustada oma treeningteekonda.
+          </p>
+          <Button 
+            onClick={() => navigate('/programmid')}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Vali programm
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-4xl space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="text-center space-y-3 sm:space-y-4">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Kontorikeha Treeningprogramm</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+          {program?.title || 'Treeningprogramm'}
+        </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          20-päevane treeningprogramm, mis avaneb päev-päevalt
+          {program?.description || 'Treeningprogramm, mis avaneb päev-päevalt'}
         </p>
+        <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+          <span>{completedDays}/{totalDays} päeva tehtud</span>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/programmid')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Tagasi programmide juurde
+          </Button>
+        </div>
       </div>
 
       {/* Calendar Grid */}
