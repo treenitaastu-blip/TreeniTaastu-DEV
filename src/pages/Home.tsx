@@ -279,7 +279,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
         
         {/* Smart Trial Popup System */}
@@ -339,9 +339,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick Actions - Clean Apple-style */}
+        {/* Quick Actions - Apple Liquid Glass */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <Button asChild className="h-16 flex-col space-y-2 bg-blue-600 hover:bg-blue-700 text-white border-0">
+          <Button asChild className="h-16 flex-col space-y-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
             <Link 
               to="/programs"
               onClick={() => trackButtonClick('programs', '/programs', 'home_quick_actions')}
@@ -350,7 +350,7 @@ export default function Home() {
               <span className="text-sm font-medium">Treening</span>
             </Link>
           </Button>
-          <Button asChild variant="outline" className="h-16 flex-col space-y-2 border-gray-300 hover:bg-gray-50">
+          <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700">
             <Link 
               to="/teenused"
               onClick={() => trackButtonClick('teenused', '/teenused', 'home_quick_actions')}
@@ -359,7 +359,7 @@ export default function Home() {
               <span className="text-sm font-medium">Teenused</span>
             </Link>
           </Button>
-          <Button asChild variant="outline" className="h-16 flex-col space-y-2 border-gray-300 hover:bg-gray-50 md:col-span-1 col-span-2">
+          <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700 md:col-span-1 col-span-2">
             <Link 
               to="/tervisetood"
               onClick={() => trackButtonClick('tervisetoed', '/tervisetoed', 'home_quick_actions')}
@@ -373,11 +373,11 @@ export default function Home() {
         {/* Training Focus - Clean Apple-style */}
         <div className="space-y-6">
           
-          {/* Personal Training Card - Clean and Focused */}
-          <Card className="border border-gray-200 shadow-sm">
+          {/* Personal Training Card - Apple Liquid Glass */}
+          <Card className="bg-white/70 backdrop-blur-sm border border-gray-200/50 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl text-black">
-                <Dumbbell className="h-6 w-6 text-blue-600" />
+              <CardTitle className="flex items-center gap-3 text-xl text-gray-900">
+                <Dumbbell className="h-6 w-6 text-gray-700" />
                 Personaaltreening
               </CardTitle>
               <CardDescription className="text-gray-600">
@@ -388,24 +388,24 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Clean Stats */}
+              {/* Glass Stats */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
+                  <div className="text-2xl font-bold text-gray-900">
                     {Math.round(stats.totalVolume)} kg
                   </div>
                   <div className="text-sm text-gray-600">Kogu maht</div>
                 </div>
                 
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
+                <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
+                  <div className="text-2xl font-bold text-gray-900">
                     {stats.avgRPE > 0 ? stats.avgRPE.toFixed(1) : "0"}/10
                   </div>
                   <div className="text-sm text-gray-600">Keskmine pingutus</div>
                 </div>
               </div>
 
-              <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+              <Button asChild size="lg" className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
                 <Link 
                   to="/programs" 
                   className="flex items-center justify-center gap-2"
