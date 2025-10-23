@@ -169,8 +169,23 @@ export default function Programm() {
           }
         } else {
           console.log('Database function returned success: false, data:', data);
-          toast({ title: 'Viga', description: 'Päeva märkimine ebaõnnestus', variant: 'destructive' });
-          return false;
+          // Check if it's already completed today
+          if (data?.message === 'Already completed today') {
+            toast({ title: 'Juba tehtud!', description: 'See päev on juba täna lõpetatud', variant: 'default' });
+            // Still navigate back and scroll to show the completed day
+            setActiveDayData(null);
+            navigate('/programm');
+            setTimeout(() => {
+              const dayElement = document.getElementById(`day-${dayNumber}`);
+              if (dayElement) {
+                dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 300);
+            return true; // Return true since the day is already completed
+          } else {
+            toast({ title: 'Viga', description: 'Päeva märkimine ebaõnnestus', variant: 'destructive' });
+            return false;
+          }
         }
       } else {
         // For future programs, this would use a different completion logic

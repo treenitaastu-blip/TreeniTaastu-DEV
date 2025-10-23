@@ -309,21 +309,59 @@ export function SupportChatWidget() {
 
       {/* Timer Modal */}
       {timerOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4">
-          <Card className="w-full max-w-sm">
+        <>
+          {timerMinimized ? (
+            <div className="fixed bottom-6 left-6 z-[200] bg-card border rounded-lg shadow-lg p-3 min-w-[140px]">
+              <div className="flex items-center justify-between gap-2">
+                <div className={`text-sm font-bold ${timeLeft === 0 ? "text-destructive" : "text-foreground"}`}>
+                  {formatTimerTime(timeLeft)}
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={isRunning ? handleTimerPause : handleTimerStart}
+                    className="h-6 w-6 p-0"
+                  >
+                    {isRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setTimerMinimized(false)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Maximize2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4">
+              <Card className="w-full max-w-sm">
             <CardHeader className="flex flex-row items-center justify-between py-3">
               <div className="flex items-center gap-2">
                 <Timer className="h-5 w-5" />
                 <span className="font-semibold">Harjutuse taimer</span>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTimerOpen(false)}
-                className="h-8 w-8"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setTimerMinimized(true)}
+                  className="h-8 w-8"
+                >
+                  <Minimize2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setTimerOpen(false)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Timer Display */}
@@ -377,6 +415,8 @@ export function SupportChatWidget() {
             </CardContent>
           </Card>
         </div>
+          )}
+        </>
       )}
     </>
   );
