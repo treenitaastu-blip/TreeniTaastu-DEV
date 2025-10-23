@@ -130,7 +130,7 @@ export function isAfterUnlockTime(): boolean {
  * Check if a specific day should be unlocked based on 15:00 Estonia time rule
  * New weekdays unlock after 15:00 Estonia time
  */
-export function shouldUnlockDay(dayNumber: number, userStartDate?: Date): boolean {
+export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompleted?: boolean): boolean {
   const tallinnDate = getTallinnDate();
   const today = tallinnDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   
@@ -139,18 +139,21 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date): boolea
     return false;
   }
   
-  // If it's before 15:00, day is locked
-  if (!isAfterUnlockTime()) {
-    return false;
-  }
-  
   // Calculate how many weekdays have passed since program start
   const startDate = userStartDate || getCurrentWeekStart();
   const daysSinceStart = Math.floor((tallinnDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   const weekdaysSinceStart = Math.floor(daysSinceStart / 7) * 5 + Math.min(daysSinceStart % 7, 5);
   
-  // Day should be unlocked if enough weekdays have passed
-  return dayNumber <= weekdaysSinceStart + 1; // +1 because day 1 unlocks on first weekday
+  // Completed days should always be unlocked
+  if (isCompleted) {
+    return true;
+  }
+  
+  // For new days: check if enough weekdays have passed AND it's after 15:00
+  const enoughWeekdaysPassed = dayNumber <= weekdaysSinceStart + 1; // +1 because day 1 unlocks on first weekday
+  const isAfterUnlock = isAfterUnlockTime();
+  
+  return enoughWeekdaysPassed && isAfterUnlock;
 }
 
 /**

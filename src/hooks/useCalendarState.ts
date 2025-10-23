@@ -54,7 +54,8 @@ export const useCalendarState = () => {
       }
       
       const isWeekendDay = isWeekend(currentDate);
-      const isUnlocked = shouldUnlockDay(dayNumber);
+      const isCompleted = false; // Will be updated from database
+      const isUnlocked = shouldUnlockDay(dayNumber, undefined, isCompleted);
       const isLocked = !isUnlocked && !isWeekendDay;
       
       days.push({
