@@ -1,4 +1,4 @@
--- Create get_user_active_program function
+-- Create get_user_active_program function using existing client_programs table
 CREATE OR REPLACE FUNCTION public.get_user_active_program(p_user_id uuid)
 RETURNS TABLE (
   id uuid,
@@ -14,27 +14,27 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $$
 BEGIN
-  -- Check if user has an active program
+  -- Check if user has an active client program (personal training)
   RETURN QUERY
   SELECT 
-    p.id,
-    p.title,
-    p.description,
-    p.duration_days,
-    p.difficulty,
-    p.status,
-    p.created_at
-  FROM programs p
-  JOIN user_programs up ON p.id = up.program_id
-  WHERE up.user_id = p_user_id 
-    AND up.status = 'active'
+    cp.id,
+    COALESCE(cp.title_override, wt.title) as title,
+    COALESCE(wt.goal, 'Personaaltreening programm') as description,
+    (cp.duration_weeks * 7)::integer as duration_days, -- Convert weeks to days
+    'kohandatud'::text as difficulty,
+    cp.status,
+    cp.inserted_at as created_at
+  FROM client_programs cp
+  LEFT JOIN workout_templates wt ON wt.id = cp.template_id
+  WHERE cp.assigned_to = p_user_id 
+    AND cp.status = 'active'
   LIMIT 1;
   
-  -- If no active program found, return fallback for Kontorikeha Reset
+  -- If no active client program found, return fallback for Kontorikeha Reset
   IF NOT FOUND THEN
     RETURN QUERY
     SELECT 
-      'kontorikeha-reset'::uuid as id,
+      gen_random_uuid() as id, -- Generate proper UUID instead of invalid string
       'Kontorikeha Reset'::text as title,
       '20-päevane programm kontoritöötajatele, mis aitab parandada kehahoiakut ja vähendada põhja- ja kaelavalusid.'::text as description,
       20::integer as duration_days,

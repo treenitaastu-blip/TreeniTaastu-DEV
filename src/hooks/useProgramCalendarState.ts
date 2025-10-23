@@ -53,7 +53,7 @@ export const useProgramCalendarState = () => {
         console.log('Database function not available, using fallback for Kontorikeha Reset');
         // Fallback: return Kontorikeha Reset program
         return {
-          id: 'kontorikeha-reset',
+          id: 'kontorikeha-reset-fallback', // Use string ID for fallback, not UUID
           title: 'Kontorikeha Reset',
           description: '20-päevane programm kontoritöötajatele, mis aitab parandada kehahoiakut ja vähendada põhja- ja kaelavalusid.',
           duration_days: 20,
@@ -160,7 +160,7 @@ export const useProgramCalendarState = () => {
       // Create a mapping of programday_id to day number for Kontorikeha Reset
       let programDayToDayNumber: Record<string, number> = {};
       
-      if (activeProgram.title === 'Kontorikeha Reset' && completedProgramDayIds.length > 0) {
+      if (activeProgram.title === 'Kontorikeha Reset') {
         // Get all programday records to map IDs to day numbers
         const { data: programDays } = await supabase
           .from('programday')
@@ -178,8 +178,8 @@ export const useProgramCalendarState = () => {
       const updatedDays = days.map(day => {
         let isCompleted = false;
         
-        if (activeProgram.title === 'Kontorikeha Reset' && completedProgramDayIds.length > 0) {
-          // Check if this specific day is completed
+        if (activeProgram.title === 'Kontorikeha Reset') {
+          // Check if this specific day is completed by mapping programday_id to day number
           isCompleted = completedProgramDayIds.some(programDayId => {
             const mappedDayNumber = programDayToDayNumber[programDayId];
             return mappedDayNumber === day.dayNumber;
