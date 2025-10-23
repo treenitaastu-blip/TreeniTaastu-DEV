@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Clock } from 'lucide-react';
+import { MessageCircle, X, Send, Clock, Play, Pause, RotateCcw, Minimize2, Maximize2, Timer } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -23,6 +23,75 @@ export function SupportChatWidget() {
   const { notification, markAsRead } = useSupportNotifications();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Timer state
+  const [timerOpen, setTimerOpen] = useState(false);
+  const [timerMinimized, setTimerMinimized] = useState(false);
+  const [selectedDuration, setSelectedDuration] = useState<number>(30);
+  const [timeLeft, setTimeLeft] = useState<number>(30);
+  const [isRunning, setIsRunning] = useState(false);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const presetTimes = [10, 20, 30, 40, 50, 60];
+
+  // Timer logic
+  useEffect(() => {
+    if (isRunning && timeLeft > 0) {
+      timerIntervalRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setIsRunning(false);
+            // Audio notification
+            try {
+              const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+              const o = ctx.createOscillator();
+              const g = ctx.createGain();
+              o.connect(g);
+              g.connect(ctx.destination);
+              o.type = 'sine';
+              o.frequency.value = 880;
+              g.gain.value = 0.001;
+              o.start();
+              g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+              g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.2);
+              o.stop(ctx.currentTime + 0.22);
+            } catch {}
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, [isRunning, timeLeft]);
+
+  const formatTimerTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleTimerStart = () => setIsRunning(true);
+  const handleTimerPause = () => setIsRunning(false);
+  const handleTimerReset = () => {
+    setIsRunning(false);
+    setTimeLeft(selectedDuration);
+  };
+
+  const handlePresetSelect = (duration: number) => {
+    setSelectedDuration(duration);
+    setTimeLeft(duration);
+    setIsRunning(false);
+  };
 
   // Auto-scroll to bottom when new messages arrive or chat opens
   useEffect(() => {
@@ -110,10 +179,7 @@ export function SupportChatWidget() {
           {/* Timer icon for programm page */}
           {location.pathname === '/programm' && (
             <Button
-              onClick={() => {
-                // This would open a timer modal or component
-                console.log('Timer clicked');
-              }}
+              onClick={() => setTimerOpen(true)}
               className="h-10 w-10 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
               size="icon"
               title="Taimer"
@@ -239,6 +305,78 @@ export function SupportChatWidget() {
             </form>
           </div>
         </Card>
+      )}
+
+      {/* Timer Modal */}
+      {timerOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4">
+          <Card className="w-full max-w-sm">
+            <CardHeader className="flex flex-row items-center justify-between py-3">
+              <div className="flex items-center gap-2">
+                <Timer className="h-5 w-5" />
+                <span className="font-semibold">Harjutuse taimer</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setTimerOpen(false)}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Timer Display */}
+              <div className="text-center">
+                <div className={`text-3xl font-bold tabular-nums ${timeLeft === 0 ? "text-destructive" : "text-foreground"}`}>
+                  {formatTimerTime(timeLeft)}
+                </div>
+              </div>
+
+              {/* Preset Time Buttons */}
+              <div className="grid grid-cols-3 gap-2">
+                {presetTimes.map(time => (
+                  <Button
+                    key={time}
+                    variant={selectedDuration === time ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePresetSelect(time)}
+                    disabled={isRunning}
+                    className="text-xs"
+                  >
+                    {time}s
+                  </Button>
+                ))}
+              </div>
+
+              {/* Control Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={isRunning ? handleTimerPause : handleTimerStart}
+                  size="sm"
+                  className="flex-1"
+                  disabled={timeLeft === 0}
+                >
+                  {isRunning ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+                  {isRunning ? "Peata" : "Alusta"}
+                </Button>
+                <Button
+                  onClick={handleTimerReset}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {timeLeft === 0 && (
+                <div className="text-center text-sm text-destructive font-medium">
+                  Aeg läbi! 🎉
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
     </>
   );

@@ -12,7 +12,6 @@ import CalendarGrid from '@/components/calendar/CalendarGrid';
 import QuoteDisplay from '@/components/calendar/QuoteDisplay';
 import { getTallinnDate, isAfterUnlockTime } from '@/lib/workweek';
 import { supabase } from '@/integrations/supabase/client';
-import { CompactTimer } from '@/components/workout/CompactTimer';
 
 export default function Programm() {
   const { user } = useAuth();
@@ -124,12 +123,20 @@ export default function Programm() {
   const handleDayCompletion = useCallback(async (dayNumber: number): Promise<boolean> => {
     if (!user || !program) return false;
     
+    console.log('handleDayCompletion called with:', { dayNumber, user: user.id, program: program.title, activeDayData });
+    
     try {
       // For "Kontorikeha Reset" program, use existing function
       if (program.title === 'Kontorikeha Reset') {
+        if (!activeDayData?.id) {
+          console.error('No activeDayData.id found:', activeDayData);
+          toast({ title: 'Viga', description: 'Päeva andmed puuduvad', variant: 'destructive' });
+          return false;
+        }
+        
         const { data, error } = await supabase.rpc('complete_static_program_day', {
           p_user_id: user.id,
-          p_programday_id: activeDayData?.id
+          p_programday_id: activeDayData.id
         });
         if (error) {
           console.error('Error completing day:', error);
@@ -312,8 +319,10 @@ export default function Programm() {
               <div className="flex justify-center pt-6 border-t">
                 <Button
                   onClick={async () => {
+                    console.log('Märgi tehtuks button clicked!', { routeDayNumber, activeDayData });
                     const dn = Number(routeDayNumber);
                     const ok = await handleDayCompletion(dn);
+                    console.log('handleDayCompletion result:', ok);
                     // The scroll logic is now handled in handleDayCompletion
                   }}
                   className="h-12 px-8 bg-green-600 hover:bg-green-700 text-white text-lg font-semibold"
@@ -402,8 +411,6 @@ export default function Programm() {
         </CardContent>
       </Card>
 
-      {/* Quick access timer for static holds */}
-      <CompactTimer />
     </div>
   );
 }
