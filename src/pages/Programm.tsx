@@ -158,6 +158,8 @@ export default function Programm() {
             setActiveDayData(null);
             // Navigate back to main program page and scroll to the completed day
             navigate('/programm');
+            // Refresh calendar to show updated completion status
+            refreshCalendar();
             // Scroll to the completed day after navigation
             setTimeout(() => {
               const dayElement = document.getElementById(`day-${dayNumber}`);
@@ -175,6 +177,8 @@ export default function Programm() {
             // Still navigate back and scroll to show the completed day
             setActiveDayData(null);
             navigate('/programm');
+            // Refresh calendar to show updated completion status
+            refreshCalendar();
             setTimeout(() => {
               const dayElement = document.getElementById(`day-${dayNumber}`);
               if (dayElement) {
