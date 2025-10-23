@@ -33,7 +33,7 @@ interface DayTileProps {
 export default function DayTile({ day, onClick, className = "", isStarted }: DayTileProps) {
   const getTileStyles = () => {
     if (day.isCompleted) {
-      return "bg-green-600 text-white border-green-600 hover:bg-green-700 shadow-green-200";
+      return "bg-success text-white border-success hover:bg-success/90 shadow-success/20";
     }
     // started but not completed: highlight in red
     if (isStarted && !day.isWeekend) {
@@ -103,7 +103,7 @@ export default function DayTile({ day, onClick, className = "", isStarted }: Day
       onClick={isClickable ? onClick : undefined}
       id={`day-${day.dayNumber}`}
     >
-      <CardContent className="p-3 sm:p-4 text-center min-h-[80px] sm:min-h-[90px] flex flex-col justify-center items-center">
+      <CardContent className="p-2 sm:p-3 text-center min-h-[70px] sm:min-h-[80px] flex flex-col justify-center">
         {/* Day Number and Icon */}
         <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
           {getIcon()}
@@ -126,7 +126,7 @@ export default function DayTile({ day, onClick, className = "", isStarted }: Day
 
         {/* Completion Badge */}
         {day.isCompleted && (
-          <Badge variant="default" className="mt-2 text-xs bg-white/20 text-white border-white/30">
+          <Badge variant="default" className="mt-2 text-xs bg-success">
             <Trophy className="h-3 w-3 mr-1" />
             Lõpetatud
           </Badge>
