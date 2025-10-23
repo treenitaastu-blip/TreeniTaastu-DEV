@@ -138,27 +138,59 @@ export const useProgramCalendarState = () => {
       // Generate calendar days
       const days = generateCalendarDays(activeProgram);
       
-      // Load completion data
-      const { data: progressData, error: progressError } = await supabase
-        .from('userprogress')
-        .select('programday_id, completed_at')
-        .eq('user_id', user.id)
-        .eq('done', true);
+      // Load completion data for Kontorikeha Reset program
+      let completedProgramDayIds: string[] = [];
+      let completedDays = 0;
+      
+      if (activeProgram.title === 'Kontorikeha Reset') {
+        const { data: progress, error: progressError } = await supabase
+          .from('userprogress')
+          .select('programday_id, completed_at, done')
+          .eq('user_id', user.id)
+          .eq('done', true);
 
-      if (progressError) {
-        console.error('Error loading progress:', progressError);
+        if (progressError) {
+          console.error('Error loading progress:', progressError);
+        } else {
+          completedProgramDayIds = progress?.map(p => p.programday_id) || [];
+          completedDays = progress?.length || 0;
+        }
+      }
+
+      // Create a mapping of programday_id to day number for Kontorikeha Reset
+      let programDayToDayNumber: Record<string, number> = {};
+      
+      if (activeProgram.title === 'Kontorikeha Reset' && completedProgramDayIds.length > 0) {
+        // Get all programday records to map IDs to day numbers
+        const { data: programDays } = await supabase
+          .from('programday')
+          .select('id, week, day');
+          
+        if (programDays) {
+          programDays.forEach(pd => {
+            const dayNumber = ((pd.week - 1) * 5) + pd.day;
+            programDayToDayNumber[pd.id] = dayNumber;
+          });
+        }
       }
 
       // Update days with completion status
-      const completedDays = progressData?.length || 0;
-      const updatedDays = days.map(day => ({
-        ...day,
-        isCompleted: progressData?.some(p => {
-          // This would need to be mapped based on your programday structure
-          // For now, we'll use a simple approach
-          return false; // Will be implemented based on your data structure
-        }) || false
-      }));
+      const updatedDays = days.map(day => {
+        let isCompleted = false;
+        
+        if (activeProgram.title === 'Kontorikeha Reset' && completedProgramDayIds.length > 0) {
+          // Check if this specific day is completed
+          isCompleted = completedProgramDayIds.some(programDayId => {
+            const mappedDayNumber = programDayToDayNumber[programDayId];
+            return mappedDayNumber === day.dayNumber;
+          });
+        }
+        
+        return {
+          ...day,
+          isCompleted
+        };
+      });
 
       setState(prev => ({
         ...prev,
