@@ -138,13 +138,21 @@ export default function Programm() {
           p_user_id: user.id,
           p_programday_id: activeDayData.id
         });
+        
+        console.log('Database call result:', { data, error, activeDayDataId: activeDayData.id });
+        
         if (error) {
           console.error('Error completing day:', error);
           toast({ title: 'Viga', description: 'Päeva märkimine ebaõnnestus', variant: 'destructive' });
           return false;
         }
+        
+        console.log('Database call successful, data:', data);
+        
         if (data?.success) {
+          console.log('Database function succeeded, calling markDayCompleted with dayNumber:', dayNumber);
           const success = await markDayCompleted(dayNumber);
+          console.log('markDayCompleted result:', success);
           if (success) {
             toast({ title: 'Suurepärane!', description: `Päev ${dayNumber} on märgitud lõpetatuks` });
             setActiveDayData(null);
@@ -159,6 +167,10 @@ export default function Programm() {
             }, 300);
             return true;
           }
+        } else {
+          console.log('Database function returned success: false, data:', data);
+          toast({ title: 'Viga', description: 'Päeva märkimine ebaõnnestus', variant: 'destructive' });
+          return false;
         }
       } else {
         // For future programs, this would use a different completion logic
