@@ -424,6 +424,46 @@ export default function Home() {
             </CardContent>
           </Card>
 
+          {/* Programs Card - Apple Liquid Glass */}
+          <Card className="bg-white/70 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl text-gray-900">
+                <Target className="h-6 w-6 text-gray-700" />
+                Programmid
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Vali oma treeningprogramm ja alusta teekonda
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Program Preview */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
+                  <div className="text-lg font-bold text-gray-900 mb-2">Kontorikeha Reset</div>
+                  <div className="text-sm text-gray-600 mb-3">20 päeva • Alustaja</div>
+                  <div className="text-xs text-green-600 font-medium">✓ Saadaval</div>
+                </div>
+                
+                <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
+                  <div className="text-lg font-bold text-gray-900 mb-2">35+ Naised Kodus</div>
+                  <div className="text-sm text-gray-600 mb-3">Varsti valmimas</div>
+                  <div className="text-xs text-orange-600 font-medium">⏳ Tulekul</div>
+                </div>
+              </div>
+
+              <Button asChild size="lg" className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
+                <Link 
+                  to="/programmid" 
+                  className="flex items-center justify-center gap-2"
+                  onClick={() => trackButtonClick('programmid', '/programmid', 'programs_card')}
+                >
+                  Vaata kõiki programme
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
         </div>
 
       </div>
