@@ -63,12 +63,13 @@ export function VideoPlayer({
   return (
     <div className={`relative rounded-lg overflow-hidden bg-black ${className}`}>
       <iframe
-        src={`${embedUrl}${embedUrl.includes("?") ? "&" : "?"}autoplay=0&mute=0&controls=1&rel=0`}
+        src={`${embedUrl}${embedUrl.includes("?") ? "&" : "?"}autoplay=0&mute=0&controls=1&rel=0&modestbranding=1&iv_load_policy=3&fs=1&cc_load_policy=0`}
         title={title}
         className="w-full h-full min-h-[240px] lg:min-h-[320px]"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
         loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
       />
       <div className="bg-black/70 text-xs text-muted-foreground px-3 py-2">
         Kui video ei kuva, 
