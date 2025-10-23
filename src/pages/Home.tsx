@@ -333,9 +333,15 @@ export default function Home() {
         {/* Welcome Header - Clean Apple-style */}
         <div className="text-center space-y-6 pt-8">
           <div className="space-y-4">
-            <h1 className="text-4xl md:text-5xl font-bold text-black">
-              Tere, {user?.full_name?.split(' ')[0] || 'Treeni & Taastu'}!
-            </h1>
+            {user?.full_name ? (
+              <h1 className="text-4xl md:text-5xl font-bold text-black">
+                Tere, {user.full_name.split(' ')[0]}!
+              </h1>
+            ) : (
+              <h1 className="text-4xl md:text-5xl font-bold text-black italic" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                TREENI & TAASTU
+              </h1>
+            )}
           </div>
         </div>
 
