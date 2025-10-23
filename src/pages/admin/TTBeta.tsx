@@ -520,3 +520,4 @@ CREATE TRIGGER trigger_update_exercise_usage
     </div>
   );
 }
+

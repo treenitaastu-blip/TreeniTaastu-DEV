@@ -242,3 +242,4 @@ export function formatWorkoutProgressionSummary(progression: WorkoutProgression)
   
   return summary || 'No changes recommended';
 }
+

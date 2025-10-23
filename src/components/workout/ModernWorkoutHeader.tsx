@@ -40,7 +40,7 @@ export default function ModernWorkoutHeader({
   const progressPercentage = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
 
   return (
-    <div className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-sm">
+    <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur-sm">
       <div className="px-4 py-2">
         {/* Ultra-minimal header - just title and progress */}
         <div className="flex items-center justify-between">

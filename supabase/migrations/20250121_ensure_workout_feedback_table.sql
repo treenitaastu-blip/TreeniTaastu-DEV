@@ -56,3 +56,4 @@ CREATE INDEX IF NOT EXISTS idx_workout_feedback_created_at ON public.workout_fee
 
 -- Grant permissions
 GRANT ALL ON public.workout_feedback TO authenticated;
+

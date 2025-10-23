@@ -39,3 +39,4 @@ CREATE TRIGGER trigger_update_video_routines_updated_at
     BEFORE UPDATE ON public.video_routines
     FOR EACH ROW
     EXECUTE FUNCTION update_video_routines_updated_at();
+

@@ -280,3 +280,4 @@ GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT ALL ON public.workout_feedback TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_exercise_progression_from_feedback TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_workout_progression_recommendations TO authenticated;
+

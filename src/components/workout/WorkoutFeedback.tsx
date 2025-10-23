@@ -93,7 +93,7 @@ export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: 
 
           {/* Soreness Level */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Kui valulik oled?</label>
+            <label className="text-sm font-medium">Kas lihased valutavad eelmisest trennist?</label>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { value: 'none', label: 'Pole valu' },
