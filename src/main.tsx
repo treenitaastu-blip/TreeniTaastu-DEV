@@ -54,6 +54,7 @@ import NotAuthorized from "@/pages/NotAuthorized";
 
 // Content pages (lazy loaded to reduce initial bundle)
 const Programm = lazy(() => import("@/pages/Programm"));
+const Programmid = lazy(() => import("@/pages/Programmid"));
 const Harjutused = lazy(() => import("@/pages/Harjutused"));
 const Kogukond = lazy(() => import("@/pages/Kogukond"));
 const Konto = lazy(() => import("@/pages/Konto"));
@@ -257,6 +258,11 @@ if (container) {
                 {/* ---------- STATIC SUBSCRIPTION ROUTES ---------- */}
                 <Route element={<RequireStatic />}>
                   <Route element={<App />}>
+                    <Route path="/programmid" element={
+                      <Suspense fallback={<div className="p-6">Laen…</div>}>
+                        <Programmid />
+                      </Suspense>
+                    } />
                     <Route path="/programm" element={
                       <Suspense fallback={<div className="p-6">Laen…</div>}>
                         <Programm />
