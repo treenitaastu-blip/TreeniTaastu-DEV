@@ -63,7 +63,27 @@ export const useProgramCalendarState = () => {
         };
       }
 
-      return data?.[0] || null;
+      // Filter out personal training programs - only return static programs
+      const staticProgram = data?.find(program => 
+        program.title === 'Kontorikeha Reset' || 
+        program.title === 'Static Program'
+      );
+      
+      if (staticProgram) {
+        return staticProgram;
+      }
+      
+      // If no static program found, return fallback
+      console.log('No static program found, using fallback for Kontorikeha Reset');
+      return {
+        id: 'kontorikeha-reset-fallback',
+        title: 'Kontorikeha Reset',
+        description: '20-päevane programm kontoritöötajatele, mis aitab parandada kehahoiakut ja vähendada põhja- ja kaelavalusid.',
+        duration_days: 20,
+        difficulty: 'alustaja',
+        status: 'available',
+        created_at: new Date().toISOString()
+      };
     } catch (error) {
       console.error('Error getting active program:', error);
       return null;
