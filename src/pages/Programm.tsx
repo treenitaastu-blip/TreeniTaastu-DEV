@@ -40,6 +40,8 @@ export default function Programm() {
   const loadProgramDayByNumber = useCallback(async (dayNum: number) => {
     if (!program) return;
 
+    console.log('Loading program day:', dayNum, 'for program:', program.title);
+
     // For "Kontorikeha Reset" program, use existing programday structure
     if (program.title === 'Kontorikeha Reset') {
       const week = Math.ceil(dayNum / 5);

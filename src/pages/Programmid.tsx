@@ -287,25 +287,59 @@ const Programmid: React.FC = () => {
                     {program.description}
                   </CardDescription>
 
-                  <div className="flex gap-2">
+                  <div className="space-y-2">
                     {status === 'available' && (
-                      <Button 
-                        onClick={() => handleStartProgram(program.id)}
-                        className="flex-1 bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900"
-                      >
-                        <Play className="h-4 w-4 mr-2" />
-                        Alusta
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900"
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Alusta programm
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>{program.title}</DialogTitle>
+                            <DialogDescription>
+                              Programmi üksikasjad
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-gray-500" />
+                                <span>{program.duration_days} päeva</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-gray-500" />
+                                <span>{getDifficultyText(program.difficulty)}</span>
+                              </div>
+                            </div>
+                            <p className="text-gray-600">{program.description}</p>
+                            <Button 
+                              onClick={() => {
+                                setSelectedProgram(null);
+                                handleStartProgram(program.id);
+                              }}
+                              className="w-full"
+                            >
+                              <Play className="h-4 w-4 mr-2" />
+                              Alusta programm
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     )}
 
                     {status === 'active' && (
                       <Button 
                         asChild
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
                       >
                         <Link to="/programm">
                           <Play className="h-4 w-4 mr-2" />
-                          Jätka
+                          Jätka programm
                         </Link>
                       </Button>
                     )}
@@ -313,15 +347,15 @@ const Programmid: React.FC = () => {
                     {status === 'paused' && (
                       <Button 
                         onClick={() => handleStartProgram(program.id)}
-                        className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white"
                       >
                         <Play className="h-4 w-4 mr-2" />
-                        Jätka
+                        Jätka programm
                       </Button>
                     )}
 
                     {status === 'completed' && (
-                      <div className="flex-1 flex items-center justify-center gap-2 text-yellow-600 font-medium">
+                      <div className="w-full flex items-center justify-center gap-2 text-yellow-600 font-medium py-2">
                         <Star className="h-4 w-4" />
                         Lõpetatud!
                       </div>
@@ -332,7 +366,7 @@ const Programmid: React.FC = () => {
                         <DialogTrigger asChild>
                           <Button 
                             variant="outline"
-                            className="flex-1 border-gray-300 hover:bg-gray-50"
+                            className="w-full border-gray-300 hover:bg-gray-50"
                           >
                             <Lock className="h-4 w-4 mr-2" />
                             Tulekul
@@ -346,6 +380,17 @@ const Programmid: React.FC = () => {
                             </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-gray-500" />
+                                <span>{program.duration_days} päeva</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-gray-500" />
+                                <span>{getDifficultyText(program.difficulty)}</span>
+                              </div>
+                            </div>
+                            <p className="text-gray-600">{program.description}</p>
                             <p className="text-sm text-gray-600">
                               Saad alustada seda programmi pärast praeguse programmi lõpetamist, 
                               tasuta tellijatele.
@@ -362,48 +407,6 @@ const Programmid: React.FC = () => {
                         </DialogContent>
                       </Dialog>
                     )}
-
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="px-3"
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>{program.title}</DialogTitle>
-                          <DialogDescription>
-                            Programmi üksikasjad
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-4 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-500" />
-                              <span>{program.duration_days} päeva</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-gray-500" />
-                              <span>{getDifficultyText(program.difficulty)}</span>
-                            </div>
-                          </div>
-                          <p className="text-gray-600">{program.description}</p>
-                          {isAvailable && (
-                            <Button 
-                              onClick={() => handleStartProgram(program.id)}
-                              className="w-full"
-                            >
-                              <Play className="h-4 w-4 mr-2" />
-                              Alusta programm
-                            </Button>
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
                   </div>
                 </CardContent>
               </Card>
