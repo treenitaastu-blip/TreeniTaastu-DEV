@@ -304,8 +304,8 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
-      <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
         
         {/* Smart Trial Popup System */}
         {popupManager.shouldShow && (
@@ -355,76 +355,67 @@ export default function Home() {
           isFirstShow={popupManager.isFirstShow}
         />
 
-        {/* Welcome Header - Clean and Warm */}
+        {/* Welcome Header - Clean Apple-style */}
         <div className="text-center space-y-6 pt-8">
           <div className="space-y-4">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent animate-fade-in">
+            <h1 className="text-4xl md:text-5xl font-bold text-black">
               Tere tulemast tagasi!
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto animate-fade-in">
-              Sinu isiklik tervise- ja treeningukaaslane
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Sinu isiklik treeningukaaslane
             </p>
           </div>
           
-          <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 ${motivationalMsg.color} animate-scale-in`}>
+          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-lg bg-blue-50 border border-blue-200">
             <div className="text-center">
-              <p className="font-semibold">{motivationalMsg.title}</p>
-              <p className="text-sm opacity-80">{motivationalMsg.message}</p>
+              <p className="font-semibold text-blue-900">{motivationalMsg.title}</p>
+              <p className="text-sm text-blue-700">{motivationalMsg.message}</p>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in">
-          <Button asChild className="h-20 flex-col space-y-2 hover-scale">
+        {/* Quick Actions - Clean Apple-style */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Button asChild className="h-16 flex-col space-y-2 bg-blue-600 hover:bg-blue-700 text-white border-0">
             <Link 
-              to="/programm"
-              onClick={() => trackButtonClick('reset', '/programm', 'home_quick_actions')}
+              to="/programs"
+              onClick={() => trackButtonClick('programs', '/programs', 'home_quick_actions')}
             >
-              <Dumbbell className="h-6 w-6" />
-              <span className="text-sm">Reset</span>
+              <Dumbbell className="h-5 w-5" />
+              <span className="text-sm font-medium">Treening</span>
             </Link>
           </Button>
-          <Button asChild variant="outline" className="h-20 flex-col space-y-2 hover-scale">
+          <Button asChild variant="outline" className="h-16 flex-col space-y-2 border-gray-300 hover:bg-gray-50">
             <Link 
               to="/teenused"
               onClick={() => trackButtonClick('teenused', '/teenused', 'home_quick_actions')}
             >
-              <Target className="h-6 w-6" />
-              <span className="text-sm">Teenused</span>
+              <Target className="h-5 w-5" />
+              <span className="text-sm font-medium">Teenused</span>
             </Link>
           </Button>
-          <Button asChild variant="outline" className="h-20 flex-col space-y-2 hover-scale">
+          <Button asChild variant="outline" className="h-16 flex-col space-y-2 border-gray-300 hover:bg-gray-50 md:col-span-1 col-span-2">
             <Link 
               to="/tervisetood"
               onClick={() => trackButtonClick('tervisetoed', '/tervisetoed', 'home_quick_actions')}
             >
-              <BookOpen className="h-6 w-6" />
-              <span className="text-sm">Tervisetõed</span>
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="h-20 flex-col space-y-2 hover-scale">
-            <Link 
-              to="/programs/stats"
-              onClick={() => trackButtonClick('statistika', '/programs/stats', 'home_quick_actions')}
-            >
-              <BarChart3 className="h-6 w-6" />
-              <span className="text-sm">Statistika</span>
+              <BookOpen className="h-5 w-5" />
+              <span className="text-sm font-medium">Tervisetõed</span>
             </Link>
           </Button>
         </div>
 
-        {/* Main Stats Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Training Focus - Clean Apple-style */}
+        <div className="space-y-6">
           
-          {/* Personal Training Progress - Full Width on Mobile */}
-          <Card className="md:col-span-2 lg:col-span-2 rounded-2xl shadow-soft border-0 bg-gradient-to-br from-primary/10 to-primary/5 animate-scale-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <TrendingUp className="h-6 w-6 text-primary" />
-                Personaaltreeningu Progress
+          {/* Personal Training Card - Clean and Focused */}
+          <Card className="border border-gray-200 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl text-black">
+                <Dumbbell className="h-6 w-6 text-blue-600" />
+                Personaaltreening
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-600">
                 {stats.lastWorkout 
                   ? `Viimane treening: ${new Date(stats.lastWorkout).toLocaleDateString("et-EE")}`
                   : "Valmis järgmiseks treeningukorraks?"
@@ -432,109 +423,37 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Statistics Cards */}
+              {/* Clean Stats */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl bg-card/50 border p-4 text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Dumbbell className="h-4 w-4 text-accent" />
-                    <span className="text-sm font-medium">Kogu maht</span>
-                  </div>
-                  <div className="text-2xl font-bold text-accent">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
                     {Math.round(stats.totalVolume)} kg
                   </div>
+                  <div className="text-sm text-gray-600">Kogu maht</div>
                 </div>
                 
-                <div className="rounded-xl bg-card/50 border p-4 text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Activity className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium">Keskmine pingutus</span>
-                  </div>
-                  <div className="text-2xl font-bold text-green-500">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
                     {stats.avgRPE > 0 ? stats.avgRPE.toFixed(1) : "0"}/10
                   </div>
+                  <div className="text-sm text-gray-600">Keskmine pingutus</div>
                 </div>
               </div>
 
-              <Button asChild size="lg" className="w-full group">
+              <Button asChild size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 <Link 
                   to="/programs" 
                   className="flex items-center justify-center gap-2"
                   onClick={() => trackButtonClick('continue_pt', '/programs', 'progress_card')}
                 >
-                  Jätka personaaltreeningut
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  Jätka treeningut
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
             </CardContent>
           </Card>
 
-
         </div>
-
-
-        {/* Kontorikeha Progress */}
-        <Card className="rounded-2xl shadow-soft border-0 animate-fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Kontorikeha progress
-            </CardTitle>
-            <CardDescription>
-              Sinu kontorikeha programmi edusammud
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              <div className="space-y-2">
-                <div className="rounded-full bg-orange-500/10 w-16 h-16 flex items-center justify-center mx-auto">
-                  <Flame className="h-8 w-8 text-orange-500" />
-                </div>
-                <div className="text-2xl font-bold">{streaks?.best_streak ?? 0}</div>
-                <div className="text-sm text-muted-foreground">Parim streak</div>
-              </div>
-              <div className="space-y-2">
-                <div className="rounded-full bg-blue-500/10 w-16 h-16 flex items-center justify-center mx-auto">
-                  <Target className="h-8 w-8 text-blue-500" />
-                </div>
-                <div className="text-2xl font-bold">{stats.sets}</div>
-                <div className="text-sm text-muted-foreground">Seeriad kokku</div>
-              </div>
-              <div className="space-y-2">
-                <div className="rounded-full bg-green-500/10 w-16 h-16 flex items-center justify-center mx-auto">
-                  <TrendingUp className="h-8 w-8 text-green-500" />
-                </div>
-                {stats.reps > 0 && stats.seconds > 0 ? (
-                  <>
-                    <div className="text-xl font-bold">{stats.reps} / {Math.floor(stats.seconds / 60)}m</div>
-                    <div className="text-sm text-muted-foreground">Kordused / Minutid</div>
-                  </>
-                ) : stats.reps > 0 ? (
-                  <>
-                    <div className="text-2xl font-bold">{stats.reps}</div>
-                    <div className="text-sm text-muted-foreground">Kordused kokku</div>
-                  </>
-                ) : stats.seconds > 0 ? (
-                  <>
-                    <div className="text-2xl font-bold">{Math.floor(stats.seconds / 60)}</div>
-                    <div className="text-sm text-muted-foreground">Minutid kokku</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">0</div>
-                    <div className="text-sm text-muted-foreground">Ei ole veel andmeid</div>
-                  </>
-                )}
-              </div>
-              <div className="space-y-2">
-                <div className="rounded-full bg-purple-500/10 w-16 h-16 flex items-center justify-center mx-auto">
-                  <Calendar className="h-8 w-8 text-purple-500" />
-                </div>
-                <div className="text-2xl font-bold">{stats.completedDays}</div>
-                <div className="text-sm text-muted-foreground">Päevi tehtud</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
       </div>
     </div>
