@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, Clock } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { supportMessageSchema, validateAndSanitize } from '@/lib/validations';
 
 export function SupportChatWidget() {
   const { user } = useAuth();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(() => {
     const saved = localStorage.getItem('supportChatOpen');
     return saved === 'true';
@@ -104,7 +106,22 @@ export function SupportChatWidget() {
     <>
       {/* Chat Toggle Button */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-[100]">
+        <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-center gap-2">
+          {/* Timer icon for programm page */}
+          {location.pathname === '/programm' && (
+            <Button
+              onClick={() => {
+                // This would open a timer modal or component
+                console.log('Timer clicked');
+              }}
+              className="h-10 w-10 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
+              size="icon"
+              title="Taimer"
+            >
+              <Clock className="h-5 w-5" />
+            </Button>
+          )}
+          
           <Button
             onClick={() => {
               setIsOpen(true);

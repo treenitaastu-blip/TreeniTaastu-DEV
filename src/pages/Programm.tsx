@@ -141,7 +141,15 @@ export default function Programm() {
           if (success) {
             toast({ title: 'Suurepärane!', description: `Päev ${dayNumber} on märgitud lõpetatuks` });
             setActiveDayData(null);
+            // Navigate back to main program page and scroll to the completed day
             navigate('/programm');
+            // Scroll to the completed day after navigation
+            setTimeout(() => {
+              const dayElement = document.getElementById(`day-${dayNumber}`);
+              if (dayElement) {
+                dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 300);
             return true;
           }
         }
@@ -306,16 +314,7 @@ export default function Programm() {
                   onClick={async () => {
                     const dn = Number(routeDayNumber);
                     const ok = await handleDayCompletion(dn);
-                    if (ok) {
-                      // Scroll back up to show the completed day
-                      setTimeout(() => {
-                        const dayElement = document.getElementById(`day-${dn}`);
-                        if (dayElement) {
-                          dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                      }, 500);
-                      navigate(`/programm#day-${dn}`);
-                    }
+                    // The scroll logic is now handled in handleDayCompletion
                   }}
                   className="h-12 px-8 bg-green-600 hover:bg-green-700 text-white text-lg font-semibold"
                 >
