@@ -58,7 +58,7 @@ export default function CalendarGrid({
       </Card>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 justify-items-center">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1 sm:gap-2">
         {days.map((day) => (
           <DayTile
             key={day.dayNumber}

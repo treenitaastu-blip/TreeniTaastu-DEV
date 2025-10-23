@@ -103,15 +103,15 @@ export default function DayTile({ day, onClick, className = "", isStarted }: Day
       onClick={isClickable ? onClick : undefined}
       id={`day-${day.dayNumber}`}
     >
-      <CardContent className="p-2 sm:p-3 text-center min-h-[70px] sm:min-h-[80px] flex flex-col justify-center">
+      <CardContent className="p-3 sm:p-4 text-center min-h-[90px] sm:min-h-[100px] flex flex-col justify-center items-center">
         {/* Day Number and Icon */}
         <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
           {getIcon()}
-          <span className="font-bold text-base sm:text-lg">{day.dayNumber}</span>
+          <span className="font-bold text-lg sm:text-xl">{day.dayNumber}</span>
         </div>
         
         {/* Status Text */}
-        <div className={`text-xs font-medium ${getStatusColor()}`}>
+        <div className={`text-sm font-medium ${getStatusColor()}`}>
           {getStatusText()}
         </div>
         
