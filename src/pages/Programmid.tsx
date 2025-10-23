@@ -13,13 +13,10 @@ import {
   Lock,
   ArrowRight,
   Calendar,
-  Users,
-  Dumbbell,
-  BookOpen
+  Users
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import { usePersonalTrainingPrograms } from '@/hooks/usePersonalTrainingPrograms';
 import { toast } from 'sonner';
 
 interface Program {
@@ -42,22 +39,14 @@ interface UserProgram {
 
 const Programmid: React.FC = () => {
   const { user } = useAuth();
-  const [staticPrograms, setStaticPrograms] = useState<Program[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [userPrograms, setUserPrograms] = useState<UserProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-  
-  // Personal training programs hook
-  const { 
-    programs: personalTrainingPrograms, 
-    loading: personalTrainingLoading, 
-    loadPersonalTrainingPrograms 
-  } = usePersonalTrainingPrograms();
 
   useEffect(() => {
     loadData();
-    loadPersonalTrainingPrograms();
-  }, [loadPersonalTrainingPrograms]);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -101,7 +90,7 @@ const Programmid: React.FC = () => {
             created_at: new Date().toISOString()
           }
         ];
-        setStaticPrograms(fallbackPrograms);
+        setPrograms(fallbackPrograms);
         setUserPrograms([]);
         return;
       }
@@ -119,7 +108,7 @@ const Programmid: React.FC = () => {
         setUserPrograms(userProgramsData || []);
       }
 
-      setStaticPrograms(programsData || []);
+      setPrograms(programsData || []);
     } catch (error) {
       console.error('Error loading programs:', error);
       toast.error('Programmide laadimine ebaõnnestus');
@@ -255,17 +244,9 @@ const Programmid: React.FC = () => {
           </p>
         </div>
 
-        {/* Static Programs Section */}
-        <div className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <BookOpen className="h-6 w-6 text-blue-600" />
-            <h2 className="text-2xl font-bold text-gray-900">Staatilised programmid</h2>
-          </div>
-          <p className="text-gray-600 mb-6">
-            Eelkoostatud treeningprogrammid, mis sobivad kõigile. Alusta kohe!
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {staticPrograms.map((program) => {
+        {/* Programs Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {programs.map((program) => {
             const status = getProgramStatus(program);
             const isAvailable = status === 'available' || status === 'active' || status === 'paused';
             
@@ -432,67 +413,6 @@ const Programmid: React.FC = () => {
             );
           })}
         </div>
-
-        {/* Personal Training Programs Section - Temporarily disabled */}
-        {false && personalTrainingPrograms.length > 0 && (
-          <div className="mb-12">
-            <div className="flex items-center gap-3 mb-6">
-              <Dumbbell className="h-6 w-6 text-purple-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Personaaltreening</h2>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Kohandatud treeningprogrammid, mis on loodud spetsiaalselt sinu vajaduste ja eesmärkide jaoks.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {personalTrainingPrograms.map((program) => (
-                <Card 
-                  key={program.id} 
-                  className="bg-white/70 backdrop-blur-sm border border-purple-200/50 shadow-lg transition-all duration-200 hover:shadow-xl"
-                >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-xl text-gray-900 mb-2">
-                          {program.title}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 mb-3">
-                          <Badge className="bg-purple-100 text-purple-800">
-                            Kohandatud
-                          </Badge>
-                          <Badge className="bg-blue-100 text-blue-800">
-                            {program.duration_days} päeva
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Clock className="h-4 w-4" />
-                          <span>Personaaltreening</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Play className="h-5 w-5 text-green-500" />
-                        <span className="text-sm font-medium text-green-600">Aktiivne</span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-gray-600 text-sm">
-                      {program.description}
-                    </p>
-                    <Button 
-                      asChild
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      <Link to={`/programs/${program.id}`}>
-                        <Play className="h-4 w-4 mr-2" />
-                        Jätka treeningut
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Coming Soon Notice */}
         <div className="mt-12 text-center">

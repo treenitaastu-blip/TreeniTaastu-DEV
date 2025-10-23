@@ -40,22 +40,34 @@ export const useProgramCalendarState = () => {
     hasActiveProgram: false
   });
 
-  // Get user's static program (separate from personal training)
+  // Get user's active program
   const getActiveProgram = useCallback(async () => {
     if (!user) return null;
 
-    // For static programs, we always return Kontorikeha Reset
-    // Personal training programs are handled separately in /programs
-    console.log('Loading static program: Kontorikeha Reset');
-    return {
-      id: 'kontorikeha-reset-static',
-      title: 'Kontorikeha Reset',
-      description: '20-päevane programm kontoritöötajatele, mis aitab parandada kehahoiakut ja vähendada põhja- ja kaelavalusid.',
-      duration_days: 20,
-      difficulty: 'alustaja',
-      status: 'available',
-      created_at: new Date().toISOString()
-    };
+    try {
+      const { data, error } = await supabase.rpc('get_user_active_program', {
+        p_user_id: user.id
+      });
+
+      if (error) {
+        console.log('Database function not available, using fallback for Kontorikeha Reset');
+        // Fallback: return Kontorikeha Reset program
+        return {
+          id: 'kontorikeha-reset-fallback', // Use string ID for fallback, not UUID
+          title: 'Kontorikeha Reset',
+          description: '20-päevane programm kontoritöötajatele, mis aitab parandada kehahoiakut ja vähendada põhja- ja kaelavalusid.',
+          duration_days: 20,
+          difficulty: 'alustaja',
+          status: 'available',
+          created_at: new Date().toISOString()
+        };
+      }
+
+      return data?.[0] || null;
+    } catch (error) {
+      console.error('Error getting active program:', error);
+      return null;
+    }
   }, [user]);
 
   // Generate calendar days based on program
