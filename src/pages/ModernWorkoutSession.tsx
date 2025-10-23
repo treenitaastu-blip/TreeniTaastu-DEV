@@ -597,22 +597,22 @@ export default function ModernWorkoutSession() {
     const endTime = session.ended_at ? new Date(session.ended_at) : new Date();
     const duration = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)); // minutes
     
-    const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets || 0), 0);
-    const totalReps = exercises.reduce((sum, ex) => {
-      const reps = parseRepsToNumber(ex.reps) || 0;
-      return sum + (reps * (ex.sets || 0));
+    // Calculate ACTUAL completed data from setLogs
+    const actualSetsCompleted = Object.keys(setLogs).length;
+    const actualRepsCompleted = Object.values(setLogs).reduce((sum, log) => {
+      return sum + (log.reps_done || 0);
     }, 0);
-    const totalWeight = exercises.reduce((sum, ex) => {
-      return sum + ((ex.weight_kg || 0) * (ex.sets || 0) * (parseRepsToNumber(ex.reps) || 0));
+    const actualWeightLifted = Object.values(setLogs).reduce((sum, log) => {
+      return sum + ((log.weight_kg_done || 0) * (log.reps_done || 0));
     }, 0);
     
     return {
-      setsCompleted: totalSets,
-      totalReps,
-      totalWeight: Math.round(totalWeight),
+      setsCompleted: actualSetsCompleted,
+      totalReps: actualRepsCompleted,
+      totalWeight: Math.round(actualWeightLifted),
       duration
     };
-  }, [session, exercises]);
+  }, [session, setLogs]);
 
   // Handle workout-level feedback
   const handleWorkoutFeedback = useCallback(async (feedback: WorkoutFeedbackType) => {
