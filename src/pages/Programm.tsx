@@ -86,10 +86,14 @@ export default function Programm() {
   // Auto-scroll to first exercise when day loads
   useEffect(() => {
     if (activeDayData && firstExerciseRef.current) {
-      // small delay to ensure layout is ready
+      // longer delay to ensure layout is ready and content is rendered
       setTimeout(() => {
-        firstExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 50);
+        firstExerciseRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }, 200);
     }
   }, [activeDayData]);
 
@@ -255,23 +259,6 @@ export default function Programm() {
                 <p className="text-sm text-muted-foreground">{activeDayData.notes}</p>
               )}
             </div>
-            {/* Mark as done button */}
-            {routeDayNumber && (
-              <div className="flex justify-end">
-                <Button
-                  onClick={async () => {
-                    const dn = Number(routeDayNumber);
-                    const ok = await handleDayCompletion(dn);
-                    if (ok) {
-                      navigate(`/programm#day-${dn}`);
-                    }
-                  }}
-                  className="h-9"
-                >
-                  Märgi tehtuks
-                </Button>
-              </div>
-            )}
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => {
                 const n = i + 1;
@@ -311,6 +298,31 @@ export default function Programm() {
                 );
               })}
             </div>
+            
+            {/* Mark as done button - moved to bottom */}
+            {routeDayNumber && (
+              <div className="flex justify-center pt-6 border-t">
+                <Button
+                  onClick={async () => {
+                    const dn = Number(routeDayNumber);
+                    const ok = await handleDayCompletion(dn);
+                    if (ok) {
+                      // Scroll back up to show the completed day
+                      setTimeout(() => {
+                        const dayElement = document.getElementById(`day-${dn}`);
+                        if (dayElement) {
+                          dayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                      }, 500);
+                      navigate(`/programm#day-${dn}`);
+                    }
+                  }}
+                  className="h-12 px-8 bg-green-600 hover:bg-green-700 text-white text-lg font-semibold"
+                >
+                  Märgi tehtuks
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
