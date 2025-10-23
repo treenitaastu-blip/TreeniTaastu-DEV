@@ -100,31 +100,6 @@ export default function Home() {
   }, [user, trackPageView, progressPct]);
 
 
-  const getMotivationalMessage = () => {
-    const currentStreak = streaks?.current_streak ?? stats.streak;
-    
-    if (currentStreak >= 7) {
-      return {
-        title: "Võrratu sooritus!",
-        message: `${currentStreak} päeva järjest! Sa oled tõeline kangelane!`,
-        color: "text-orange-600"
-      };
-    } else if (currentStreak >= 3) {
-      return {
-        title: "Suurepärane tempo!",
-        message: `${currentStreak} päeva järjest - jätka samas vaimus!`,
-        color: "text-green-600"
-      };
-    } else {
-      return {
-        title: "Täna on hea päev!",
-        message: "Iga treening viib sind eesmärgile lähemale",
-        color: "text-primary"
-      };
-    }
-  };
-
-  const motivationalMsg = getMotivationalMessage();
 
   // PT stats loading - exact same logic as PersonalTrainingStats page
   useEffect(() => {
@@ -359,18 +334,8 @@ export default function Home() {
         <div className="text-center space-y-6 pt-8">
           <div className="space-y-4">
             <h1 className="text-4xl md:text-5xl font-bold text-black">
-              Tere tulemast tagasi!
+              Tere, {user?.full_name?.split(' ')[0] || 'Treeni & Taastu'}!
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Sinu isiklik treeningukaaslane
-            </p>
-          </div>
-          
-          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-lg bg-blue-50 border border-blue-200">
-            <div className="text-center">
-              <p className="font-semibold text-blue-900">{motivationalMsg.title}</p>
-              <p className="text-sm text-blue-700">{motivationalMsg.message}</p>
-            </div>
           </div>
         </div>
 
