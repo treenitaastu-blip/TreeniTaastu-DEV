@@ -157,6 +157,7 @@ export const useProgramCalendarState = () => {
 
       // Generate calendar days
       const days = generateCalendarDays(activeProgram);
+      const today = getTallinnDate();
       
       // Load completion data for Kontorikeha Reset program
       let completedProgramDayIds: string[] = [];
