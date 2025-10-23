@@ -176,8 +176,8 @@ export function SupportChatWidget() {
       {/* Chat Toggle Button */}
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-center gap-2">
-          {/* Timer icon for programm page */}
-          {location.pathname === '/programm' && (
+          {/* Timer icon for programm page and day pages */}
+          {(location.pathname === '/programm' || location.pathname.startsWith('/programm/day/')) && (
             <Button
               onClick={() => setTimerOpen(true)}
               className="h-10 w-10 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
