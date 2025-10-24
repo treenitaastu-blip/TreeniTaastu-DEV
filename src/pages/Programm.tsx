@@ -375,7 +375,7 @@ export default function Programm() {
                 <div className="text-center">
                   <h3 className="text-lg font-semibold">Päev {selectedDay}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Avaneb täna kell 15:00 (Eesti aeg)
+                    Avaneb täna kell 07:00 (Eesti aeg)
                   </p>
                 </div>
                 
@@ -415,7 +415,7 @@ export default function Programm() {
                 <div>
                   <p className="font-medium">Uued päevad avanevad</p>
                   <p className="text-muted-foreground">
-                    Igal nädalapäeval kell 15:00 avaneb uus treeningpäev
+                    Igal nädalapäeval kell 07:00 avaneb uus treeningpäev
                   </p>
                 </div>
               </div>

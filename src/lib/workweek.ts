@@ -118,17 +118,17 @@ export function getCurrentWeekStart(): Date {
 }
 
 /**
- * Check if it's after 15:00 Estonia time (unlock time for new days)
+ * Check if it's after 07:00 Estonia time (unlock time for new days)
  */
 export function isAfterUnlockTime(): boolean {
   const tallinnDate = getTallinnDate();
   const currentHour = tallinnDate.getHours();
-  return currentHour >= 15; // 15:00 Estonia time
+  return currentHour >= 7; // 07:00 Estonia time
 }
 
 /**
- * Check if a specific day should be unlocked based on 15:00 Estonia time rule
- * New weekdays unlock after 15:00 Estonia time
+ * Check if a specific day should be unlocked based on 07:00 Estonia time rule
+ * New weekdays unlock after 07:00 Estonia time
  */
 export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompleted?: boolean): boolean {
   const tallinnDate = getTallinnDate();
@@ -149,7 +149,7 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
     return true;
   }
   
-  // For new days: check if enough weekdays have passed AND it's after 15:00
+  // For new days: check if enough weekdays have passed AND it's after 07:00
   const enoughWeekdaysPassed = dayNumber <= weekdaysSinceStart + 1; // +1 because day 1 unlocks on first weekday
   const isAfterUnlock = isAfterUnlockTime();
   
@@ -157,12 +157,12 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
 }
 
 /**
- * Get unlock time for today (15:00 Estonia time)
+ * Get unlock time for today (07:00 Estonia time)
  */
 export function getTodayUnlockTime(): Date {
   const tallinnDate = getTallinnDate();
   const unlockTime = new Date(tallinnDate);
-  unlockTime.setHours(15, 0, 0, 0);
+  unlockTime.setHours(7, 0, 0, 0);
   return unlockTime;
 }
 

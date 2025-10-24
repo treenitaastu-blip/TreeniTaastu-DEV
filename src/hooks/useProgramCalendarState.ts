@@ -117,7 +117,7 @@ export const useProgramCalendarState = () => {
       
       const isWeekendDay = isWeekend(currentDate);
       const isCompleted = false; // Will be loaded from database
-      const isUnlocked = shouldUnlockDay(dayNumber, today, isCompleted);
+      const isUnlocked = shouldUnlockDay(dayNumber, undefined, isCompleted);
       
       days.push({
         dayNumber,
@@ -208,7 +208,8 @@ export const useProgramCalendarState = () => {
         }
         
         // Recalculate unlock status with completion info
-        const isUnlocked = shouldUnlockDay(day.dayNumber, today, isCompleted);
+        // Use undefined for userStartDate to let shouldUnlockDay use getCurrentWeekStart()
+        const isUnlocked = shouldUnlockDay(day.dayNumber, undefined, isCompleted);
         
         return {
           ...day,
