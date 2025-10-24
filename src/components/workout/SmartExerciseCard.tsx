@@ -94,19 +94,20 @@ export default function SmartExerciseCard({
   const [currentSet, setCurrentSet] = useState((completedSets || 0) + 1);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [manuallyExpanded, setManuallyExpanded] = useState(false);
 
   // Auto-collapse when all sets are completed
   const allSetsCompleted = completedSets >= exercise.sets;
   
   // Auto-collapse when all sets are done (only if not manually expanded)
   React.useEffect(() => {
-    if (allSetsCompleted && !isCollapsed && !showFeedback) {
+    if (allSetsCompleted && !isCollapsed && !showFeedback && !manuallyExpanded) {
       const timer = setTimeout(() => {
         setIsCollapsed(true);
       }, 2000); // Collapse after 2 seconds to allow user to see completion
       return () => clearTimeout(timer);
     }
-  }, [allSetsCompleted, isCollapsed, showFeedback]);
+  }, [allSetsCompleted, isCollapsed, showFeedback, manuallyExpanded]);
 
   // Smart auto-fill based on progression suggestion
   const handleSetInputChangeWithSuggestion = useCallback((setNumber: number, field: string, value: number) => {
@@ -324,7 +325,10 @@ export default function SmartExerciseCard({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(false)}
+            onClick={() => {
+              setIsCollapsed(false);
+              setManuallyExpanded(true);
+            }}
             className="text-green-600 hover:text-green-700 hover:bg-green-100 transition-colors"
           >
             Näita
@@ -391,7 +395,16 @@ export default function SmartExerciseCard({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsCollapsed(!isCollapsed)}
+                onClick={() => {
+                  setIsCollapsed(!isCollapsed);
+                  if (!isCollapsed) {
+                    // If collapsing, reset manual expansion
+                    setManuallyExpanded(false);
+                  } else {
+                    // If expanding, mark as manually expanded
+                    setManuallyExpanded(true);
+                  }
+                }}
                 className="h-7 w-7 p-0"
                 title={isCollapsed ? "Näita seeriad" : "Peida seeriad"}
               >
@@ -607,6 +620,23 @@ export default function SmartExerciseCard({
             );
           })}
         </div>
+        
+        {/* Peida button - only show when all sets are completed and expanded */}
+        {allSetsCompleted && (
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsCollapsed(true);
+                setManuallyExpanded(false);
+              }}
+              className="text-red-600 hover:text-red-700 hover:bg-red-100 transition-colors"
+            >
+              Peida
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Collapsible Notes - Hidden by default */}
