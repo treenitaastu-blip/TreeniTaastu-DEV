@@ -9,6 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { 
   Plus, 
   Trash2, 
@@ -322,17 +329,16 @@ export default function ProgramContentEditor({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Programmi sisu redigeerimine</h3>
-        <Button
-          variant="outline"
-          onClick={() => onOpenChange(false)}
-        >
-          <X className="h-4 w-4 mr-2" />
-          Sulge
-        </Button>
-      </div>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Programmi sisu redigeerimine</DialogTitle>
+          <DialogDescription>
+            Redigeeri programmi harjutusi ja seadistusi
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-6">
 
       {days.map((day) => (
         <Card key={day.id} className="border-l-4 border-l-primary">
@@ -576,6 +582,8 @@ export default function ProgramContentEditor({
           <p>Programmil pole veel päevi.</p>
         </div>
       )}
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

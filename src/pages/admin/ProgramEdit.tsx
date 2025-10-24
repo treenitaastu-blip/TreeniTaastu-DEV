@@ -465,22 +465,16 @@ export default function ProgramEdit() {
       </AdminCard>
 
       {/* Program Content Editor Modal */}
-      {showContentEditor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-background rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <ProgramContentEditor
-              programId={id!}
-              isOpen={showContentEditor}
-              onOpenChange={setShowContentEditor}
-              onSuccess={() => {
-                setShowContentEditor(false);
-                // Optionally reload program data
-                loadProgram();
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <ProgramContentEditor
+        programId={id!}
+        isOpen={showContentEditor}
+        onOpenChange={setShowContentEditor}
+        onSuccess={() => {
+          setShowContentEditor(false);
+          // Optionally reload program data
+          loadProgram();
+        }}
+      />
     </AdminLayout>
   );
 }
