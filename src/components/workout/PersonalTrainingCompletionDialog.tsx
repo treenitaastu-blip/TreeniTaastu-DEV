@@ -27,8 +27,11 @@ export default function PersonalTrainingCompletionDialog({
   };
 
   const handleAddNote = () => {
-    navigate("/programs/journal");
     onClose();
+    // Add a small delay to ensure dialog closes before navigation
+    setTimeout(() => {
+      navigate("/programs/journal");
+    }, 100);
   };
 
   const handleGoHome = () => {
