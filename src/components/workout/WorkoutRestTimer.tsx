@@ -116,15 +116,38 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
             </span>
           </div>
           
-          {/* Maximize button */}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setIsMinimized(false)}
-            className="h-8 w-8 p-0 bg-card/80 backdrop-blur-sm border rounded-full shadow-lg"
-          >
-            <Maximize2 className="h-3 w-3" />
-          </Button>
+          {/* Control buttons */}
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={isRunning ? handlePause : handleStart}
+              className="h-6 w-6 p-0 bg-card/80 backdrop-blur-sm border rounded-full shadow-lg"
+              title={isRunning ? "Peata" : "Alusta"}
+            >
+              {isRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+            </Button>
+            
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleReset}
+              className="h-6 w-6 p-0 bg-card/80 backdrop-blur-sm border rounded-full shadow-lg"
+              title="Lähtesta"
+            >
+              <RotateCcw className="h-3 w-3" />
+            </Button>
+            
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsMinimized(false)}
+              className="h-6 w-6 p-0 bg-card/80 backdrop-blur-sm border rounded-full shadow-lg"
+              title="Suurenda"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -153,8 +176,9 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
             variant="ghost"
             onClick={onClose}
             className="h-6 w-6 p-0"
+            title="Sulge"
           >
-            ×
+            <X className="h-3 w-3" />
           </Button>
         </div>
       </div>
