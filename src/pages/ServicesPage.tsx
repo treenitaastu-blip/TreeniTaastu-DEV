@@ -18,6 +18,7 @@ export default function ServicesPage() {
     message: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
   const services = [
     {
@@ -104,6 +105,11 @@ export default function ServicesPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleServiceCardClick = (serviceId: string, serviceName: string) => {
+    setSelectedServiceId(serviceId);
+    setFormData(prev => ({ ...prev, service: serviceName }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-6xl mx-auto py-8">
@@ -128,7 +134,15 @@ export default function ServicesPage() {
               </Button>
             </div>
             {services.map((service) => (
-              <Card key={service.id} className="border-2 hover:border-primary/50 transition-colors">
+              <Card 
+                key={service.id} 
+                className={`border-2 hover:border-primary/50 transition-colors cursor-pointer ${
+                  selectedServiceId === service.id 
+                    ? 'border-primary bg-primary/5 shadow-md' 
+                    : 'hover:shadow-md'
+                }`}
+                onClick={() => handleServiceCardClick(service.id, service.name)}
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
@@ -200,7 +214,17 @@ export default function ServicesPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="service">Vali teenus *</Label>
-                  <Select value={formData.service} onValueChange={(value) => handleInputChange("service", value)}>
+                  <Select 
+                    value={formData.service} 
+                    onValueChange={(value) => {
+                      handleInputChange("service", value);
+                      // Find the service ID for the selected service name
+                      const selectedService = services.find(s => s.name === value);
+                      if (selectedService) {
+                        setSelectedServiceId(selectedService.id);
+                      }
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Vali teenus" />
                     </SelectTrigger>
