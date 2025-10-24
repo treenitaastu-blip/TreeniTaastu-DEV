@@ -19,7 +19,7 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
   onClose,
   onStartRest 
 }) => {
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true); // Start minimized by default
   const [timeLeft, setTimeLeft] = useState<number>(initialSeconds);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -33,8 +33,18 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
       if (onStartRest) {
         onStartRest(initialSeconds);
       }
+    } else {
+      setIsRunning(false); // Stop when closed
     }
   }, [isOpen, initialSeconds, onStartRest]);
+
+  // Reset timer when initialSeconds changes (new set completed)
+  useEffect(() => {
+    if (isOpen && initialSeconds) {
+      setTimeLeft(initialSeconds);
+      setIsRunning(true);
+    }
+  }, [initialSeconds, isOpen]);
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -97,29 +107,24 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-20 left-6 z-[100] bg-card border rounded-lg shadow-lg p-3 min-w-[140px]">
-        <div className="flex items-center justify-between gap-2">
-          <Badge variant={timeLeft === 0 ? "destructive" : "default"}>
-            {formatTime(timeLeft)}
-          </Badge>
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={isRunning ? handlePause : handleStart}
-              className="h-6 w-6 p-0"
-            >
-              {isRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsMinimized(false)}
-              className="h-6 w-6 p-0"
-            >
-              <Maximize2 className="h-3 w-3" />
-            </Button>
+      <div className="fixed bottom-20 left-6 z-[100]">
+        <div className="flex items-center gap-2">
+          {/* Small circular timer */}
+          <div className="relative w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center border-2 border-primary/20">
+            <span className="text-xs font-mono font-semibold text-primary">
+              {timeLeft}
+            </span>
           </div>
+          
+          {/* Maximize button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setIsMinimized(false)}
+            className="h-8 w-8 p-0 bg-card/80 backdrop-blur-sm border rounded-full shadow-lg"
+          >
+            <Maximize2 className="h-3 w-3" />
+          </Button>
         </div>
       </div>
     );
