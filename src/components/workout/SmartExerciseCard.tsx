@@ -417,6 +417,16 @@ export default function SmartExerciseCard({
             </div>
           </div>
         )}
+
+        {/* User Comment - Show if exists */}
+        {notes && (
+          <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm">
+            <div className="flex items-start gap-2">
+              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+              <span className="text-blue-800">{notes}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Clean exercise details - sets, weight, reps, rest */}
