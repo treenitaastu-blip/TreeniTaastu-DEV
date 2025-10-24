@@ -15,7 +15,7 @@ import { trackFeatureUsage, trackTaskCompletion, trackMobileInteraction, trackAP
 
 import ModernWorkoutHeader from "@/components/workout/ModernWorkoutHeader";
 import SmartExerciseCard from "@/components/workout/SmartExerciseCard";
-import ModernRestTimer from "@/components/workout/ModernRestTimer";
+import { WorkoutRestTimer } from "@/components/workout/WorkoutRestTimer";
 import PersonalTrainingCompletionDialog from "@/components/workout/PersonalTrainingCompletionDialog";
 import PTAccessValidator from "@/components/PTAccessValidator";
 import ErrorRecovery from "@/components/ErrorRecovery";
@@ -1065,19 +1065,14 @@ export default function ModernWorkoutSession() {
           totalSets={totalSets}
         />
 
-        {/* Rest Timer - Positioned below header */}
-        {restTimer.isOpen && (
-          <div className="border-b bg-background/95 backdrop-blur-sm">
-            <div className="px-4 py-2">
-              <ModernRestTimer
-                isOpen={restTimer.isOpen}
-                initialSeconds={restTimer.seconds}
-                exerciseName={restTimer.exerciseName}
-                onClose={() => setRestTimer(prev => ({ ...prev, isOpen: false }))}
-              />
-            </div>
-          </div>
-        )}
+        {/* Workout Rest Timer - Positioned above chat bubble */}
+        <WorkoutRestTimer
+          isOpen={restTimer.isOpen}
+          initialSeconds={restTimer.seconds}
+          exerciseName={restTimer.exerciseName}
+          onClose={() => setRestTimer(prev => ({ ...prev, isOpen: false }))}
+          onStartRest={(seconds) => setRestTimer(prev => ({ ...prev, seconds }))}
+        />
 
         {/* Day Notes */}
         {day?.note && (
