@@ -56,7 +56,6 @@ import NotAuthorized from "@/pages/NotAuthorized";
 const Programm = lazy(() => import("@/pages/Programm"));
 const Programmid = lazy(() => import("@/pages/Programmid"));
 const Harjutused = lazy(() => import("@/pages/Harjutused"));
-const Kogukond = lazy(() => import("@/pages/Kogukond"));
 const Konto = lazy(() => import("@/pages/Konto"));
 const ReadsList = lazy(() => import("@/pages/reads/ReadsList"));
 const ReadDetail = lazy(() => import("@/pages/reads/ReadDetail"));
@@ -271,11 +270,6 @@ if (container) {
                     <Route path="/harjutused" element={
                       <Suspense fallback={<div className="p-6">Laen…</div>}>
                         <Harjutused />
-                      </Suspense>
-                    } />
-                    <Route path="/kogukond" element={
-                      <Suspense fallback={<div className="p-6">Laen…</div>}>
-                        <Kogukond />
                       </Suspense>
                     } />
                     <Route path="/konto" element={

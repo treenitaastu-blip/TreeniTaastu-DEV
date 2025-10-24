@@ -114,7 +114,6 @@ export default function Header() {
           { to: "/programm", label: "Programm", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/harjutused", label: "Harjutused", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/tervisetood", label: "Tervisetõed", show: !accessLoading && (canStatic || isAdmin) },
-          { to: "/kogukond", label: "Kogukond", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/mindfulness", label: "Lõõgastus", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/pricing", label: "Hinnad", show: !accessLoading && !canStatic && !isAdmin },
         ]

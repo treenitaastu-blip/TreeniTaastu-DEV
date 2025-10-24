@@ -236,11 +236,11 @@ export default function ProgramsList() {
             </Link>
           ) : (
             <Link
-              to="/kogukond"
+              to="/teenused"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-6 py-3 text-sm font-medium hover:bg-secondary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors"
             >
               <BookOpen className="h-4 w-4" />
-              Võta ühendust
+              Vaata teenuseid
             </Link>
           )}
         </div>

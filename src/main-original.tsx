@@ -54,7 +54,6 @@ import NotAuthorized from "@/pages/NotAuthorized";
 // Content pages (lazy loaded to reduce initial bundle)
 const Programm = lazy(() => import("@/pages/Programm"));
 const Harjutused = lazy(() => import("@/pages/Harjutused"));
-const Kogukond = lazy(() => import("@/pages/Kogukond"));
 const Konto = lazy(() => import("@/pages/Konto"));
 const ServicesPage = lazy(() => import("@/pages/ServicesPage"));
 const ReadsList = lazy(() => import("@/pages/reads/ReadsList"));
@@ -309,11 +308,6 @@ if (container) {
                      <Route path="/harjutused" element={
                        <Suspense fallback={<div className="p-6">Laen…</div>}>
                          <Harjutused />
-                       </Suspense>
-                     } />
-                     <Route path="/kogukond" element={
-                       <Suspense fallback={<div className="p-6">Laen…</div>}>
-                         <Kogukond />
                        </Suspense>
                      } />
                        <Route path="/konto" element={
