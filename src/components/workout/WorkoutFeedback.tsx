@@ -21,38 +21,35 @@ interface WorkoutFeedbackProps {
     duration: number;
   };
   onComplete: (feedback: {
-    energy: 'low' | 'normal' | 'high';
-    soreness: 'none' | 'mild' | 'high';
-    pump: 'poor' | 'good' | 'excellent';
     joint_pain: boolean;
-    overall_difficulty: 'too_easy' | 'just_right' | 'too_hard';
+    joint_pain_location?: string;
+    fatigue_level: number; // 0-10
+    energy_level: 'low' | 'normal' | 'high';
     notes?: string;
   }) => void;
   onSkip?: () => void;
 }
 
 export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: WorkoutFeedbackProps) {
-  const [energy, setEnergy] = useState<'low' | 'normal' | 'high' | null>(null);
-  const [soreness, setSoreness] = useState<'none' | 'mild' | 'high' | null>(null);
-  const [pump, setPump] = useState<'poor' | 'good' | 'excellent' | null>(null);
   const [jointPain, setJointPain] = useState<boolean | null>(null);
-  const [difficulty, setDifficulty] = useState<'too_easy' | 'just_right' | 'too_hard' | null>(null);
+  const [jointPainLocation, setJointPainLocation] = useState('');
+  const [fatigueLevel, setFatigueLevel] = useState<number>(5);
+  const [energyLevel, setEnergyLevel] = useState<'low' | 'normal' | 'high' | null>(null);
   const [notes, setNotes] = useState('');
 
   const handleSubmit = () => {
-    if (energy && soreness && pump && jointPain !== null && difficulty) {
+    if (jointPain !== null && energyLevel) {
       onComplete({
-        energy,
-        soreness,
-        pump,
         joint_pain: jointPain,
-        overall_difficulty: difficulty,
+        joint_pain_location: jointPain ? jointPainLocation.trim() : undefined,
+        fatigue_level: fatigueLevel,
+        energy_level: energyLevel,
         notes: notes.trim() || undefined
       });
     }
   };
 
-  const isComplete = energy && soreness && pump && jointPain !== null && difficulty;
+  const isComplete = jointPain !== null && energyLevel;
 
 
   return (
@@ -70,9 +67,64 @@ export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: 
         </CardHeader>
         
         <CardContent className="space-y-4">
+          {/* Joint Pain Question */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Kas oli liigesevalu?</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={jointPain === false ? "default" : "outline"}
+                onClick={() => setJointPain(false)}
+                className="h-10"
+              >
+                Ei
+              </Button>
+              <Button
+                variant={jointPain === true ? "default" : "outline"}
+                onClick={() => setJointPain(true)}
+                className="h-10"
+              >
+                Jah
+              </Button>
+            </div>
+            
+            {/* Joint Pain Location - Show only if "Jah" is selected */}
+            {jointPain === true && (
+              <div className="mt-3">
+                <label className="text-sm font-medium text-muted-foreground">Kus valutab?</label>
+                <input
+                  type="text"
+                  value={jointPainLocation}
+                  onChange={(e) => setJointPainLocation(e.target.value)}
+                  placeholder="Näiteks: õlavöötmed, põlved, selg..."
+                  className="w-full p-3 border rounded-lg text-sm mt-1"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Fatigue Level */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Kui väsinud oled trennist? ({fatigueLevel}/10)</label>
+            <div className="space-y-3">
+              <input
+                type="range"
+                min="0"
+                max="10"
+                value={fatigueLevel}
+                onChange={(e) => setFatigueLevel(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0 - Ei tunne üldse väsimust</span>
+                <span>5 - Mõõdukas väsimus</span>
+                <span>10 - Täiesti läbi</span>
+              </div>
+            </div>
+          </div>
+
           {/* Energy Level */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Kuidas oli energiatase?</label>
+            <label className="text-sm font-medium">Kui energilisena end trennis tundsid?</label>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { value: 'low', label: 'Madal' },
@@ -81,92 +133,8 @@ export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: 
               ].map((option) => (
                 <Button
                   key={option.value}
-                  variant={energy === option.value ? "default" : "outline"}
-                  onClick={() => setEnergy(option.value as any)}
-                  className="h-10"
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Soreness Level */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Kas lihased valutavad eelmisest trennist?</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 'none', label: 'Pole valu' },
-                { value: 'mild', label: 'Kergelt' },
-                { value: 'high', label: 'Väga' }
-              ].map((option) => (
-                <Button
-                  key={option.value}
-                  variant={soreness === option.value ? "default" : "outline"}
-                  onClick={() => setSoreness(option.value as any)}
-                  className="h-10"
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Muscle Pump Quality */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Kui tugevalt tajusid lihaste paisumist?</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 'poor', label: 'Nõrk' },
-                { value: 'good', label: 'Hea' },
-                { value: 'excellent', label: 'Tugev' }
-              ].map((option) => (
-                <Button
-                  key={option.value}
-                  variant={pump === option.value ? "default" : "outline"}
-                  onClick={() => setPump(option.value as any)}
-                  className="h-10"
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Joint Pain */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Liigesevalu?</label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={jointPain === false ? "default" : "outline"}
-                onClick={() => setJointPain(false)}
-                className="h-10"
-              >
-                Pole
-              </Button>
-              <Button
-                variant={jointPain === true ? "default" : "outline"}
-                onClick={() => setJointPain(true)}
-                className="h-10"
-              >
-                Natuke
-              </Button>
-            </div>
-          </div>
-
-          {/* Overall Difficulty */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Kuidas oli raskus?</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 'too_easy', label: 'Liiga kerge' },
-                { value: 'just_right', label: 'Paras' },
-                { value: 'too_hard', label: 'Liiga raske' }
-              ].map((option) => (
-                <Button
-                  key={option.value}
-                  variant={difficulty === option.value ? "default" : "outline"}
-                  onClick={() => setDifficulty(option.value as any)}
+                  variant={energyLevel === option.value ? "default" : "outline"}
+                  onClick={() => setEnergyLevel(option.value as any)}
                   className="h-10"
                 >
                   {option.label}
