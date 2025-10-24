@@ -44,6 +44,16 @@ type JournalEntry = {
   created_at: string;
 };
 
+type WorkoutFeedback = {
+  id: string;
+  joint_pain: boolean;
+  joint_pain_location: string | null;
+  fatigue_level: number;
+  energy_level: string;
+  notes: string | null;
+  created_at: string;
+};
+
 export default function ClientSpecificAnalytics() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -56,6 +66,7 @@ export default function ClientSpecificAnalytics() {
   const [stats, setStats] = useState<ClientStats | null>(null);
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [workoutFeedback, setWorkoutFeedback] = useState<WorkoutFeedback[]>([]);
 
   useEffect(() => {
     loadClients();
@@ -208,6 +219,17 @@ export default function ClientSpecificAnalytics() {
 
       if (journalError) throw journalError;
       setJournalEntries(journalData || []);
+
+      // Load workout feedback
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from("workout_feedback")
+        .select("id, joint_pain, joint_pain_location, fatigue_level, energy_level, notes, created_at")
+        .eq("user_id", clientId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (feedbackError) throw feedbackError;
+      setWorkoutFeedback(feedbackData || []);
 
     } catch (error) {
       console.error("Error loading client data:", error);
@@ -383,7 +405,110 @@ export default function ClientSpecificAnalytics() {
               </Card>
             )}
 
-            {weeklyData.length === 0 && journalEntries.length === 0 && (
+            {/* Joint Pain Reports */}
+            {workoutFeedback.filter(f => f.joint_pain).length > 0 && (
+              <Card className="rounded-2xl shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    Liigesevalu raportid ({workoutFeedback.filter(f => f.joint_pain).length} märget)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {workoutFeedback
+                      .filter(f => f.joint_pain)
+                      .map((feedback) => (
+                        <div key={feedback.id} className="rounded-xl border bg-card/50 p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="font-medium text-destructive">⚠️ Liigesevalu</h4>
+                              <p className="text-xs text-muted-foreground">{formatDate(feedback.created_at)}</p>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <span className="text-orange-600">😰 {feedback.fatigue_level}/10</span>
+                              <span className={`${
+                                feedback.energy_level === 'high' ? 'text-green-600' : 
+                                feedback.energy_level === 'normal' ? 'text-blue-600' : 'text-red-600'
+                              }`}>
+                                ⚡ {feedback.energy_level === 'high' ? 'Kõrge' : 
+                                    feedback.energy_level === 'normal' ? 'Normaalne' : 'Madal'}
+                              </span>
+                            </div>
+                          </div>
+                          {feedback.joint_pain_location && (
+                            <div className="mb-2">
+                              <p className="text-sm font-medium text-destructive">📍 Valu asukoht:</p>
+                              <p className="text-sm text-muted-foreground">{feedback.joint_pain_location}</p>
+                            </div>
+                          )}
+                          {feedback.notes && (
+                            <p className="text-sm text-muted-foreground">
+                              <strong>Märkused:</strong> {feedback.notes}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Client Feedback Summary */}
+            {workoutFeedback.length > 0 && (
+              <Card className="rounded-2xl shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Kliendi tagasiside ({workoutFeedback.length} märget)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {workoutFeedback.map((feedback) => (
+                      <div key={feedback.id} className="rounded-xl border bg-card/50 p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-medium">
+                              {feedback.joint_pain ? "⚠️ Liigesevalu" : "✅ Probleemideta"}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">{formatDate(feedback.created_at)}</p>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className={`${
+                              feedback.fatigue_level >= 8 ? 'text-red-600' : 
+                              feedback.fatigue_level >= 5 ? 'text-orange-600' : 'text-green-600'
+                            }`}>
+                              😰 {feedback.fatigue_level}/10
+                            </span>
+                            <span className={`${
+                              feedback.energy_level === 'high' ? 'text-green-600' : 
+                              feedback.energy_level === 'normal' ? 'text-blue-600' : 'text-red-600'
+                            }`}>
+                              ⚡ {feedback.energy_level === 'high' ? 'Kõrge' : 
+                                  feedback.energy_level === 'normal' ? 'Normaalne' : 'Madal'}
+                            </span>
+                          </div>
+                        </div>
+                        {feedback.joint_pain_location && (
+                          <div className="mb-2">
+                            <p className="text-sm font-medium text-destructive">📍 Valu asukoht:</p>
+                            <p className="text-sm text-muted-foreground">{feedback.joint_pain_location}</p>
+                          </div>
+                        )}
+                        {feedback.notes && (
+                          <p className="text-sm text-muted-foreground">
+                            <strong>Märkused:</strong> {feedback.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {weeklyData.length === 0 && journalEntries.length === 0 && workoutFeedback.length === 0 && (
               <div className="text-center py-12">
                 <div className="rounded-full bg-muted/50 w-16 h-16 flex items-center justify-center mx-auto mb-4">
                   <Activity className="h-8 w-8 text-muted-foreground" />
