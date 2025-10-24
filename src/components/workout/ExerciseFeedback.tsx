@@ -66,19 +66,19 @@ export default function ExerciseFeedback({
       case "too_easy":
         const increase = Math.max(currentWeight * baseIncrease, minIncrement);
         newWeight = Math.round((currentWeight + increase) * 2) / 2; // Round to 0.5kg
-        reason = `Liiga kerge - tõstame ${(newWeight - currentWeight).toFixed(1)}kg`;
+        reason = `Kerge - tõstame ${(newWeight - currentWeight).toFixed(1)}kg`;
         break;
         
       case "too_hard":
         const decrease = Math.max(currentWeight * baseIncrease, minIncrement);
         newWeight = Math.round((currentWeight - decrease) * 2) / 2; // Round to 0.5kg
         newWeight = Math.max(newWeight, 0); // Never go below 0
-        reason = `Liiga raske - langetame ${(currentWeight - newWeight).toFixed(1)}kg`;
+        reason = `Raske - langetame ${(currentWeight - newWeight).toFixed(1)}kg`;
         break;
         
       case "just_right":
         newWeight = currentWeight;
-        reason = 'Paras raskus - kaal jääb samaks';
+        reason = 'Paras - kaal jääb samaks';
         break;
     }
     
@@ -93,11 +93,11 @@ export default function ExerciseFeedback({
   const getBodyweightReason = (feedback: string) => {
     switch(feedback) {
       case "too_easy":
-        return "Liiga kerge - lisa järgmine kord 1 kordus seeria kohta";
+        return "Kerge - lisa järgmine kord 1 kordus seeria kohta";
       case "too_hard":
-        return "Liiga raske - vähenda järgmine kord 1 kordus seeria kohta";
+        return "Raske - vähenda järgmine kord 1 kordus seeria kohta";
       default:
-        return "Paras raskus - jäta kordused samaks";
+        return "Paras - jäta kordused samaks";
     }
   };
 
