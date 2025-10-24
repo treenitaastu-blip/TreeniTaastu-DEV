@@ -150,7 +150,7 @@ export default function ExerciseFeedback({
             >
               <div className="flex items-center gap-2">
                 {getFeedbackIcon("too_easy")}
-                <span className="font-medium">Liiga kerge</span>
+                <span className="font-medium">Kerge</span>
               </div>
             </Button>
             
@@ -174,7 +174,7 @@ export default function ExerciseFeedback({
             >
               <div className="flex items-center gap-2">
                 {getFeedbackIcon("too_hard")}
-                <span className="font-medium">Liiga raske</span>
+                <span className="font-medium">Raske</span>
               </div>
             </Button>
           </div>
