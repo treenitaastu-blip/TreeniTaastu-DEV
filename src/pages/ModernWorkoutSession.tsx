@@ -20,7 +20,7 @@ import PersonalTrainingCompletionDialog from "@/components/workout/PersonalTrain
 import PTAccessValidator from "@/components/PTAccessValidator";
 import ErrorRecovery from "@/components/ErrorRecovery";
 import WorkoutFeedback from "@/components/workout/WorkoutFeedback";
-import { calculateExerciseProgression, calculateWorkoutProgression, ExerciseType, WorkoutFeedback as WorkoutFeedbackType } from "@/utils/progressionLogic";
+import { calculateExerciseProgression, ExerciseType } from "@/utils/progressionLogic";
 
 // Helper function to parse reps string to number
 const parseRepsToNumber = (reps: string): number | null => {
@@ -615,32 +615,52 @@ export default function ModernWorkoutSession() {
   }, [session, setLogs]);
 
   // Handle workout-level feedback
-  const handleWorkoutFeedback = useCallback(async (feedback: WorkoutFeedbackType) => {
+  const handleWorkoutFeedback = useCallback(async (feedback: {
+    joint_pain: boolean;
+    joint_pain_location?: string;
+    fatigue_level: number;
+    energy_level: 'low' | 'normal' | 'high';
+    notes?: string;
+  }) => {
     if (!session || !user) return;
 
     try {
-      // Calculate workout progression
-      const progression = calculateWorkoutProgression(feedback);
-
       // Save workout feedback to database
       await supabase.from("workout_feedback").insert({
         session_id: session.id,
         user_id: user.id,
         program_id: programId!,
-        energy: feedback.energy,
-        soreness: feedback.soreness,
-        pump: feedback.pump,
         joint_pain: feedback.joint_pain,
-        overall_difficulty: feedback.overall_difficulty,
-        notes: feedback.notes,
-        volume_multiplier: progression.volumeMultiplier,
-        intensity_multiplier: progression.intensityMultiplier,
-        recommendations: progression.recommendations
+        joint_pain_location: feedback.joint_pain_location,
+        fatigue_level: feedback.fatigue_level,
+        energy_level: feedback.energy_level,
+        notes: feedback.notes
       });
 
-      toast.success("Treeningu tagasiside salvestatud!", {
-        description: `Maht: ${((progression.volumeMultiplier - 1) * 100).toFixed(1)}%, Intensiivsus: ${((progression.intensityMultiplier - 1) * 100).toFixed(1)}%`
+      // Apply volume progression based on feedback
+      const { data: progressionResults, error: progressionError } = await supabase.rpc('apply_volume_progression', {
+        p_user_id: user.id,
+        p_program_id: programId!,
+        p_fatigue_level: feedback.fatigue_level,
+        p_energy_level: feedback.energy_level,
+        p_joint_pain: feedback.joint_pain
       });
+
+      if (progressionError) {
+        console.error('Volume progression error:', progressionError);
+        // Don't show error to user, just log it
+      } else if (progressionResults && progressionResults.length > 0) {
+        // Show progression summary
+        const progressionSummary = progressionResults.map((result: any) => 
+          `${result.exercise_name}: ${result.old_reps}→${result.new_reps} reps, ${result.old_sets}→${result.new_sets} sets`
+        ).join(', ');
+        
+        toast.success("Treeningu tagasiside salvestatud!", {
+          description: `Progression: ${progressionSummary}`
+        });
+      } else {
+        toast.success("Treeningu tagasiside salvestatud!");
+      }
 
       setShowWorkoutFeedback(false);
       
