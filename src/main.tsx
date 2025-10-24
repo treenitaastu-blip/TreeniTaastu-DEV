@@ -92,7 +92,6 @@ const TemplateDetail = lazy(() => import("@/pages/admin/TemplateDetail"));
 const AdminArticles = lazy(() => import("@/pages/admin/ArticlesList"));
 const AdminArticleForm = lazy(() => import("@/pages/admin/ArticleForm"));
 const UserManagement = lazy(() => import("@/pages/admin/UserManagement"));
-const ExerciseArchive = lazy(() => import("@/pages/admin/ExerciseArchive"));
 const TTBeta = lazy(() => import("@/pages/admin/TTBeta"));
 
 // Training Journal
@@ -194,11 +193,6 @@ if (container) {
                     <Route path="/admin/articles/:id/edit" element={
                       <Suspense fallback={<div className="p-6">Laen…</div>}>
                         <AdminArticleForm />
-                      </Suspense>
-                    } />
-                    <Route path="/admin/exercises" element={
-                      <Suspense fallback={<div className="p-6">Laen…</div>}>
-                        <ExerciseArchive />
                       </Suspense>
                     } />
                     <Route path="/admin/programs/:id" element={

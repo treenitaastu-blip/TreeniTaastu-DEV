@@ -60,14 +60,6 @@ export default function AdminDashboard() {
         renderHere: false,
       },
       {
-        key: "exercises" as const,
-        label: "Harjutuste arhiiv",
-        icon: ListChecks,
-        path: "/admin/exercises",
-        isActive: (pathname: string) => pathname.startsWith("/admin/exercises"),
-        renderHere: false,
-      },
-      {
         key: "admin-setup" as const,
         label: "Admin Setup",
         icon: Users,

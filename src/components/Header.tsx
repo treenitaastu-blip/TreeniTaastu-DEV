@@ -522,9 +522,6 @@ function AdminMenuItems({ onItem }: { onItem?: () => void }) {
       <Item to="/admin/programs" icon={Users2}>
         Programmid
       </Item>
-      <Item to="/admin/exercises" icon={BookOpen}>
-        Harjutuste arhiiv
-      </Item>
       <Item to="/admin/articles" icon={BookOpen}>
         Artiklid
       </Item>
