@@ -491,7 +491,7 @@ export default function ModernWorkoutSession() {
             user_id: user.id,
             notes: notes.trim()
           }, {
-            on_conflict: 'session_id,client_item_id'
+            onConflict: 'session_id,client_item_id'
           });
         } else {
           // If notes are empty, delete the record for this session
@@ -836,7 +836,7 @@ export default function ModernWorkoutSession() {
             notes: notes || undefined,
             rpe: rpe || undefined
           }, {
-            on_conflict: 'session_id,client_item_id'
+            onConflict: 'session_id,client_item_id'
           });
         }
       }
