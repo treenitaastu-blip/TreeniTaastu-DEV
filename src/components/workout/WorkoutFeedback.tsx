@@ -53,10 +53,10 @@ export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: 
 
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center pb-4">
-          <CardTitle className="text-xl">Kuidas treening läks?</CardTitle>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center pb-3">
+          <CardTitle className="text-lg">Kuidas treening läks?</CardTitle>
           {workoutSummary && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
               <div className="text-sm text-green-800 font-medium">
@@ -104,21 +104,24 @@ export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: 
 
           {/* Fatigue Level */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Kui väsinud oled trennist? ({fatigueLevel}/10)</label>
-            <div className="space-y-3">
-              <input
-                type="range"
-                min="0"
-                max="10"
-                value={fatigueLevel}
-                onChange={(e) => setFatigueLevel(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>0 - Ei tunne üldse väsimust</span>
-                <span>5 - Mõõdukas väsimus</span>
-                <span>10 - Täiesti läbi</span>
-              </div>
+            <label className="text-sm font-medium">Kui väsinud oled trennist? (0-10)</label>
+            <div className="grid grid-cols-11 gap-1">
+              {Array.from({ length: 11 }, (_, i) => (
+                <Button
+                  key={i}
+                  variant={fatigueLevel === i ? "default" : "outline"}
+                  onClick={() => setFatigueLevel(i)}
+                  className="h-8 text-xs"
+                  size="sm"
+                >
+                  {i}
+                </Button>
+              ))}
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>0 - Ei tunne üldse väsimust</span>
+              <span>5 - Mõõdukas väsimus</span>
+              <span>10 - Täiesti läbi</span>
             </div>
           </div>
 
@@ -156,11 +159,11 @@ export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: 
           </div>
 
           {/* Submit Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-2 pt-3">
             <Button
               onClick={handleSubmit}
               disabled={!isComplete}
-              className="flex-1 h-10"
+              className="flex-1 h-9 text-sm"
             >
               Saada tagasiside
             </Button>
@@ -168,7 +171,7 @@ export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: 
               <Button
                 variant="outline"
                 onClick={onSkip}
-                className="h-10"
+                className="h-9 text-sm px-4"
               >
                 Jäta vahele
               </Button>
