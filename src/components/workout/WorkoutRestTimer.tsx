@@ -28,32 +28,17 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      console.log('Timer opened, setting timeLeft to:', initialSeconds);
       setTimeLeft(initialSeconds);
       setIsRunning(true); // Auto-start when opened
-      if (onStartRest) {
-        onStartRest(initialSeconds);
-      }
     } else {
       setIsRunning(false); // Stop when closed
     }
-  }, [isOpen, initialSeconds, onStartRest]);
-
-  // Reset timer when initialSeconds changes (new set completed)
-  useEffect(() => {
-    if (isOpen && initialSeconds) {
-      setTimeLeft(initialSeconds);
-      setIsRunning(true);
-    }
-  }, [initialSeconds, isOpen]);
+  }, [isOpen, initialSeconds]);
 
   useEffect(() => {
-    console.log('Timer effect - isRunning:', isRunning, 'timeLeft:', timeLeft);
     if (isRunning && timeLeft > 0) {
-      console.log('Starting countdown from:', timeLeft);
       intervalRef.current = setInterval(() => {
         setTimeLeft(prev => {
-          console.log('Countdown tick:', prev);
           if (prev <= 1) {
             setIsRunning(false);
             // Audio notification
