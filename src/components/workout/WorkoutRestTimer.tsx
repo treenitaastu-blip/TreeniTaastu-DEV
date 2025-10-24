@@ -97,7 +97,7 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
   if (isMinimized) {
     return (
       <div className="fixed bottom-20 right-6 z-[100]">
-        <div className="flex flex-col items-center gap-2 bg-black/60 backdrop-blur-md border border-white/50 rounded-2xl p-2 shadow-xl w-16">
+        <div className="flex flex-col items-center gap-2 bg-black/60 backdrop-blur-md border border-white/50 rounded-2xl p-2 shadow-xl w-12">
           {/* Small circular timer */}
           <div className="relative w-10 h-10 bg-black/40 rounded-full flex items-center justify-center border-2 border-white/60 backdrop-blur-sm">
             <span className="text-sm font-mono font-bold text-white drop-shadow-lg">
@@ -121,7 +121,7 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
   }
 
   return (
-    <div className="fixed bottom-20 right-6 z-[100] bg-black/20 backdrop-blur-md border border-white/30 rounded-2xl shadow-xl p-4 w-80">
+    <div className="fixed bottom-20 right-6 z-[100] bg-black/60 backdrop-blur-md border border-white/50 rounded-2xl shadow-xl p-4 w-80">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-semibold text-sm text-white">Puhkepaus</h3>
@@ -200,7 +200,7 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
 
       {timeLeft === 0 && (
         <div className="mt-2 text-center text-sm text-red-400 font-medium">
-          Aeg läbi! 🎉
+          Aeg läbi!
         </div>
       )}
     </div>
