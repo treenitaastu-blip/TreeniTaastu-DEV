@@ -129,8 +129,8 @@ export default function ExerciseFeedback({
   };
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-2 duration-300">
-      <Card className="shadow-lg border-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
+      <Card className="shadow-lg border-2 max-w-md w-full">
         <CardContent className="p-4">
           <div className="text-center mb-4">
             <h3 className="text-lg font-semibold text-foreground">
