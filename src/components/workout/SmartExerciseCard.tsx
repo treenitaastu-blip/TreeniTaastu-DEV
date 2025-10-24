@@ -363,6 +363,7 @@ export default function SmartExerciseCard({
                 showNotes && "bg-primary/10 text-primary",
                 notes && !showNotes && "text-primary"
               )}
+              title={notes ? `Kommentaar: ${notes.substring(0, 50)}${notes.length > 50 ? '...' : ''}` : "Lisa kommentaar"}
             >
               <MessageSquare className="h-3 w-3" />
             </Button>
@@ -579,35 +580,26 @@ export default function SmartExerciseCard({
         </div>
       </div>
 
-      {/* Collapsible Notes & RPE - Hidden by default */}
+      {/* Collapsible Notes - Hidden by default */}
       {showNotes && (
         <div className="p-4 border-t bg-muted/5 space-y-4 animate-in slide-in-from-top-2 duration-200">
-          {/* Simplified notes section */}
           <div className="space-y-3">
             <Textarea
               value={notes}
               onChange={(e) => onNotesChange?.(e.target.value)}
-              placeholder="Kuidas läks?"
-              rows={2}
+              placeholder="Lisa kommentaar harjutuse kohta..."
+              rows={3}
               className="text-sm"
             />
             
-            {/* Simplified RPE selector */}
-            <div className="flex gap-1">
-              {Array.from({ length: 10 }, (_, i) => {
-                const value = i + 1;
-                return (
-                  <Button
-                    key={value}
-                    variant={rpe === value ? "default" : "outline"}
-                    size="sm"
-                    className="w-8 h-8 p-0 text-xs"
-                    onClick={() => onRPEChange?.(value)}
-                  >
-                    {value}
-                  </Button>
-                );
-              })}
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                onClick={() => setShowNotes(false)}
+                className="text-xs"
+              >
+                Lisa kommentaar
+              </Button>
             </div>
           </div>
         </div>
