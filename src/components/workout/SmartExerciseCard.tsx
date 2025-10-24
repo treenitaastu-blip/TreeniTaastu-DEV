@@ -307,7 +307,7 @@ export default function SmartExerciseCard({
   // Show collapsed state when all sets are completed
   if (allSetsCompleted && isCollapsed) {
     return (
-      <div className="rounded-2xl border bg-green-50 border-green-200 shadow-soft overflow-hidden animate-in slide-in-from-top-2 duration-300">
+      <div className="rounded-2xl border-2 border-black bg-green-50 shadow-soft overflow-hidden animate-in slide-in-from-top-2 duration-300">
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300">
@@ -339,7 +339,7 @@ export default function SmartExerciseCard({
   }
 
   return (
-    <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-lg border-2 border-black bg-card shadow-sm overflow-hidden">
       {/* Exercise Title - First and prominent */}
       <div className="p-3 border-b bg-muted/30">
         <div className="flex items-center justify-between">
