@@ -28,6 +28,7 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      console.log('Timer opened, setting timeLeft to:', initialSeconds);
       setTimeLeft(initialSeconds);
       setIsRunning(true); // Auto-start when opened
       if (onStartRest) {
@@ -47,9 +48,12 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
   }, [initialSeconds, isOpen]);
 
   useEffect(() => {
+    console.log('Timer effect - isRunning:', isRunning, 'timeLeft:', timeLeft);
     if (isRunning && timeLeft > 0) {
+      console.log('Starting countdown from:', timeLeft);
       intervalRef.current = setInterval(() => {
         setTimeLeft(prev => {
+          console.log('Countdown tick:', prev);
           if (prev <= 1) {
             setIsRunning(false);
             // Audio notification
@@ -108,10 +112,10 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
   if (isMinimized) {
     return (
       <div className="fixed bottom-20 right-6 z-[100]">
-        <div className="flex flex-col items-center gap-2 bg-black/20 backdrop-blur-md border border-white/30 rounded-2xl p-3 shadow-xl">
+        <div className="flex flex-col items-center gap-2 bg-black/30 backdrop-blur-md border border-white/40 rounded-2xl p-2 shadow-xl w-16">
           {/* Small circular timer */}
-          <div className="relative w-12 h-12 bg-primary/30 rounded-full flex items-center justify-center border-2 border-primary/50 backdrop-blur-sm">
-            <span className="text-xs font-mono font-semibold text-white">
+          <div className="relative w-10 h-10 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/50 backdrop-blur-sm">
+            <span className="text-sm font-mono font-bold text-white drop-shadow-lg">
               {timeLeft}
             </span>
           </div>
@@ -122,30 +126,30 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
               size="sm"
               variant="ghost"
               onClick={isRunning ? handlePause : handleStart}
-              className="h-6 w-6 p-0 bg-black/30 backdrop-blur-sm border border-white/40 rounded-full shadow-lg hover:bg-black/50"
+              className="h-5 w-5 p-0 bg-white/20 backdrop-blur-sm border border-white/50 rounded-full shadow-lg hover:bg-white/30"
               title={isRunning ? "Peata" : "Alusta"}
             >
-              {isRunning ? <Pause className="h-3 w-3 text-white" /> : <Play className="h-3 w-3 text-white" />}
+              {isRunning ? <Pause className="h-2.5 w-2.5 text-white" /> : <Play className="h-2.5 w-2.5 text-white" />}
             </Button>
             
             <Button
               size="sm"
               variant="ghost"
               onClick={handleReset}
-              className="h-6 w-6 p-0 bg-black/30 backdrop-blur-sm border border-white/40 rounded-full shadow-lg hover:bg-black/50"
+              className="h-5 w-5 p-0 bg-white/20 backdrop-blur-sm border border-white/50 rounded-full shadow-lg hover:bg-white/30"
               title="Lähtesta"
             >
-              <RotateCcw className="h-3 w-3 text-white" />
+              <RotateCcw className="h-2.5 w-2.5 text-white" />
             </Button>
             
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setIsMinimized(false)}
-              className="h-6 w-6 p-0 bg-black/30 backdrop-blur-sm border border-white/40 rounded-full shadow-lg hover:bg-black/50"
+              className="h-5 w-5 p-0 bg-white/20 backdrop-blur-sm border border-white/50 rounded-full shadow-lg hover:bg-white/30"
               title="Suurenda"
             >
-              <Maximize2 className="h-3 w-3 text-white" />
+              <Maximize2 className="h-2.5 w-2.5 text-white" />
             </Button>
           </div>
         </div>
