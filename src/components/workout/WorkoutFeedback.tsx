@@ -105,13 +105,13 @@ export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: 
           {/* Fatigue Level */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Kui väsinud oled trennist? (0-10)</label>
-            <div className="grid grid-cols-11 gap-1">
+            <div className="grid grid-cols-11 gap-1.5">
               {Array.from({ length: 11 }, (_, i) => (
                 <Button
                   key={i}
                   variant={fatigueLevel === i ? "default" : "outline"}
                   onClick={() => setFatigueLevel(i)}
-                  className="h-8 text-xs"
+                  className="h-9 text-sm px-2"
                   size="sm"
                 >
                   {i}
