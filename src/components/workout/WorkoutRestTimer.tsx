@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Pause, RotateCcw, Minimize2, Maximize2, Timer, Plus } from "lucide-react";
+import { Play, Pause, RotateCcw, Minimize2, Maximize2, Timer, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface WorkoutRestTimerProps {
@@ -97,46 +97,24 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
   if (isMinimized) {
     return (
       <div className="fixed bottom-20 right-6 z-[100]">
-        <div className="flex flex-col items-center gap-2 bg-black/30 backdrop-blur-md border border-white/40 rounded-2xl p-2 shadow-xl w-16">
+        <div className="flex flex-col items-center gap-2 bg-black/60 backdrop-blur-md border border-white/50 rounded-2xl p-2 shadow-xl w-16">
           {/* Small circular timer */}
-          <div className="relative w-10 h-10 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/50 backdrop-blur-sm">
+          <div className="relative w-10 h-10 bg-black/40 rounded-full flex items-center justify-center border-2 border-white/60 backdrop-blur-sm">
             <span className="text-sm font-mono font-bold text-white drop-shadow-lg">
               {timeLeft}
             </span>
           </div>
           
-          {/* Control buttons - vertical stack */}
-          <div className="flex flex-col gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={isRunning ? handlePause : handleStart}
-              className="h-5 w-5 p-0 bg-white/20 backdrop-blur-sm border border-white/50 rounded-full shadow-lg hover:bg-white/30"
-              title={isRunning ? "Peata" : "Alusta"}
-            >
-              {isRunning ? <Pause className="h-2.5 w-2.5 text-white" /> : <Play className="h-2.5 w-2.5 text-white" />}
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleReset}
-              className="h-5 w-5 p-0 bg-white/20 backdrop-blur-sm border border-white/50 rounded-full shadow-lg hover:bg-white/30"
-              title="Lähtesta"
-            >
-              <RotateCcw className="h-2.5 w-2.5 text-white" />
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsMinimized(false)}
-              className="h-5 w-5 p-0 bg-white/20 backdrop-blur-sm border border-white/50 rounded-full shadow-lg hover:bg-white/30"
-              title="Suurenda"
-            >
-              <Maximize2 className="h-2.5 w-2.5 text-white" />
-            </Button>
-          </div>
+          {/* Only maximize button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setIsMinimized(false)}
+            className="h-5 w-5 p-0 bg-black/40 backdrop-blur-sm border border-white/60 rounded-full shadow-lg hover:bg-black/60"
+            title="Suurenda"
+          >
+            <Maximize2 className="h-2.5 w-2.5 text-white" />
+          </Button>
         </div>
       </div>
     );
