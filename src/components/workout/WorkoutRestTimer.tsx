@@ -108,44 +108,44 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
   if (isMinimized) {
     return (
       <div className="fixed bottom-20 right-6 z-[100]">
-        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3 shadow-xl">
+        <div className="flex flex-col items-center gap-2 bg-black/20 backdrop-blur-md border border-white/30 rounded-2xl p-3 shadow-xl">
           {/* Small circular timer */}
-          <div className="relative w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center border-2 border-primary/30 backdrop-blur-sm">
-            <span className="text-xs font-mono font-semibold text-primary">
+          <div className="relative w-12 h-12 bg-primary/30 rounded-full flex items-center justify-center border-2 border-primary/50 backdrop-blur-sm">
+            <span className="text-xs font-mono font-semibold text-white">
               {timeLeft}
             </span>
           </div>
           
-          {/* Control buttons */}
-          <div className="flex items-center gap-1">
+          {/* Control buttons - vertical stack */}
+          <div className="flex flex-col gap-1">
             <Button
               size="sm"
               variant="ghost"
               onClick={isRunning ? handlePause : handleStart}
-              className="h-6 w-6 p-0 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full shadow-lg hover:bg-white/30"
+              className="h-6 w-6 p-0 bg-black/30 backdrop-blur-sm border border-white/40 rounded-full shadow-lg hover:bg-black/50"
               title={isRunning ? "Peata" : "Alusta"}
             >
-              {isRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+              {isRunning ? <Pause className="h-3 w-3 text-white" /> : <Play className="h-3 w-3 text-white" />}
             </Button>
             
             <Button
               size="sm"
               variant="ghost"
               onClick={handleReset}
-              className="h-6 w-6 p-0 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full shadow-lg hover:bg-white/30"
+              className="h-6 w-6 p-0 bg-black/30 backdrop-blur-sm border border-white/40 rounded-full shadow-lg hover:bg-black/50"
               title="Lähtesta"
             >
-              <RotateCcw className="h-3 w-3" />
+              <RotateCcw className="h-3 w-3 text-white" />
             </Button>
             
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setIsMinimized(false)}
-              className="h-6 w-6 p-0 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full shadow-lg hover:bg-white/30"
+              className="h-6 w-6 p-0 bg-black/30 backdrop-blur-sm border border-white/40 rounded-full shadow-lg hover:bg-black/50"
               title="Suurenda"
             >
-              <Maximize2 className="h-3 w-3" />
+              <Maximize2 className="h-3 w-3 text-white" />
             </Button>
           </div>
         </div>
@@ -154,11 +154,11 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
   }
 
   return (
-    <div className="fixed bottom-20 right-6 z-[100] bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-4 w-80">
+    <div className="fixed bottom-20 right-6 z-[100] bg-black/20 backdrop-blur-md border border-white/30 rounded-2xl shadow-xl p-4 w-80">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-sm">Puhkepaus</h3>
-          <p className="text-xs text-muted-foreground truncate max-w-48">
+          <h3 className="font-semibold text-sm text-white">Puhkepaus</h3>
+          <p className="text-xs text-white/70 truncate max-w-48">
             {exerciseName}
           </p>
         </div>
@@ -167,19 +167,19 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
             size="sm"
             variant="ghost"
             onClick={() => setIsMinimized(true)}
-            className="h-6 w-6 p-0 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full shadow-lg hover:bg-white/30"
+            className="h-6 w-6 p-0 bg-black/30 backdrop-blur-sm border border-white/40 rounded-full shadow-lg hover:bg-black/50"
             title="Minimeeri"
           >
-            <Minimize2 className="h-3 w-3" />
+            <Minimize2 className="h-3 w-3 text-white" />
           </Button>
           <Button
             size="sm"
             variant="ghost"
             onClick={onClose}
-            className="h-6 w-6 p-0 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full shadow-lg hover:bg-white/30"
+            className="h-6 w-6 p-0 bg-black/30 backdrop-blur-sm border border-white/40 rounded-full shadow-lg hover:bg-black/50"
             title="Sulge"
           >
-            <X className="h-3 w-3" />
+            <X className="h-3 w-3 text-white" />
           </Button>
         </div>
       </div>
@@ -188,7 +188,7 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
       <div className="text-center mb-4">
         <div className={cn(
           "text-3xl font-bold tabular-nums",
-          timeLeft === 0 ? "text-destructive" : "text-foreground"
+          timeLeft === 0 ? "text-red-400" : "text-white"
         )}>
           {formatTime(timeLeft)}
         </div>
@@ -203,7 +203,7 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
             size="sm"
             onClick={() => handleAddTime(seconds)}
             disabled={isRunning}
-            className="text-xs bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg shadow-lg hover:bg-white/30 disabled:opacity-50"
+            className="text-xs bg-black/30 backdrop-blur-sm border border-white/40 rounded-lg shadow-lg hover:bg-black/50 disabled:opacity-50 text-white"
           >
             +{seconds}s
           </Button>
@@ -215,7 +215,7 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
         <Button
           onClick={isRunning ? handlePause : handleStart}
           size="sm"
-          className="flex-1 bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg shadow-lg hover:bg-white/30 disabled:opacity-50"
+          className="flex-1 bg-black/30 backdrop-blur-sm border border-white/40 rounded-lg shadow-lg hover:bg-black/50 disabled:opacity-50 text-white"
           disabled={timeLeft === 0}
         >
           {isRunning ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
@@ -225,14 +225,14 @@ export const WorkoutRestTimer: React.FC<WorkoutRestTimerProps> = ({
           onClick={handleReset}
           variant="ghost"
           size="sm"
-          className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg shadow-lg hover:bg-white/30"
+          className="bg-black/30 backdrop-blur-sm border border-white/40 rounded-lg shadow-lg hover:bg-black/50"
         >
-          <RotateCcw className="h-4 w-4" />
+          <RotateCcw className="h-4 w-4 text-white" />
         </Button>
       </div>
 
       {timeLeft === 0 && (
-        <div className="mt-2 text-center text-sm text-destructive font-medium">
+        <div className="mt-2 text-center text-sm text-red-400 font-medium">
           Aeg läbi! 🎉
         </div>
       )}
