@@ -4,7 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Activity, Target } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar, Clock, Activity, Target, Plus, Save } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type JournalEntry = {
   id: string;
@@ -20,8 +23,18 @@ type JournalEntry = {
 
 export default function TrainingJournal() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newEntry, setNewEntry] = useState({
+    title: "",
+    content: "",
+    mood: 3,
+    energy_level: 3,
+    motivation: 3
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadJournal = async () => {
@@ -29,34 +42,34 @@ export default function TrainingJournal() {
 
       try {
         const { data, error } = await supabase
-          .from("v_session_summary")
+          .from("training_journal")
           .select(`
+            id,
+            title,
+            content,
+            mood,
+            energy_level,
+            motivation,
+            created_at,
             session_id,
-            started_at,
-            ended_at,
-            duration_minutes,
-            avg_rpe,
-            program_title,
-            day_title,
-            total_sets_completed
+            client_program_id
           `)
           .eq("user_id", user.id)
-          .not("ended_at", "is", null)
-          .order("started_at", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(50);
 
         if (error) throw error;
 
-        const journalEntries: JournalEntry[] = (data || []).map(session => ({
-          id: session.session_id,
-          date: session.started_at,
-          program_title: session.program_title || "Unknown Program",
-          day_title: session.day_title || "Unknown Day",
-          duration_minutes: session.duration_minutes || 0,
-          exercises_completed: 0, // Not available in this view
-          total_sets: session.total_sets_completed || 0,
-          avg_rpe: session.avg_rpe || 0,
-          notes: "" // Not available in this view
+        const journalEntries: JournalEntry[] = (data || []).map(entry => ({
+          id: entry.id,
+          date: entry.created_at,
+          program_title: entry.title || "Märkmik",
+          day_title: "Märkus",
+          duration_minutes: 0,
+          exercises_completed: 0,
+          total_sets: 0,
+          avg_rpe: 0,
+          notes: entry.content || ""
         }));
 
         setEntries(journalEntries);
@@ -69,6 +82,74 @@ export default function TrainingJournal() {
 
     loadJournal();
   }, [user]);
+
+  const handleSaveEntry = async () => {
+    if (!user || !newEntry.title.trim() || !newEntry.content.trim()) {
+      toast({
+        title: "Viga",
+        description: "Palun täida pealkiri ja sisu",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const { data, error } = await supabase
+        .from("training_journal")
+        .insert({
+          user_id: user.id,
+          title: newEntry.title.trim(),
+          content: newEntry.content.trim(),
+          mood: newEntry.mood,
+          energy_level: newEntry.energy_level,
+          motivation: newEntry.motivation
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add to local state
+      const newJournalEntry: JournalEntry = {
+        id: data.id,
+        date: data.created_at,
+        program_title: data.title,
+        day_title: "Märkus",
+        duration_minutes: 0,
+        exercises_completed: 0,
+        total_sets: 0,
+        avg_rpe: 0,
+        notes: data.content
+      };
+
+      setEntries(prev => [newJournalEntry, ...prev]);
+      
+      // Reset form
+      setNewEntry({
+        title: "",
+        content: "",
+        mood: 3,
+        energy_level: 3,
+        motivation: 3
+      });
+      setShowAddForm(false);
+
+      toast({
+        title: "Edukas!",
+        description: "Märkmik salvestatud"
+      });
+    } catch (error) {
+      console.error("Error saving journal entry:", error);
+      toast({
+        title: "Viga",
+        description: "Märkmiku salvestamine ebaõnnestus",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -92,12 +173,119 @@ export default function TrainingJournal() {
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Treeningu päevik
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Treeningu päevik
+              </CardTitle>
+              <Button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Lisa märkus
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
+            {showAddForm && (
+              <Card className="mb-6 border-2 border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-lg">Lisa uus märkmik</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Pealkiri</label>
+                    <Input
+                      value={newEntry.title}
+                      onChange={(e) => setNewEntry(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Näiteks: Tänane treening"
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium">Sisu</label>
+                    <Textarea
+                      value={newEntry.content}
+                      onChange={(e) => setNewEntry(prev => ({ ...prev, content: e.target.value }))}
+                      placeholder="Kirjuta oma mõtted treeningu kohta..."
+                      className="mt-1 min-h-[100px]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Tuju (1-5)</label>
+                      <div className="flex gap-1 mt-1">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <Button
+                            key={value}
+                            variant={newEntry.mood === value ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setNewEntry(prev => ({ ...prev, mood: value }))}
+                            className="w-8 h-8 p-0"
+                          >
+                            {value}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium">Energia (1-5)</label>
+                      <div className="flex gap-1 mt-1">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <Button
+                            key={value}
+                            variant={newEntry.energy_level === value ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setNewEntry(prev => ({ ...prev, energy_level: value }))}
+                            className="w-8 h-8 p-0"
+                          >
+                            {value}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium">Motivatsioon (1-5)</label>
+                      <div className="flex gap-1 mt-1">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <Button
+                            key={value}
+                            variant={newEntry.motivation === value ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setNewEntry(prev => ({ ...prev, motivation: value }))}
+                            className="w-8 h-8 p-0"
+                          >
+                            {value}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSaveEntry}
+                      disabled={saving}
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      {saving ? "Salvestan..." : "Salvesta"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddForm(false)}
+                    >
+                      Tühista
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {entries.length === 0 ? (
               <div className="text-center py-8">
                 <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
