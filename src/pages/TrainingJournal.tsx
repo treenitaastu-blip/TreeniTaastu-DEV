@@ -29,23 +29,16 @@ export default function TrainingJournal() {
 
       try {
         const { data, error } = await supabase
-          .from("workout_sessions")
+          .from("v_session_summary")
           .select(`
-            id,
+            session_id,
             started_at,
             ended_at,
             duration_minutes,
             avg_rpe,
-            notes,
-            client_programs!inner (
-              title_override,
-              client_days!inner (
-                title,
-                client_items!inner (
-                  id
-                )
-              )
-            )
+            program_title,
+            day_title,
+            total_sets_completed
           `)
           .eq("user_id", user.id)
           .not("ended_at", "is", null)
@@ -55,15 +48,15 @@ export default function TrainingJournal() {
         if (error) throw error;
 
         const journalEntries: JournalEntry[] = (data || []).map(session => ({
-          id: session.id,
+          id: session.session_id,
           date: session.started_at,
-          program_title: session.client_programs?.title_override || "Unknown Program",
-          day_title: session.client_programs?.client_days?.[0]?.title || "Unknown Day",
+          program_title: session.program_title || "Unknown Program",
+          day_title: session.day_title || "Unknown Day",
           duration_minutes: session.duration_minutes || 0,
-          exercises_completed: session.client_programs?.client_days?.[0]?.client_items?.length || 0,
-          total_sets: 0, // Would need to calculate from set_logs
+          exercises_completed: 0, // Not available in this view
+          total_sets: session.total_sets_completed || 0,
           avg_rpe: session.avg_rpe || 0,
-          notes: session.notes
+          notes: "" // Not available in this view
         }));
 
         setEntries(journalEntries);

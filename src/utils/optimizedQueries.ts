@@ -344,8 +344,8 @@ export async function getUserPTStatsOptimized(userId: string) {
         .eq("assigned_to", userId),
       
       supabase
-        .from("workout_sessions")
-        .select("id, started_at, ended_at, duration_minutes, avg_rpe")
+        .from("v_session_summary")
+        .select("session_id, started_at, ended_at, duration_minutes, avg_rpe")
         .eq("user_id", userId)
         .order("started_at", { ascending: false })
         .limit(50),

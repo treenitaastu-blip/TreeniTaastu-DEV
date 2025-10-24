@@ -243,16 +243,18 @@ const Harjutused = () => {
 
       if (error) throw error;
       
-      // Merge with default routines, prioritizing database data
+      // Use database routines directly, fallback to default routines if database is empty
       const dbRoutines = data || [];
-      const mergedRoutines = defaultRoutines.map(defaultRoutine => {
-        const dbRoutine = dbRoutines.find(db => db.id === defaultRoutine.id);
-        return dbRoutine ? { ...defaultRoutine, ...dbRoutine } : defaultRoutine;
-      });
-      
-      setRoutines(mergedRoutines);
+      if (dbRoutines.length > 0) {
+        setRoutines(dbRoutines);
+      } else {
+        // Fallback to default routines if database is empty
+        setRoutines(defaultRoutines);
+      }
     } catch (error) {
       console.error("Error fetching routines:", error);
+      // Fallback to default routines on error
+      setRoutines(defaultRoutines);
       toast({
         title: "Viga",
         description: "Harjutusrutiinide laadimine ebaõnnestus",
