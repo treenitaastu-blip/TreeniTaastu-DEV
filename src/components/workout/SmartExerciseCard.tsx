@@ -359,7 +359,7 @@ export default function SmartExerciseCard({
                     handleSetComplete(i);
                   }
                 }}
-                className="text-xs px-3 py-1 h-7"
+                className="text-[10px] px-2 py-1 h-6"
               >
                 Märgi kõik tehtuks
               </Button>
