@@ -293,10 +293,10 @@ export default function SmartExerciseCard({
 
         <Button
           onClick={() => handleSetComplete(currentSet)}
-          size="lg"
-          className="w-full h-12 text-base font-semibold"
+          size="sm"
+          className="w-full h-8 text-sm font-medium"
         >
-          <Check className="h-5 w-5 mr-2" />
+          <Check className="h-3 w-3 mr-1" />
           Seeria tehtud
         </Button>
       </div>
@@ -339,9 +339,28 @@ export default function SmartExerciseCard({
       {/* Exercise Title - First and prominent */}
       <div className="p-3 border-b bg-muted/30">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-foreground">
-            {exercise.exercise_name}
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-base font-semibold text-foreground">
+              {exercise.exercise_name}
+            </h3>
+            
+            {/* Märgi kõik tehtuks button - only show if not all sets completed */}
+            {!allSetsCompleted && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Mark all remaining sets as completed
+                  for (let i = completedSets + 1; i <= exercise.sets; i++) {
+                    handleSetComplete(i);
+                  }
+                }}
+                className="text-xs px-3 py-1 h-7"
+              >
+                Märgi kõik tehtuks
+              </Button>
+            )}
+          </div>
           
           <div className="flex items-center gap-1">
             {exercise.video_url && (
@@ -502,12 +521,12 @@ export default function SmartExerciseCard({
                     
                     {isCurrent && !isCompleted && (
                       <Button
-                        size="lg"
+                        size="sm"
                         onClick={() => handleSetComplete(setNumber)}
-                        className="h-12 px-4 text-base font-bold bg-primary hover:bg-primary/90"
+                        className="h-8 px-3 text-sm font-medium bg-primary hover:bg-primary/90"
                         disabled={!inputs.reps && !parseRepsToNumber(exercise.reps)}
                       >
-                        <Check className="h-4 w-4 mr-2" />
+                        <Check className="h-3 w-3 mr-1" />
                         Seeria tehtud
                       </Button>
                     )}
