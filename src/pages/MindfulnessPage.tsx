@@ -21,6 +21,7 @@ interface BreathingExercise {
   totalDuration: number;
   phases: BreathingPhase[];
   instruction: string;
+  breathingMethod: 'nose' | 'mouth';
   color: string;
   icon: string;
 }
@@ -37,13 +38,14 @@ const breathingExercises: BreathingExercise[] = [
       { name: "Sisse", duration: 1, instruction: "Hinga kiiresti sisse" },
       { name: "Välja", duration: 1, instruction: "Hinga kiiresti välja" }
     ],
-    instruction: "Hinga kiiresti ja jõuliselt sisse ning välja läbi nina. Hoia tempo ühtlane, umbes kord sekundis. Pärast 30 hingetõmmet lõdvestu ja hinga sügavalt välja.",
+    instruction: "Hinga kiiresti ja jõuliselt sisse ning välja läbi suu. Hoia tempo ühtlane, umbes kord sekundis. Pärast 30 hingetõmmet lõdvestu ja hinga sügavalt välja.",
+    breathingMethod: 'mouth',
     color: "from-orange-400 to-red-500",
     icon: "▲"
   },
   {
-    id: "kasti",
-    name: "Kasti hingamine",
+    id: "ruuthingamine",
+    name: "Ruuthingamine",
     category: "Stressi ja ärevuse leevendamiseks",
     description: "Rahustav hingamisrütm, mida kasutavad ka sportlased ja sõjaväelased ärevuse kontrolliks.",
     totalDuration: 180, // 3 minutes
@@ -53,7 +55,8 @@ const breathingExercises: BreathingExercise[] = [
       { name: "Välja", duration: 4, instruction: "Hinga aeglaselt välja" },
       { name: "Hoia", duration: 4, instruction: "Hoia jälle kinni" }
     ],
-    instruction: "Hinga sügavalt sisse 4 sekundi jooksul, hoia hinge kinni 4 sekundit, hinga välja 4 sekundi jooksul ja hoia jälle 4 sekundit. Korda kuus tsüklit. Kujuta ette, et liigud mööda nelinurka.",
+    instruction: "Hinga sügavalt sisse 4 sekundi jooksul läbi nina, hoia hinge kinni 4 sekundit, hinga välja 4 sekundi jooksul ja hoia jälle 4 sekundit. Korda kuus tsüklit. Kujuta ette, et liigud mööda nelinurka.",
+    breathingMethod: 'nose',
     color: "from-blue-400 to-indigo-500",
     icon: "⬜"
   },
@@ -68,7 +71,8 @@ const breathingExercises: BreathingExercise[] = [
       { name: "Hoia", duration: 7, instruction: "Hoia hinge kinni" },
       { name: "Välja", duration: 8, instruction: "Hinga aeglaselt välja" }
     ],
-    instruction: "Hinga sisse 4 sekundi jooksul, hoia hinge kinni 7 sekundit ja hinga aeglaselt välja 8 sekundi jooksul. Korda neli korda. Ideaalne enne und või lõõgastuseks.",
+    instruction: "Hinga sisse 4 sekundi jooksul läbi nina, hoia hinge kinni 7 sekundit ja hinga aeglaselt välja 8 sekundi jooksul. Korda neli korda. Ideaalne enne und või lõõgastuseks.",
+    breathingMethod: 'nose',
     color: "from-purple-400 to-pink-500",
     icon: "●"
   },
@@ -82,7 +86,8 @@ const breathingExercises: BreathingExercise[] = [
       { name: "Sisse", duration: 5, instruction: "Hinga sügavalt sisse" },
       { name: "Välja", duration: 5, instruction: "Hinga aeglaselt välja" }
     ],
-    instruction: "Hinga sügavalt sisse 5 sekundi jooksul ja hinga sama aeglaselt välja 5 sekundi jooksul. Hoia rütm ühtlane ja keskendu hingamise tundele rinnus.",
+    instruction: "Hinga sügavalt sisse 5 sekundi jooksul läbi nina ja hinga sama aeglaselt välja 5 sekundi jooksul. Hoia rütm ühtlane ja keskendu hingamise tundele rinnus.",
+    breathingMethod: 'nose',
     color: "from-green-400 to-teal-500",
     icon: "◯"
   }
@@ -122,7 +127,7 @@ export default function MindfulnessPage() {
     switch (selectedExercise.id) {
       case 'aktiveeriv':
         return 30; // 30 breaths in 1 minute
-      case 'kasti':
+      case 'ruuthingamine':
         return 6; // 6 cycles in 3 minutes
       case '478':
         return 4; // 4 cycles in 3 minutes
@@ -141,7 +146,7 @@ export default function MindfulnessPage() {
     if (!selectedExercise) return 5000; // Default 5 seconds
     
     if (phase === 'prep') {
-      return selectedExercise.phases[0].duration * 1000; // First phase for prep
+      return 5000; // Fixed 5 seconds for preparation phase
     }
     
     // For main exercise, use the current phase
@@ -157,7 +162,7 @@ export default function MindfulnessPage() {
     switch (selectedExercise.id) {
       case 'aktiveeriv':
         return "Suurepärane! Sa ergutasid oma närvisüsteemi ja tõstsid energiataset. Tunne seda energiat kogu päeva jooksul.";
-      case 'kasti':
+      case 'ruuthingamine':
         return "Hästi tehtud! Sa leevendasid stressi ja taastasid sisemise tasakaalu. Tunne seda rahu.";
       case '478':
         return "Suurepärane! Sa valmistasid keha ja meele und. Lõdvestu ja lase kehal taastuda.";
@@ -361,13 +366,13 @@ export default function MindfulnessPage() {
                   // Finished prep, start main exercise
                   setPhase('inhale');
                   setCurrentPhase(0);
-                  const firstPhaseDuration = selectedExercise.phases[0].duration;
-                  createBreathSound('inhale', firstPhaseDuration);
+                  const prepDuration = 5; // 5 seconds for preparation
+                  createBreathSound('inhale', prepDuration);
                   return 0;
                 } else {
                   // Continue prep phase
                   const nextPhase = nextBreaths % 2 === 1 ? 'exhale' : 'inhale';
-                  const prepDuration = selectedExercise.phases[0].duration; // Use first phase duration for prep
+                  const prepDuration = 5; // 5 seconds for preparation
                   createBreathSound(nextPhase, prepDuration);
                   setPhase('prep');
                   return nextBreaths;
@@ -484,19 +489,19 @@ export default function MindfulnessPage() {
       const currentPhaseName = selectedExercise.phases[currentPhase]?.name.toLowerCase() || '';
       
       if (currentPhaseName.includes('sisse') || currentPhaseName.includes('inhale')) {
-        // Smooth inhale curve - starts slow, accelerates, then slows down
-        const easedProgress = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
-        return 0.6 + (easedProgress * 0.4); // Scale from 0.6 to 1.0
+        // Natural inhale curve - starts gentle, accelerates, then eases out
+        const easedProgress = 1 - Math.pow(1 - progress, 2.5); // More natural curve
+        return 0.7 + (easedProgress * 0.3); // Scale from 0.7 to 1.0
       } else if (currentPhaseName.includes('välja') || currentPhaseName.includes('exhale')) {
-        // Smooth exhale curve - starts fast, then slows down
-        const easedProgress = Math.pow(progress, 2); // Ease-in quadratic
-        return 1.0 - (easedProgress * 0.4); // Scale from 1.0 to 0.6
+        // Natural exhale curve - starts gentle, then accelerates
+        const easedProgress = Math.pow(progress, 1.8); // More natural exhale
+        return 1.0 - (easedProgress * 0.3); // Scale from 1.0 to 0.7
       } else if (currentPhaseName.includes('hoia') || currentPhaseName.includes('hold')) {
-        return 0.8; // Stable size for hold phases
+        return 0.85; // Slightly larger stable size for hold phases
       } else {
-        // Default to smooth inhale scaling
-        const easedProgress = 1 - Math.pow(1 - progress, 3);
-        return 0.6 + (easedProgress * 0.4);
+        // Default to natural inhale scaling
+        const easedProgress = 1 - Math.pow(1 - progress, 2.5);
+        return 0.7 + (easedProgress * 0.3);
       }
     } else {
       // Fallback to old logic
@@ -556,7 +561,22 @@ export default function MindfulnessPage() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
+    <>
+      <style>
+        {`
+          @keyframes breathe {
+            0%, 100% { 
+              filter: brightness(1) saturate(1);
+              transform: scale(1);
+            }
+            50% { 
+              filter: brightness(1.1) saturate(1.2);
+              transform: scale(1.02);
+            }
+          }
+        `}
+      </style>
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
       <div className="container mx-auto px-4 py-12 max-w-3xl">
         <div className="mb-8 text-center space-y-3">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
@@ -720,16 +740,30 @@ export default function MindfulnessPage() {
                 style={{
                   transform: `scale(${isActive ? getCircleScale() : 0.75})`,
                   transitionDuration: `${getCurrentPhaseDuration() / 1000}ms`,
-                  transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)', // Smooth breathing curve
+                  transitionTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Natural breathing curve
                 }}
               >
                 <div 
-                  className="w-64 h-64 rounded-full backdrop-blur-sm border-2 border-primary/30 shadow-2xl flex items-center justify-center"
+                  className="w-64 h-64 rounded-full backdrop-blur-xl border-2 border-primary/20 shadow-3xl flex items-center justify-center relative overflow-hidden"
                   style={{
-                    background: `radial-gradient(circle, ${getPhaseColors()})`,
+                    background: `radial-gradient(circle at ${50 + Math.sin(Date.now() / 1000) * 10}% ${50 + Math.cos(Date.now() / 1000) * 10}%, ${getPhaseColors()})`,
+                    boxShadow: `
+                      0 0 0 1px rgba(255,255,255,0.1),
+                      0 8px 32px rgba(0,0,0,0.12),
+                      0 16px 64px rgba(0,0,0,0.08),
+                      0 32px 128px rgba(0,0,0,0.04)
+                    `,
+                    animation: 'breathe 4s ease-in-out infinite',
                   }}
                 >
-                  <div className="text-center">
+                  {/* Additional blur layer for depth */}
+                  <div 
+                    className="absolute inset-0 rounded-full backdrop-blur-lg opacity-50"
+                    style={{
+                      background: `radial-gradient(circle, ${getPhaseColors()})`,
+                    }}
+                  />
+                  <div className="text-center relative z-10">
                     <div className="text-3xl font-bold mb-2 text-foreground">
                       {isActive ? getPhaseText() : 'Valmis?'}
                     </div>
@@ -861,11 +895,12 @@ export default function MindfulnessPage() {
                 </p>
               )}
             </div>
-          )}
-            </CardContent>
-          </Card>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
+  )}
+</div>
+</div>
+</>
   );
 }
