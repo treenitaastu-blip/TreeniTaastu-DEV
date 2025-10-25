@@ -114,7 +114,7 @@ export default function Header() {
           { to: "/programm", label: "Programm", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/harjutused", label: "Harjutused", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/tervisetood", label: "Tervisetõed", show: !accessLoading && (canStatic || isAdmin) },
-          { to: "/mindfulness", label: "Lõõgastus", show: !accessLoading && (canStatic || isAdmin) },
+          { to: "/mindfulness", label: "Hingamine", show: !accessLoading && (canStatic || isAdmin) },
           { to: "/pricing", label: "Hinnad", show: !accessLoading && !canStatic && !isAdmin },
         ]
       : []),
@@ -298,6 +298,17 @@ export default function Header() {
                 <span className="hidden sm:inline">Logi sisse</span>
               </Link>
             )}
+
+            {/* Center: TREENI & TAASTU Logo */}
+            <Link
+              to="/"
+              className="flex-1 flex justify-center"
+              onClick={() => closeAllDropdowns()}
+            >
+              <h1 className="text-lg font-bold text-black italic" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                TREENI & TAASTU
+              </h1>
+            </Link>
 
             {/* Right: Burger Menu */}
             <button

@@ -20,7 +20,7 @@ import PersonalTrainingCompletionDialog from "@/components/workout/PersonalTrain
 import PTAccessValidator from "@/components/PTAccessValidator";
 import ErrorRecovery from "@/components/ErrorRecovery";
 import WorkoutFeedback from "@/components/workout/WorkoutFeedback";
-import { calculateExerciseProgression, ExerciseType } from "@/utils/progressionLogic";
+// Removed unused import: calculateExerciseProgression from progressionLogic
 
 // Helper function to parse reps string to number
 const parseRepsToNumber = (reps: string): number | null => {

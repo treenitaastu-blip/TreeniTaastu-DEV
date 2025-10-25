@@ -3,6 +3,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, TrendingUp, TrendingDown } from 'lucide-react';
 
+// Exercise type detection
+export type ExerciseType = 'compound' | 'isolation' | 'bodyweight';
+
+export function determineExerciseType(exerciseName: string): ExerciseType {
+  const name = exerciseName.toLowerCase();
+  
+  // Compound movements
+  const compoundKeywords = ['squat', 'deadlift', 'bench', 'press', 'row', 'pull', 'push'];
+  if (compoundKeywords.some(keyword => name.includes(keyword))) {
+    return 'compound';
+  }
+  
+  // Bodyweight movements
+  const bodyweightKeywords = ['push-up', 'pull-up', 'dip', 'chin-up', 'plank', 'burpee'];
+  if (bodyweightKeywords.some(keyword => name.includes(keyword))) {
+    return 'bodyweight';
+  }
+  
+  // Default to isolation
+  return 'isolation';
+}
+
 interface ExerciseFeedbackProps {
   exerciseName: string;
   exerciseType: 'compound' | 'isolation' | 'bodyweight';

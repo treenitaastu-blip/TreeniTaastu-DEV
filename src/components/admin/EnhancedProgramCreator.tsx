@@ -67,6 +67,7 @@ type ExerciseAlternative = {
 type Exercise = {
   id?: string;
   exercise_name: string;
+  exercise_type?: 'compound' | 'isolation' | 'bodyweight';
   sets: number;
   reps: string;
   rest_seconds: number;
@@ -163,6 +164,7 @@ export default function EnhancedProgramCreator({
   const addExercise = (dayIndex: number) => {
     const newExercise: Exercise = {
       exercise_name: "Uus harjutus",
+      exercise_type: 'isolation',
       sets: 3,
       reps: "8-12",
       rest_seconds: 60,
@@ -391,6 +393,7 @@ export default function EnhancedProgramCreator({
             return {
               template_day_id: dayData.id,
               exercise_name: exercise.exercise_name,
+              exercise_type: exercise.exercise_type || 'isolation',
               sets: exercise.sets,
               reps: exercise.reps,
               rest_seconds: exercise.rest_seconds,
@@ -760,6 +763,18 @@ export default function EnhancedProgramCreator({
                                   onChange={(e) => updateExercise(dayIndex, exerciseIndex, { exercise_name: e.target.value })}
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                 />
+                              </div>
+                              <div className="sm:col-span-1 lg:col-span-1">
+                                <label className="block text-xs font-medium mb-1">Tüüp</label>
+                                <select
+                                  value={exercise.exercise_type || 'isolation'}
+                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { exercise_type: e.target.value })}
+                                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
+                                >
+                                  <option value="compound">Liigend (2.5kg)</option>
+                                  <option value="isolation">Isolatsioon (1.25kg)</option>
+                                  <option value="bodyweight">Kehakaal</option>
+                                </select>
                               </div>
                               <div className="sm:col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-medium mb-1">Seeriad</label>

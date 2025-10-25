@@ -6,15 +6,103 @@ import { Play, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWeekendRedirect } from '@/hooks/useWeekendRedirect';
 
+// Exercise configuration types
+interface BreathingPhase {
+  name: string;
+  duration: number; // in seconds
+  instruction: string;
+}
+
+interface BreathingExercise {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  totalDuration: number;
+  phases: BreathingPhase[];
+  instruction: string;
+  color: string;
+  icon: string;
+}
+
+// Exercise configurations
+const breathingExercises: BreathingExercise[] = [
+  {
+    id: "aktiveeriv",
+    name: "Aktiveeriv hingamine",
+    category: "Energiat ja keskendumist tõstev",
+    description: "Kiire ja jõuline hingamine nina kaudu, mis ergutab närvisüsteemi ja tõstab hapnikutaset. Parim hommikul või enne treeningut.",
+    totalDuration: 60, // 1 minute
+    phases: [
+      { name: "Sisse", duration: 1, instruction: "Hinga kiiresti sisse" },
+      { name: "Välja", duration: 1, instruction: "Hinga kiiresti välja" }
+    ],
+    instruction: "Hinga kiiresti ja jõuliselt sisse ning välja läbi nina. Hoia tempo ühtlane, umbes kord sekundis. Pärast 30 hingetõmmet lõdvestu ja hinga sügavalt välja.",
+    color: "from-orange-400 to-red-500",
+    icon: "⚡"
+  },
+  {
+    id: "kasti",
+    name: "Kasti hingamine",
+    category: "Stressi ja ärevuse leevendamiseks",
+    description: "Rahustav hingamisrütm, mida kasutavad ka sportlased ja sõjaväelased ärevuse kontrolliks.",
+    totalDuration: 180, // 3 minutes
+    phases: [
+      { name: "Sisse", duration: 4, instruction: "Hinga sügavalt sisse" },
+      { name: "Hoia", duration: 4, instruction: "Hoia hinge kinni" },
+      { name: "Välja", duration: 4, instruction: "Hinga aeglaselt välja" },
+      { name: "Hoia", duration: 4, instruction: "Hoia jälle kinni" }
+    ],
+    instruction: "Hinga sügavalt sisse 4 sekundi jooksul, hoia hinge kinni 4 sekundit, hinga välja 4 sekundi jooksul ja hoia jälle 4 sekundit. Korda kuus tsüklit. Kujuta ette, et liigud mööda nelinurka.",
+    color: "from-blue-400 to-indigo-500",
+    icon: "📦"
+  },
+  {
+    id: "478",
+    name: "4-7-8 hingamine",
+    category: "Uinumise ja taastumise soodustamiseks",
+    description: "Aitab aeglustada pulssi ja aktiveerib parasümpaatilist närvisüsteemi.",
+    totalDuration: 180, // 3 minutes
+    phases: [
+      { name: "Sisse", duration: 4, instruction: "Hinga sügavalt sisse" },
+      { name: "Hoia", duration: 7, instruction: "Hoia hinge kinni" },
+      { name: "Välja", duration: 8, instruction: "Hinga aeglaselt välja" }
+    ],
+    instruction: "Hinga sisse 4 sekundi jooksul, hoia hinge kinni 7 sekundit ja hinga aeglaselt välja 8 sekundi jooksul. Korda neli korda. Ideaalne enne und või lõõgastuseks.",
+    color: "from-purple-400 to-pink-500",
+    icon: "🌙"
+  },
+  {
+    id: "tasakaalustatud",
+    name: "Tasakaalustatud hingamine",
+    category: "Närvisüsteemi tasakaalustamiseks ja keskendumise taastamiseks",
+    description: "Rahustav ja rütmiline hingamisviis, mis aitab stabiliseerida pulssi ja närvisüsteemi aktiivsust. Sobib ideaalselt tööpausi, keskendumise taastamise või päeva alustamise ajaks.",
+    totalDuration: 300, // 5 minutes
+    phases: [
+      { name: "Sisse", duration: 5, instruction: "Hinga sügavalt sisse" },
+      { name: "Välja", duration: 5, instruction: "Hinga aeglaselt välja" }
+    ],
+    instruction: "Hinga sügavalt sisse 5 sekundi jooksul ja hinga sama aeglaselt välja 5 sekundi jooksul. Hoia rütm ühtlane ja keskendu hingamise tundele rinnus.",
+    color: "from-green-400 to-teal-500",
+    icon: "⚖️"
+  }
+];
+
 export default function MindfulnessPage() {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { markWeekendCompleted } = useWeekendRedirect();
   
+  // Exercise selection state
+  const [selectedExercise, setSelectedExercise] = useState<BreathingExercise | null>(null);
+  const [showExerciseSelection, setShowExerciseSelection] = useState(true);
+  
+  // Exercise execution state
   const [isActive, setIsActive] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(0);
-  const [phase, setPhase] = useState<'prep' | 'inhale' | 'exhale'>('prep');
+  const [currentPhase, setCurrentPhase] = useState(0);
+  const [phase, setPhase] = useState<'prep' | 'inhale' | 'exhale' | 'hold'>('prep');
   const [isCompleted, setIsCompleted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(5000); // 5 seconds in ms
   const [prepBreaths, setPrepBreaths] = useState(0);
@@ -27,17 +115,58 @@ export default function MindfulnessPage() {
   const dayNumber = location.state?.dayNumber;
   const returnPath = location.state?.returnPath || '/programm';
 
-  const totalCycles = 10;
-  const cycleDuration = 5000; // 5 seconds per phase
-  const prepPhases = 3; // 3 preparation breaths
+  // Calculate cycles based on selected exercise
+  const getTotalCycles = () => {
+    if (!selectedExercise) return 10;
+    
+    switch (selectedExercise.id) {
+      case 'aktiveeriv':
+        return 30; // 30 breaths in 1 minute
+      case 'kasti':
+        return 6; // 6 cycles in 3 minutes
+      case '478':
+        return 4; // 4 cycles in 3 minutes
+      case 'tasakaalustatud':
+        return 30; // 30 cycles in 5 minutes
+      default:
+        return 10;
+    }
+  };
 
-  const motivationalMessages = [
-    "Suurepärane! Sa andsid endale kingi - hetke täielikku rahu.",
-    "Hästi tehtud! Sügav ja teadlik hingamine rahustab meelt ja kehha.",
-    "Võta see rahu ja selgus endaga kaasa kogu päeva jooksul.",
-    "Sa oled leidnud hetke enda jaoks. See on väärtuslik anni.",
-    "Iga teadlik hingamine toob sulle rohkem sisemist rahu ja tasakaalu."
-  ];
+  const totalCycles = getTotalCycles();
+  const prepPhases = 3; // 3 preparation breaths
+  
+  // Get current phase duration based on selected exercise
+  const getCurrentPhaseDuration = () => {
+    if (!selectedExercise) return 5000; // Default 5 seconds
+    
+    if (phase === 'prep') {
+      return selectedExercise.phases[0].duration * 1000; // First phase for prep
+    }
+    
+    // For main exercise, use the current phase
+    const phaseIndex = currentPhase % selectedExercise.phases.length;
+    return selectedExercise.phases[phaseIndex].duration * 1000;
+  };
+  
+  const cycleDuration = getCurrentPhaseDuration();
+
+  const getExerciseSpecificMessage = () => {
+    if (!selectedExercise) return "Suurepärane! Sa andsid endale kingi - hetke täielikku rahu.";
+    
+    switch (selectedExercise.id) {
+      case 'aktiveeriv':
+        return "Suurepärane! Sa ergutasid oma närvisüsteemi ja tõstsid energiataset. Tunne seda energiat kogu päeva jooksul.";
+      case 'kasti':
+        return "Hästi tehtud! Sa leevendasid stressi ja taastasid sisemise tasakaalu. Tunne seda rahu.";
+      case '478':
+        return "Suurepärane! Sa valmistasid keha ja meele und. Lõdvestu ja lase kehal taastuda.";
+      case 'tasakaalustatud':
+        return "Hästi tehtud! Sa tasakaalustasid närvisüsteemi ja taastasid keskendumise. Tunne seda selgust.";
+      default:
+        return "Suurepärane! Sa andsid endale kingi - hetke täielikku rahu.";
+    }
+  };
 
   // Audio context for breathing sounds
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -220,7 +349,7 @@ export default function MindfulnessPage() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (isActive && !isCompleted) {
+    if (isActive && !isCompleted && selectedExercise) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 100) {
@@ -231,6 +360,7 @@ export default function MindfulnessPage() {
                 if (nextBreaths >= prepPhases * 2) {
                   // Finished prep, start main exercise
                   setPhase('inhale');
+                  setCurrentPhase(0);
                   createBreathSound('inhale');
                   return 0;
                 } else {
@@ -242,33 +372,40 @@ export default function MindfulnessPage() {
                 }
               });
             } else {
-              // Handle main exercise phase
-              setPhase((currentPhase) => {
-                const nextPhase = currentPhase === 'inhale' ? 'exhale' : 'inhale';
-                createBreathSound(nextPhase);
-                
-                if (currentPhase === 'exhale') {
-                  // Completed a full cycle (inhale + exhale)
-                  setCurrentCycle((prevCycle) => {
-                    const nextCycle = prevCycle + 1;
-                    if (nextCycle >= totalCycles) {
-                      setIsActive(false);
-                      setIsCompleted(true);
-                      
-                      // Track weekend completion if coming from calendar
-                      if (fromCalendar && dayNumber && user?.id) {
-                        markWeekendCompleted(dayNumber, user.id);
-                      }
+              // Handle main exercise phase with selected exercise phases
+              const nextPhaseIndex = (currentPhase + 1) % selectedExercise.phases.length;
+              setCurrentPhase(nextPhaseIndex);
+              
+              // Get the next phase name for audio
+              const nextPhaseName = selectedExercise.phases[nextPhaseIndex].name.toLowerCase();
+              if (nextPhaseName.includes('sisse') || nextPhaseName.includes('inhale')) {
+                createBreathSound('inhale');
+              } else if (nextPhaseName.includes('välja') || nextPhaseName.includes('exhale')) {
+                createBreathSound('exhale');
+              } else {
+                // For hold phases, use a gentle sound
+                createBreathSound('inhale');
+              }
+              
+              // Check if we completed a full cycle
+              if (nextPhaseIndex === 0) {
+                setCurrentCycle((prevCycle) => {
+                  const nextCycle = prevCycle + 1;
+                  if (nextCycle >= totalCycles) {
+                    setIsActive(false);
+                    setIsCompleted(true);
+                    
+                    // Track weekend completion if coming from calendar
+                    if (fromCalendar && dayNumber && user?.id) {
+                      markWeekendCompleted(dayNumber, user.id);
                     }
-                    return nextCycle;
-                  });
-                }
-                
-                return nextPhase;
-              });
+                  }
+                  return nextCycle;
+                });
+              }
             }
             
-            return cycleDuration;
+            return getCurrentPhaseDuration();
           }
           return prev - 100;
         });
@@ -276,7 +413,7 @@ export default function MindfulnessPage() {
     }
 
     return () => clearInterval(interval);
-  }, [isActive, isCompleted, phase, prepPhases, cycleDuration, totalCycles]);
+  }, [isActive, isCompleted, phase, prepPhases, selectedExercise, currentPhase, totalCycles]);
 
   const handleStart = async () => {
     console.log('[Mindfulness] Starting exercise...');
@@ -354,6 +491,11 @@ export default function MindfulnessPage() {
       const isPrepInhale = prepBreaths % 2 === 0;
       return isPrepInhale ? 'Sisse' : 'Välja';
     }
+    
+    if (selectedExercise) {
+      return selectedExercise.phases[currentPhase]?.name || 'Hingamine';
+    }
+    
     return phase === 'inhale' ? 'Sisse' : 'Välja';
   };
 
@@ -361,6 +503,11 @@ export default function MindfulnessPage() {
     if (phase === 'prep') {
       return `Ettevalmistus ${Math.floor(prepBreaths / 2) + 1}/3`;
     }
+    
+    if (selectedExercise) {
+      return selectedExercise.phases[currentPhase]?.instruction || 'Järgi ringi liikumist';
+    }
+    
     return 'Hinga rahulikult';
   };
 
@@ -371,44 +518,109 @@ export default function MindfulnessPage() {
       <div className="container mx-auto px-4 py-12 max-w-3xl">
         <div className="mb-8 text-center space-y-3">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-            Mindfulness
+            Hingamine
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Võta hetk rahust ja keskendus oma hingamisele
+            Vali sobiv hingamisharjutus oma vajadusele
           </p>
         </div>
 
-        <Card className="shadow-xl border-primary/10">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl">Hingamisharjutus</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-8">
+        {/* Exercise Selection UI */}
+        {showExerciseSelection && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {breathingExercises.map((exercise) => (
+              <Card 
+                key={exercise.id}
+                className="cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl border-0 bg-white/50 backdrop-blur-sm"
+                onClick={() => {
+                  setSelectedExercise(exercise);
+                  setShowExerciseSelection(false);
+                  setShowInstructions(true);
+                }}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${exercise.color} flex items-center justify-center text-2xl`}>
+                      {exercise.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {exercise.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {exercise.category}
+                      </p>
+                      <p className="text-sm text-gray-700 mb-3">
+                        {exercise.description}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>⏱️ {Math.floor(exercise.totalDuration / 60)} min</span>
+                        <span>•</span>
+                        <span>{exercise.phases.length} faas</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Exercise Execution UI */}
+        {!showExerciseSelection && selectedExercise && (
+          <Card className="shadow-xl border-primary/10">
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-2xl flex items-center justify-center gap-2">
+                <span className="text-2xl">{selectedExercise.icon}</span>
+                {selectedExercise.name}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {selectedExercise.category}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-8">
           {/* Instructions */}
           {showInstructions && (
             <div className="space-y-6 p-8 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-xl border border-primary/20">
-              <div className="text-center">
-                <h3 className="text-xl font-semibold text-primary mb-6">
-                  Ettevalmistus rahulikuks hingamiseks
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-primary">
+                  {selectedExercise.name} - Juhend
                 </h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowExerciseSelection(true);
+                    setSelectedExercise(null);
+                  }}
+                >
+                  ← Tagasi
+                </Button>
               </div>
-              <div className="space-y-5">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold flex-shrink-0">1</div>
-                  <p className="text-base pt-2">Leia mugav asend - istu või lama maha</p>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
+                  <p className="text-base text-gray-700">
+                    {selectedExercise.instruction}
+                  </p>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold flex-shrink-0">2</div>
-                  <p className="text-base pt-2">Pane käed kõhule või sülle</p>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold flex-shrink-0">3</div>
-                  <p className="text-base pt-2">Sulge silmad või vaata õrnalt ringi keskele</p>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold flex-shrink-0">4</div>
-                  <p className="text-base pt-2">Harjutus algab 3 ettevalmistava hingamisega</p>
+                
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900">Hingamise rütm:</h4>
+                  {selectedExercise.phases.map((phase, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-medium">{phase.name}</span>
+                        <span className="text-gray-600 ml-2">({phase.duration}s)</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
+              
               <p className="text-center text-sm text-muted-foreground italic pt-4">
                 Võta aega, et ennast mugavalt sisse seada. Kui oled valmis, vajuta "Alusta"
               </p>
@@ -533,7 +745,7 @@ export default function MindfulnessPage() {
                 Harjutus lõpetatud!
               </div>
               <p className="text-lg text-success-foreground max-w-md mx-auto">
-                {randomMessage}
+                {getExerciseSpecificMessage()}
               </p>
             </div>
           )}
@@ -594,8 +806,9 @@ export default function MindfulnessPage() {
               )}
             </div>
           )}
-        </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

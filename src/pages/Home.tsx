@@ -333,13 +333,9 @@ export default function Home() {
         {/* Welcome Header - Clean Apple-style */}
         <div className="text-center space-y-6 pt-8">
           <div className="space-y-4">
-            {user?.full_name ? (
+            {user?.full_name && (
               <h1 className="text-4xl md:text-5xl font-bold text-black">
                 Tere, {user.full_name.split(' ')[0]}!
-              </h1>
-            ) : (
-              <h1 className="text-4xl md:text-5xl font-bold text-black italic" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                TREENI & TAASTU
               </h1>
             )}
           </div>
@@ -436,18 +432,12 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Program Preview */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Program Preview - Only Available Programs */}
+              <div className="grid grid-cols-1 gap-4">
                 <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
                   <div className="text-lg font-bold text-gray-900 mb-2">Kontorikeha Reset</div>
                   <div className="text-sm text-gray-600 mb-3">20 päeva • Alustaja</div>
                   <div className="text-xs text-green-600 font-medium">✓ Saadaval</div>
-                </div>
-                
-                <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
-                  <div className="text-lg font-bold text-gray-900 mb-2">35+ Naised Kodus</div>
-                  <div className="text-sm text-gray-600 mb-3">Varsti valmimas</div>
-                  <div className="text-xs text-orange-600 font-medium">⏳ Tulekul</div>
                 </div>
               </div>
 

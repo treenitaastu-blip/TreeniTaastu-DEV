@@ -143,7 +143,7 @@ export default function TemplateDetail() {
           const { data: idata, error: ierr } = await supabase
             .from("template_items")
             .select(
-              "id, template_day_id, exercise_name, sets, reps, rest_seconds, seconds, weight_kg, coach_notes, order_in_day, video_url, inserted_at, is_unilateral, reps_per_side, total_reps"
+              "id, template_day_id, exercise_name, exercise_type, sets, reps, rest_seconds, seconds, weight_kg, coach_notes, order_in_day, video_url, inserted_at, is_unilateral, reps_per_side, total_reps"
             )
             .in("template_day_id", dayIds)
             .order("order_in_day", { ascending: true });
@@ -448,6 +448,7 @@ export default function TemplateDetail() {
     const ins: ItemIns = {
       template_day_id: dayId,
       exercise_name: strOrNull(processedBase.exercise_name) ?? "Uus harjutus",
+      exercise_type: strOrNull(processedBase.exercise_type) ?? "isolation",
       sets: intOrUndef(processedBase.sets as any) ?? 1,
       reps: strOrNull(processedBase.reps) ?? "8-12",
       rest_seconds: intOrUndef(processedBase.rest_seconds as any),
@@ -476,7 +477,7 @@ export default function TemplateDetail() {
       const { data, error } = await supabase
         .from("template_items")
         .insert(ins)
-        .select("id, template_day_id, exercise_name, sets, reps, rest_seconds, seconds, weight_kg, coach_notes, order_in_day, video_url, inserted_at")
+        .select("id, template_day_id, exercise_name, exercise_type, sets, reps, rest_seconds, seconds, weight_kg, coach_notes, order_in_day, video_url, inserted_at")
         .single();
       if (error) throw error;
 
@@ -783,6 +784,25 @@ export default function TemplateDetail() {
                               }
                               placeholder="Harjutuse nimi"
                             />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Tüüp</label>
+                            <select
+                              className="w-full rounded-md border px-3 py-2 text-sm"
+                              value={it.exercise_type ?? "isolation"}
+                              onChange={(e) =>
+                                setItemsByDay((prev) => ({
+                                  ...prev,
+                                  [day.id]: (prev[day.id] || []).map((row) =>
+                                    row.id === it.id ? { ...row, exercise_type: e.target.value } : row
+                                  ),
+                                }))
+                              }
+                            >
+                              <option value="compound">Liigend (2.5kg)</option>
+                              <option value="isolation">Isolatsioon (1.25kg)</option>
+                              <option value="bodyweight">Kehakaal</option>
+                            </select>
                           </div>
                           <div className="sm:col-span-1">
                             <label className="block text-xs font-medium text-gray-600 mb-1">Seeriad</label>
@@ -1172,6 +1192,23 @@ export default function TemplateDetail() {
                         }))
                       }
                     />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Tüüp</label>
+                    <select
+                      className="w-full rounded-md border px-3 py-2 text-sm"
+                      value={(newItem[day.id]?.exercise_type as string) || "isolation"}
+                      onChange={(e) =>
+                        setNewItem((prev) => ({
+                          ...prev,
+                          [day.id]: { ...(prev[day.id] || {}), exercise_type: e.target.value },
+                        }))
+                      }
+                    >
+                      <option value="compound">Liigend (2.5kg)</option>
+                      <option value="isolation">Isolatsioon (1.25kg)</option>
+                      <option value="bodyweight">Kehakaal</option>
+                    </select>
                   </div>
                   <div className="sm:col-span-1">
                     <label className="block text-xs font-medium text-gray-600 mb-1">Seeriad</label>

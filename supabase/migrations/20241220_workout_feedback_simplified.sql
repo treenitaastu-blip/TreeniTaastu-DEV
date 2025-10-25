@@ -138,11 +138,11 @@ BEGIN
     v_reps_increase := -1;
     v_sets_increase := 0;
     v_reason := 'Joint pain - reducing intensity';
-  -- Normal progression
+  -- Normal progression - no changes when feedback is normal
   ELSE
-    v_reps_increase := 1;
+    v_reps_increase := 0;
     v_sets_increase := 0;
-    v_reason := 'Normal progression';
+    v_reason := 'Normal progression - no changes needed';
   END IF;
   
   -- Apply progression to each exercise in the program

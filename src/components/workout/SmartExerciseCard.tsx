@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { VideoModal } from "./VideoModal";
 import ExerciseFeedback from "./ExerciseFeedback";
 import { cn } from "@/lib/utils";
-import { determineExerciseType, ExerciseType } from "@/utils/progressionLogic";
+import { determineExerciseType, ExerciseType } from "./ExerciseFeedback";
 
 // Helper to parse reps string to number (e.g., "12x" -> 12, "8-10" -> 8)
 const parseRepsToNumber = (reps: string): number | null => {
@@ -21,6 +21,7 @@ interface SmartExerciseCardProps {
   exercise: {
     id: string;
     exercise_name: string;
+    exercise_type?: 'compound' | 'isolation' | 'bodyweight';
     sets: number;
     reps: string;
     seconds?: number | null;
@@ -680,7 +681,7 @@ export default function SmartExerciseCard({
       {showFeedback && (
         <ExerciseFeedback
           exerciseName={exercise.exercise_name}
-          exerciseType={determineExerciseType(exercise.exercise_name)}
+          exerciseType={exercise.exercise_type || determineExerciseType(exercise.exercise_name)}
           currentWeight={exercise.weight_kg || 0}
           onComplete={handleExerciseFeedback}
           onSkip={handleSkipFeedback}
