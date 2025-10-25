@@ -744,16 +744,34 @@ export default function MindfulnessPage() {
 
           {/* Progress */}
           {!isCompleted && !showInstructions && !showCountdown && phase !== 'prep' && (
-            <div className="space-y-3">
-              <div className="text-center text-xl font-semibold">
-                Tsükkel {Math.min(currentCycle + 1, totalCycles)} / {totalCycles}
+            <div className="space-y-4">
+              {/* Overall Progress */}
+              <div className="space-y-2">
+                <div className="text-center text-lg font-semibold">
+                  Tsükkel {Math.min(currentCycle + 1, totalCycles)} / {totalCycles}
+                </div>
+                <div className="w-full bg-secondary/30 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-gradient-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(currentCycle / totalCycles) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full bg-secondary/30 rounded-full h-3 overflow-hidden">
-                <div 
-                  className="bg-gradient-primary h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentCycle / totalCycles) * 100}%` }}
-                />
-              </div>
+              
+              {/* Phase Progress */}
+              {selectedExercise && (
+                <div className="space-y-2">
+                  <div className="text-center text-sm font-medium text-muted-foreground">
+                    {selectedExercise.phases[currentPhase]?.name} ({selectedExercise.phases[currentPhase]?.duration}s)
+                  </div>
+                  <div className="w-full bg-secondary/20 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-primary to-accent h-1.5 rounded-full transition-all duration-100"
+                      style={{ width: `${((getCurrentPhaseDuration() - timeLeft) / getCurrentPhaseDuration()) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
