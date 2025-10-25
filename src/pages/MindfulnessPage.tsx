@@ -39,7 +39,7 @@ const breathingExercises: BreathingExercise[] = [
     ],
     instruction: "Hinga kiiresti ja jõuliselt sisse ning välja läbi nina. Hoia tempo ühtlane, umbes kord sekundis. Pärast 30 hingetõmmet lõdvestu ja hinga sügavalt välja.",
     color: "from-orange-400 to-red-500",
-    icon: "⚡"
+    icon: "▲"
   },
   {
     id: "kasti",
@@ -55,7 +55,7 @@ const breathingExercises: BreathingExercise[] = [
     ],
     instruction: "Hinga sügavalt sisse 4 sekundi jooksul, hoia hinge kinni 4 sekundit, hinga välja 4 sekundi jooksul ja hoia jälle 4 sekundit. Korda kuus tsüklit. Kujuta ette, et liigud mööda nelinurka.",
     color: "from-blue-400 to-indigo-500",
-    icon: "📦"
+    icon: "⬜"
   },
   {
     id: "478",
@@ -70,7 +70,7 @@ const breathingExercises: BreathingExercise[] = [
     ],
     instruction: "Hinga sisse 4 sekundi jooksul, hoia hinge kinni 7 sekundit ja hinga aeglaselt välja 8 sekundi jooksul. Korda neli korda. Ideaalne enne und või lõõgastuseks.",
     color: "from-purple-400 to-pink-500",
-    icon: "🌙"
+    icon: "●"
   },
   {
     id: "tasakaalustatud",
@@ -84,7 +84,7 @@ const breathingExercises: BreathingExercise[] = [
     ],
     instruction: "Hinga sügavalt sisse 5 sekundi jooksul ja hinga sama aeglaselt välja 5 sekundi jooksul. Hoia rütm ühtlane ja keskendu hingamise tundele rinnus.",
     color: "from-green-400 to-teal-500",
-    icon: "⚖️"
+    icon: "◯"
   }
 ];
 
@@ -596,7 +596,7 @@ export default function MindfulnessPage() {
                         {exercise.description}
                       </p>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span>⏱️ {Math.floor(exercise.totalDuration / 60)} min</span>
+                        <span>{Math.floor(exercise.totalDuration / 60)} min</span>
                         <span>•</span>
                         <span>{exercise.phases.length} faas</span>
                       </div>
@@ -669,7 +669,7 @@ export default function MindfulnessPage() {
               {!audioSupported && (
                 <div className="mt-4 p-4 bg-warning/10 border border-warning/30 rounded-lg">
                   <p className="text-sm text-warning-foreground text-center">
-                    ⚠️ Heli ei ole selles brauseris toetatud, kuid harjutus toimib siiski visuaalse juhendamisega.
+                    Heli ei ole selles brauseris toetatud, kuid harjutus toimib siiski visuaalse juhendamisega.
                   </p>
                 </div>
               )}
@@ -796,7 +796,7 @@ export default function MindfulnessPage() {
           {/* Completion Message */}
           {isCompleted && (
             <div className="text-center space-y-5 p-8 bg-gradient-to-br from-success/10 to-primary/5 rounded-xl border border-success/30">
-              <div className="text-4xl">✨</div>
+              <div className="text-4xl">✓</div>
               <div className="text-2xl font-semibold text-success">
                 Harjutus lõpetatud!
               </div>
