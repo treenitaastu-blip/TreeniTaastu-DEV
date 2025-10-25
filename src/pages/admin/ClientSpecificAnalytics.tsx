@@ -67,6 +67,8 @@ export default function ClientSpecificAnalytics() {
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [workoutFeedback, setWorkoutFeedback] = useState<WorkoutFeedback[]>([]);
+  const [staticProgramCompletion, setStaticProgramCompletion] = useState<number>(0);
+  const [lastLogin, setLastLogin] = useState<string | null>(null);
 
   useEffect(() => {
     loadClients();
@@ -137,6 +139,27 @@ export default function ClientSpecificAnalytics() {
         .select("rpe")
         .eq("user_id", clientId);
 
+      // Get static program completion data
+      const { data: staticProgress, error: staticError } = await supabase
+        .from("userprogress")
+        .select("id, completed_at")
+        .eq("user_id", clientId);
+
+      if (staticError) {
+        console.warn("Error loading static program data:", staticError);
+      }
+
+      // Get last login information from profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("updated_at")
+        .eq("id", clientId)
+        .single();
+
+      if (profileError) {
+        console.warn("Error loading profile data:", profileError);
+      }
+
       // Calculate stats
       const totalSessions = sessions?.length || 0;
       const completedSessions = sessions?.filter(s => s.ended_at)?.length || 0;
@@ -174,6 +197,12 @@ export default function ClientSpecificAnalytics() {
       };
 
       setStats(clientStats);
+
+      // Set static program completion count
+      setStaticProgramCompletion(staticProgress?.length || 0);
+
+      // Set last login information
+      setLastLogin(profileData?.updated_at || null);
 
       // Build weekly data for charts (last 12 weeks, fill gaps)
       const weeklyStats: Record<string, { sessions: number; volume: number; rpe_sum: number; rpe_count: number }> = {};
@@ -364,6 +393,8 @@ export default function ClientSpecificAnalytics() {
                   <ProgressChart 
                     weeklyData={weeklyData}
                     stats={stats}
+                    staticProgramCompletion={staticProgramCompletion}
+                    lastLogin={lastLogin}
                   />
                 </CardContent>
               </Card>
