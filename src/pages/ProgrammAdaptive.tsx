@@ -12,7 +12,7 @@ import CalendarGrid from '@/components/calendar/CalendarGrid';
 import QuoteDisplay from '@/components/calendar/QuoteDisplay';
 import { getTallinnDate, isAfterUnlockTime } from '@/lib/workweek';
 import { supabase } from '@/integrations/supabase/client';
-import { CompactTimer } from '@/components/workout/CompactTimer';
+import { UnifiedTimer } from '@/components/workout/UnifiedTimer';
 
 export default function ProgrammAdaptive() {
   const { user } = useAuth();
