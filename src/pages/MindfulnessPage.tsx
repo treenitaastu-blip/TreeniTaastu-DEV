@@ -244,7 +244,7 @@ export default function MindfulnessPage() {
     }
   };
 
-  const createBreathSound = async (type: 'inhale' | 'exhale') => {
+  const createBreathSound = async (type: 'inhale' | 'exhale', duration?: number) => {
     try {
       if (!audioSupported) {
         console.log('[Mindfulness] Audio not supported, skipping sound generation');
@@ -260,10 +260,10 @@ export default function MindfulnessPage() {
       console.log(`[Mindfulness] Creating ${type} sound`);
       
       const audioContext = audioContextRef.current;
-      const duration = type === 'inhale' ? 4.5 : 5.5;
+      const soundDuration = duration || (type === 'inhale' ? 4.5 : 5.5);
       
       // Create noise source with iOS-optimized settings
-      const bufferSize = Math.floor(audioContext.sampleRate * duration);
+      const bufferSize = Math.floor(audioContext.sampleRate * soundDuration);
       const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       
@@ -311,21 +311,21 @@ export default function MindfulnessPage() {
       if (type === 'inhale') {
         // Gradual increase for inhale (wind coming in)
         gainNode.gain.linearRampToValueAtTime(maxGain, audioContext.currentTime + 0.5);
-        gainNode.gain.setValueAtTime(maxGain, audioContext.currentTime + duration - 0.8);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
+        gainNode.gain.setValueAtTime(maxGain, audioContext.currentTime + soundDuration - 0.8);
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + soundDuration);
         
         // Frequency modulation for inhale
-        filter.frequency.linearRampToValueAtTime(baseFreq + 100, audioContext.currentTime + duration * 0.3);
-        filter.frequency.linearRampToValueAtTime(baseFreq + 50, audioContext.currentTime + duration);
+        filter.frequency.linearRampToValueAtTime(baseFreq + 100, audioContext.currentTime + soundDuration * 0.3);
+        filter.frequency.linearRampToValueAtTime(baseFreq + 50, audioContext.currentTime + soundDuration);
       } else {
         // Gradual decrease for exhale (wind going out)
         gainNode.gain.linearRampToValueAtTime(maxGain * 0.8, audioContext.currentTime + 0.3);
-        gainNode.gain.setValueAtTime(maxGain * 0.8, audioContext.currentTime + duration - 1.2);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
+        gainNode.gain.setValueAtTime(maxGain * 0.8, audioContext.currentTime + soundDuration - 1.2);
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + soundDuration);
         
         // Frequency modulation for exhale
-        filter.frequency.linearRampToValueAtTime(baseFreq - 50, audioContext.currentTime + duration * 0.7);
-        filter.frequency.linearRampToValueAtTime(baseFreq - 100, audioContext.currentTime + duration);
+        filter.frequency.linearRampToValueAtTime(baseFreq - 50, audioContext.currentTime + soundDuration * 0.7);
+        filter.frequency.linearRampToValueAtTime(baseFreq - 100, audioContext.currentTime + soundDuration);
       }
       
       // Add error handling for audio playback
@@ -336,9 +336,9 @@ export default function MindfulnessPage() {
       // Start the sound with iOS-specific timing
       const startTime = audioContext.currentTime + (isIOS() ? 0.1 : 0);
       noiseSource.start(startTime);
-      noiseSource.stop(startTime + duration);
+      noiseSource.stop(startTime + soundDuration);
       
-      console.log(`[Mindfulness] ${type} sound started at ${startTime}, duration: ${duration}s`);
+      console.log(`[Mindfulness] ${type} sound started at ${startTime}, duration: ${soundDuration}s`);
     } catch (error) {
       console.error(`[Mindfulness] Error creating ${type} sound:`, error);
       console.error('[Mindfulness] Audio context state:', audioContextRef.current?.state);
@@ -361,12 +361,14 @@ export default function MindfulnessPage() {
                   // Finished prep, start main exercise
                   setPhase('inhale');
                   setCurrentPhase(0);
-                  createBreathSound('inhale');
+                  const firstPhaseDuration = selectedExercise.phases[0].duration;
+                  createBreathSound('inhale', firstPhaseDuration);
                   return 0;
                 } else {
                   // Continue prep phase
                   const nextPhase = nextBreaths % 2 === 1 ? 'exhale' : 'inhale';
-                  createBreathSound(nextPhase);
+                  const prepDuration = selectedExercise.phases[0].duration; // Use first phase duration for prep
+                  createBreathSound(nextPhase, prepDuration);
                   setPhase('prep');
                   return nextBreaths;
                 }
@@ -378,13 +380,18 @@ export default function MindfulnessPage() {
               
               // Get the next phase name for audio
               const nextPhaseName = selectedExercise.phases[nextPhaseIndex].name.toLowerCase();
+              const nextPhaseDuration = selectedExercise.phases[nextPhaseIndex].duration;
+              
               if (nextPhaseName.includes('sisse') || nextPhaseName.includes('inhale')) {
-                createBreathSound('inhale');
+                createBreathSound('inhale', nextPhaseDuration);
               } else if (nextPhaseName.includes('välja') || nextPhaseName.includes('exhale')) {
-                createBreathSound('exhale');
+                createBreathSound('exhale', nextPhaseDuration);
+              } else if (nextPhaseName.includes('hoia') || nextPhaseName.includes('hold')) {
+                // Hold phases are silent - no audio
+                console.log('[Mindfulness] Hold phase - no audio');
               } else {
-                // For hold phases, use a gentle sound
-                createBreathSound('inhale');
+                // Default to inhale sound for unknown phases
+                createBreathSound('inhale', nextPhaseDuration);
               }
               
               // Check if we completed a full cycle
@@ -448,13 +455,6 @@ export default function MindfulnessPage() {
         return prev - 1;
       });
     }, 1000);
-    
-    // Start first breath sound after a longer delay for iOS
-    const delay = isIOS() ? 1000 : 500;
-    setTimeout(() => {
-      console.log('[Mindfulness] Starting first breath sound...');
-      createBreathSound('inhale');
-    }, delay);
   };
 
   const handleReset = () => {
@@ -479,10 +479,28 @@ export default function MindfulnessPage() {
       } else {
         return 0.9 - (progress * 0.3); // Scale from 0.9 to 0.6
       }
-    } else if (phase === 'inhale') {
-      return 0.5 + (progress * 0.5); // Scale from 0.5 to 1.0
+    } else if (selectedExercise) {
+      // Use selected exercise phase for main exercise
+      const currentPhaseName = selectedExercise.phases[currentPhase]?.name.toLowerCase() || '';
+      
+      if (currentPhaseName.includes('sisse') || currentPhaseName.includes('inhale')) {
+        // Smooth inhale curve - starts slow, accelerates, then slows down
+        const easedProgress = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+        return 0.6 + (easedProgress * 0.4); // Scale from 0.6 to 1.0
+      } else if (currentPhaseName.includes('välja') || currentPhaseName.includes('exhale')) {
+        // Smooth exhale curve - starts fast, then slows down
+        const easedProgress = Math.pow(progress, 2); // Ease-in quadratic
+        return 1.0 - (easedProgress * 0.4); // Scale from 1.0 to 0.6
+      } else if (currentPhaseName.includes('hoia') || currentPhaseName.includes('hold')) {
+        return 0.8; // Stable size for hold phases
+      } else {
+        // Default to smooth inhale scaling
+        const easedProgress = 1 - Math.pow(1 - progress, 3);
+        return 0.6 + (easedProgress * 0.4);
+      }
     } else {
-      return 1.0 - (progress * 0.5); // Scale from 1.0 to 0.5
+      // Fallback to old logic
+      return phase === 'inhale' ? 0.5 + (progress * 0.5) : 1.0 - (progress * 0.5);
     }
   };
 
@@ -509,6 +527,31 @@ export default function MindfulnessPage() {
     }
     
     return 'Hinga rahulikult';
+  };
+
+  const getPhaseColors = () => {
+    if (phase === 'prep') {
+      return 'hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.15)';
+    }
+    
+    if (selectedExercise) {
+      const currentPhaseName = selectedExercise.phases[currentPhase]?.name.toLowerCase() || '';
+      
+      if (currentPhaseName.includes('sisse') || currentPhaseName.includes('inhale')) {
+        return 'hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.3)'; // Blue for inhale
+      } else if (currentPhaseName.includes('välja') || currentPhaseName.includes('exhale')) {
+        return 'hsl(var(--accent) / 0.4), hsl(var(--primary) / 0.3)'; // Orange for exhale
+      } else if (currentPhaseName.includes('hoia') || currentPhaseName.includes('hold')) {
+        return 'hsl(var(--secondary) / 0.3), hsl(var(--muted) / 0.2)'; // Gray for hold
+      } else {
+        return 'hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.2)'; // Default
+      }
+    }
+    
+    // Fallback to old logic
+    return phase === 'inhale' 
+      ? 'hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.2)' 
+      : 'hsl(var(--accent) / 0.3), hsl(var(--primary) / 0.2)';
   };
 
 
@@ -673,21 +716,17 @@ export default function MindfulnessPage() {
           {!showInstructions && !showCountdown && (
             <div className="flex justify-center items-center py-12">
               <div
-                className="relative transition-transform duration-[5000ms] ease-in-out"
+                className="relative transition-transform"
                 style={{
                   transform: `scale(${isActive ? getCircleScale() : 0.75})`,
+                  transitionDuration: `${getCurrentPhaseDuration() / 1000}ms`,
+                  transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)', // Smooth breathing curve
                 }}
               >
                 <div 
                   className="w-64 h-64 rounded-full backdrop-blur-sm border-2 border-primary/30 shadow-2xl flex items-center justify-center"
                   style={{
-                    background: `radial-gradient(circle, ${
-                      phase === 'prep' 
-                        ? 'hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.15)'
-                        : phase === 'inhale' 
-                        ? 'hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.2)' 
-                        : 'hsl(var(--accent) / 0.3), hsl(var(--primary) / 0.2)'
-                    })`,
+                    background: `radial-gradient(circle, ${getPhaseColors()})`,
                   }}
                 >
                   <div className="text-center">
