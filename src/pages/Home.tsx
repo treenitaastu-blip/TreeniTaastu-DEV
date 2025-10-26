@@ -342,14 +342,23 @@ export default function Home() {
         </div>
 
         {/* Quick Actions - Apple Liquid Glass */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button asChild className="h-16 flex-col space-y-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
             <Link 
-              to="/programs"
-              onClick={() => trackButtonClick('programs', '/programs', 'home_quick_actions')}
+              to="/programs/journal"
+              onClick={() => trackButtonClick('journal', '/programs/journal', 'home_quick_actions')}
             >
-              <Dumbbell className="h-5 w-5" />
-              <span className="text-sm font-medium">Treening</span>
+              <BookOpen className="h-5 w-5" />
+              <span className="text-sm font-medium">Märkmik</span>
+            </Link>
+          </Button>
+          <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700">
+            <Link 
+              to="/programs/stats"
+              onClick={() => trackButtonClick('analytics', '/programs/stats', 'home_quick_actions')}
+            >
+              <BarChart3 className="h-5 w-5" />
+              <span className="text-sm font-medium">Analüütika</span>
             </Link>
           </Button>
           <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700">
@@ -359,15 +368,6 @@ export default function Home() {
             >
               <Target className="h-5 w-5" />
               <span className="text-sm font-medium">Teenused</span>
-            </Link>
-          </Button>
-          <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700 md:col-span-1 col-span-2">
-            <Link 
-              to="/tervisetood"
-              onClick={() => trackButtonClick('tervisetoed', '/tervisetoed', 'home_quick_actions')}
-            >
-              <BookOpen className="h-5 w-5" />
-              <span className="text-sm font-medium">Tervisetõed</span>
             </Link>
           </Button>
         </div>
