@@ -214,17 +214,17 @@ export default function TrainingJournal() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                       <label className="text-sm font-medium">Tuju (1-5)</label>
-                      <div className="flex gap-1 mt-1">
+                      <div className="flex gap-1 mt-1 justify-center md:justify-start">
                         {[1, 2, 3, 4, 5].map((value) => (
                           <Button
                             key={value}
                             variant={newEntry.mood === value ? "default" : "outline"}
                             size="sm"
                             onClick={() => setNewEntry(prev => ({ ...prev, mood: value }))}
-                            className="w-8 h-8 p-0"
+                            className="w-10 h-10 p-0 text-sm"
                           >
                             {value}
                           </Button>
@@ -234,14 +234,14 @@ export default function TrainingJournal() {
                     
                     <div>
                       <label className="text-sm font-medium">Energia (1-5)</label>
-                      <div className="flex gap-1 mt-1">
+                      <div className="flex gap-1 mt-1 justify-center md:justify-start">
                         {[1, 2, 3, 4, 5].map((value) => (
                           <Button
                             key={value}
                             variant={newEntry.energy_level === value ? "default" : "outline"}
                             size="sm"
                             onClick={() => setNewEntry(prev => ({ ...prev, energy_level: value }))}
-                            className="w-8 h-8 p-0"
+                            className="w-10 h-10 p-0 text-sm"
                           >
                             {value}
                           </Button>
@@ -251,14 +251,14 @@ export default function TrainingJournal() {
                     
                     <div>
                       <label className="text-sm font-medium">Motivatsioon (1-5)</label>
-                      <div className="flex gap-1 mt-1">
+                      <div className="flex gap-1 mt-1 justify-center md:justify-start">
                         {[1, 2, 3, 4, 5].map((value) => (
                           <Button
                             key={value}
                             variant={newEntry.motivation === value ? "default" : "outline"}
                             size="sm"
                             onClick={() => setNewEntry(prev => ({ ...prev, motivation: value }))}
-                            className="w-8 h-8 p-0"
+                            className="w-10 h-10 p-0 text-sm"
                           >
                             {value}
                           </Button>
