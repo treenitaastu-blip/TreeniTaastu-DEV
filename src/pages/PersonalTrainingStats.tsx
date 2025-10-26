@@ -61,6 +61,7 @@ export default function PersonalTrainingStats() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklySummary[]>([]);
   const [weeklyChartData, setWeeklyChartData] = useState<WeeklyChartData[]>([]);
+  const [lastLogin, setLastLogin] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -128,6 +129,19 @@ export default function PersonalTrainingStats() {
           .limit(12);
         if (weeklyError) throw weeklyError;
         setWeeklyStats((weeklyData as unknown as WeeklySummary[]) || []);
+
+        // Load last login information from profiles
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("updated_at")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError) {
+          console.warn("Error loading profile data:", profileError);
+        } else {
+          setLastLogin(profileData?.updated_at || null);
+        }
 
       } catch (err) {
         setError(err instanceof Error ? err.message : "Viga statistika laadimisel");
@@ -330,6 +344,7 @@ export default function PersonalTrainingStats() {
                   total_volume_kg: overallStats.totalVolumeKg,
                   avg_rpe: overallStats.avgRPE
                 }}
+                lastLogin={lastLogin}
               />
             </CardContent>
           </Card>

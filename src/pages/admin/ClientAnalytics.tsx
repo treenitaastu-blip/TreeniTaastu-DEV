@@ -380,9 +380,9 @@ export default function ClientAnalytics() {
                   total_sessions: stats.total_sessions,
                   completion_rate: stats.completion_rate,
                   total_volume_kg: stats.total_volume_kg,
-                  current_streak: stats.current_streak,
                   avg_rpe: stats.avg_rpe
                 }}
+                lastLogin={null}
               />
             ) : (
               <div className="text-center py-12">

@@ -393,12 +393,46 @@ export default function ClientSpecificAnalytics() {
                   <ProgressChart 
                     weeklyData={weeklyData}
                     stats={stats}
-                    staticProgramCompletion={staticProgramCompletion}
                     lastLogin={lastLogin}
                   />
                 </CardContent>
               </Card>
             )}
+
+            {/* Client Information */}
+            <Card className="rounded-2xl shadow-soft">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Kliendi Info
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Viimane sisselogimine</p>
+                    <p className="text-lg font-semibold">
+                      {lastLogin 
+                        ? new Date(lastLogin).toLocaleDateString("et-EE", {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : "Tundmatu"
+                      }
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Staatilised programmid</p>
+                    <p className="text-lg font-semibold">
+                      {staticProgramCompletion} lõpetatud päeva
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Journal Entries */}
             {journalEntries.length > 0 && (

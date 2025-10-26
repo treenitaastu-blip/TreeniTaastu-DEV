@@ -1,6 +1,6 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Activity, Target } from 'lucide-react';
+import { TrendingUp, Activity, Target, Clock } from 'lucide-react';
 
 interface WeeklyData {
   week_start: string;
@@ -17,9 +17,10 @@ interface ProgressChartProps {
     total_volume_kg: number;
     avg_rpe: number;
   };
+  lastLogin?: string | null;
 }
 
-export default function ProgressChart({ weeklyData, stats }: ProgressChartProps) {
+export default function ProgressChart({ weeklyData, stats, lastLogin }: ProgressChartProps) {
   const formatNumber = (num: number) => num.toLocaleString("et-EE", { maximumFractionDigits: 1 });
   const formatPercent = (num: number) => `${(num * 100).toFixed(0)}%`;
 
@@ -68,6 +69,31 @@ export default function ProgressChart({ weeklyData, stats }: ProgressChartProps)
 
       </div>
 
+      {/* Additional Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+        <Card className="border-0 shadow-soft bg-gradient-to-br from-purple-500/10 to-purple-400/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Viimane sisselogimine</p>
+                <p className="text-lg font-bold text-purple-600">
+                  {lastLogin 
+                    ? new Date(lastLogin).toLocaleDateString('et-EE', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : 'Tundmatu'
+                  }
+                </p>
+              </div>
+              <Clock className="h-8 w-8 text-purple-500/60" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
