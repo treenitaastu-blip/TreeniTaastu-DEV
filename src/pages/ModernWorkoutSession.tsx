@@ -1268,7 +1268,10 @@ export default function ModernWorkoutSession() {
           <WorkoutFeedback
             workoutSummary={getWorkoutSummary()}
             onComplete={handleWorkoutFeedback}
-            onSkip={() => setShowWorkoutFeedback(false)}
+            onSkip={() => {
+              setShowWorkoutFeedback(false);
+              setShowCompletionDialog(true);
+            }}
           />
         )}
 
