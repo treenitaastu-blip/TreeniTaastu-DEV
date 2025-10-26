@@ -302,7 +302,7 @@ export default function Header() {
             {/* Center: TREENI & TAASTU Logo */}
             <Link
               to="/"
-              className="flex-1 flex justify-center"
+              className="flex-1 flex justify-center items-center"
               onClick={() => closeAllDropdowns()}
             >
               <h1 className="text-lg font-bold text-black italic" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
