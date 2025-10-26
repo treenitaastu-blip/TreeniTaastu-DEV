@@ -74,7 +74,7 @@ export default function ModernWorkoutHeader({
                     <AlertDialogDescription className="space-y-2">
                       <p>Soovid treeningu lõpetada?</p>
                       {completedSets < totalSets && (
-                        <p className="text-warning font-medium">
+                        <p className="text-black font-bold">
                           Oled teinud {completedSets}/{totalSets} seeriat. 
                           Kui lõpetad nüüd, siis märgitakse treening poolikuks.
                         </p>
@@ -85,7 +85,7 @@ export default function ModernWorkoutHeader({
                     <AlertDialogCancel>Tühista</AlertDialogCancel>
                     <AlertDialogAction 
                       onClick={onFinish}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      className="bg-red-600 text-white hover:bg-red-700 h-12 px-6 text-base font-medium"
                     >
                       Jah, lõpeta treening
                     </AlertDialogAction>
