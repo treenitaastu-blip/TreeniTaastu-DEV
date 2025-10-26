@@ -395,7 +395,7 @@ export default function ProgramDetail() {
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                {program.title_override || "Treeningu Programm"}
+                {program.title_override || "Treeningkava"}
               </h1>
               <div className="text-sm text-muted-foreground">
                 {program.days.length} päeva • Alustatud:{" "}
