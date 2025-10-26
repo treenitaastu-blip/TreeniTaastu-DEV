@@ -1,6 +1,6 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Activity, Target, Zap, Calendar, Clock } from 'lucide-react';
+import { TrendingUp, Activity, Target } from 'lucide-react';
 
 interface WeeklyData {
   week_start: string;
@@ -15,14 +15,11 @@ interface ProgressChartProps {
     total_sessions: number;
     completion_rate: number;
     total_volume_kg: number;
-    current_streak: number;
     avg_rpe: number;
   };
-  staticProgramCompletion?: number;
-  lastLogin?: string | null;
 }
 
-export default function ProgressChart({ weeklyData, stats, staticProgramCompletion, lastLogin }: ProgressChartProps) {
+export default function ProgressChart({ weeklyData, stats }: ProgressChartProps) {
   const formatNumber = (num: number) => num.toLocaleString("et-EE", { maximumFractionDigits: 1 });
   const formatPercent = (num: number) => `${(num * 100).toFixed(0)}%`;
 
@@ -69,51 +66,8 @@ export default function ProgressChart({ weeklyData, stats, staticProgramCompleti
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-soft bg-gradient-to-br from-orange-500/10 to-orange-400/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Sari</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.current_streak}</p>
-              </div>
-              <Zap className="h-8 w-8 text-orange-500/60" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Additional Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border-0 shadow-soft bg-gradient-to-br from-blue-500/10 to-blue-400/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Staatilised programmid</p>
-                <p className="text-2xl font-bold text-blue-600">{staticProgramCompletion || 0}</p>
-                <p className="text-xs text-muted-foreground">lõpetatud päeva</p>
-              </div>
-              <Calendar className="h-8 w-8 text-blue-500/60" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-soft bg-gradient-to-br from-purple-500/10 to-purple-400/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Viimane sisselogimine</p>
-                <p className="text-lg font-bold text-purple-600">
-                  {lastLogin ? new Date(lastLogin).toLocaleDateString('et-EE') : 'Tundmatu'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {lastLogin ? new Date(lastLogin).toLocaleTimeString('et-EE', { hour: '2-digit', minute: '2-digit' }) : ''}
-                </p>
-              </div>
-              <Clock className="h-8 w-8 text-purple-500/60" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">

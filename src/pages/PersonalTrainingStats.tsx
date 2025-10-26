@@ -311,7 +311,94 @@ export default function PersonalTrainingStats() {
           </Card>
         </div>
 
-        {/* Recent Sessions */}
+
+        {/* Weekly Progress Charts */}
+        {weeklyChartData.length > 0 && (
+          <Card className="rounded-2xl shadow-soft">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                12 nädala progressi ülevaade
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProgressChart 
+                weeklyData={weeklyChartData}
+                stats={{
+                  total_sessions: overallStats.totalSessions,
+                  completion_rate: overallStats.totalSessions > 0 ? overallStats.totalSessions / sessions.length : 0,
+                  total_volume_kg: overallStats.totalVolumeKg,
+                  avg_rpe: overallStats.avgRPE
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Weekly Trends */}
+        {weeklyStats.length > 0 && (
+          <Card className="rounded-2xl shadow-soft">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Nädalased tulemused
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {weeklyStats.slice(0, 8).map((week, _index) => (
+                  <div key={week.iso_week} className="rounded-xl border bg-gradient-to-r from-card/80 to-card/60 p-4 transition-all duration-200 hover:shadow-md hover:border-primary/20">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="font-semibold text-foreground">
+                        {week.iso_week}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-full bg-primary/10 px-3 py-1">
+                          <span className="text-sm font-medium text-primary">
+                            {week.sessions_count} treeningut
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-green-500/10 p-2">
+                          <Target className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Lõpetatud</p>
+                          <p className="font-semibold text-foreground">{week.completed_sessions}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-blue-500/10 p-2">
+                          <Timer className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Kokku aeg</p>
+                          <p className="font-semibold text-foreground">{Math.round(week.total_minutes || 0)} min</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-orange-500/10 p-2">
+                          <Activity className="h-4 w-4 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Kesk. kestus</p>
+                          <p className="font-semibold text-foreground">
+                            {week.avg_minutes_per_session > 0 ? Math.round(week.avg_minutes_per_session) + " min" : "—"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Recent Sessions - Moved to Last Position */}
         <div className="mb-8">
           <Card className="rounded-2xl shadow-soft">
             <CardHeader>
@@ -371,74 +458,6 @@ export default function PersonalTrainingStats() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Weekly Progress Charts */}
-        {weeklyChartData.length > 0 && (
-          <Card className="rounded-2xl shadow-soft">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                12 nädala progressi ülevaade
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProgressChart 
-                weeklyData={weeklyChartData}
-                stats={{
-                  total_sessions: overallStats.totalSessions,
-                  completion_rate: overallStats.totalSessions > 0 ? overallStats.totalSessions / sessions.length : 0,
-                  total_volume_kg: overallStats.totalVolumeKg,
-                  current_streak: 0,
-                  avg_rpe: overallStats.avgRPE
-                }}
-              />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Weekly Trends */}
-        {weeklyStats.length > 0 && (
-          <Card className="rounded-2xl shadow-soft">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Nädalased tulemused
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {weeklyStats.slice(0, 8).map((week, _index) => (
-                  <div key={week.iso_week} className="rounded-xl border bg-card/50 p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium">
-                        {week.iso_week}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {week.sessions_count} treeningut
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Lõpetatud:</span>
-                        <span className="ml-2 font-medium">{week.completed_sessions}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Kokku aeg:</span>
-                        <span className="ml-2 font-medium">{Math.round(week.total_minutes || 0)} min</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Kesk. kestus:</span>
-                        <span className="ml-2 font-medium">
-                          {week.avg_minutes_per_session > 0 ? Math.round(week.avg_minutes_per_session) + " min" : "—"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
