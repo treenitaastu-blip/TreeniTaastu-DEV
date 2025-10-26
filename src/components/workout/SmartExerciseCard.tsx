@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoModal } from "./VideoModal";
 import ExerciseFeedback from "./ExerciseFeedback";
+import { WeightUpdateDialog } from "./WeightUpdateDialog";
 import { cn } from "@/lib/utils";
 import { determineExerciseType, ExerciseType } from "./ExerciseFeedback";
 
@@ -68,6 +69,9 @@ interface SmartExerciseCardProps {
     reason: string;
   }) => void;
   showExerciseFeedback?: boolean;
+  // Weight update props
+  onUpdateSingleSetWeight?: (exerciseId: string, setNumber: number, newWeight: number) => void;
+  onUpdateAllSetsWeight?: (exerciseId: string, newWeight: number) => void;
 }
 
 export default function SmartExerciseCard({
@@ -88,7 +92,9 @@ export default function SmartExerciseCard({
   showAlternatives = false,
   onToggleAlternatives,
   onExerciseFeedback,
-  showExerciseFeedback = false
+  showExerciseFeedback = false,
+  onUpdateSingleSetWeight,
+  onUpdateAllSetsWeight
 }: SmartExerciseCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
@@ -96,6 +102,14 @@ export default function SmartExerciseCard({
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [manuallyExpanded, setManuallyExpanded] = useState(false);
+  
+  // Weight update dialog state
+  const [showWeightDialog, setShowWeightDialog] = useState(false);
+  const [weightDialogData, setWeightDialogData] = useState<{
+    setNumber: number;
+    currentWeight: number;
+    newWeight: number;
+  } | null>(null);
 
   // Auto-collapse when all sets are completed
   const allSetsCompleted = completedSets >= exercise.sets;
@@ -112,6 +126,26 @@ export default function SmartExerciseCard({
 
   // Smart auto-fill based on progression suggestion
   const handleSetInputChangeWithSuggestion = useCallback((setNumber: number, field: string, value: number) => {
+    // Check if this is a weight change and show dialog
+    if (field === 'kg' && onUpdateSingleSetWeight && onUpdateAllSetsWeight) {
+      const currentWeight = exercise.weight_kg || 0;
+      const hasExistingInput = setInputs[`${exercise.id}:${setNumber}`]?.kg !== undefined;
+      
+      // Only show dialog if:
+      // 1. Weight is actually different from the exercise default
+      // 2. This is the first time changing weight for this exercise
+      // 3. Value is valid (not 0 or empty)
+      if (value !== currentWeight && !hasExistingInput && value > 0) {
+        setWeightDialogData({
+          setNumber,
+          currentWeight,
+          newWeight: value
+        });
+        setShowWeightDialog(true);
+        return; // Don't update yet, wait for user choice
+      }
+    }
+    
     onSetInputChange(setNumber, field, value);
     
     // Auto-apply suggestion to all remaining sets
@@ -120,7 +154,7 @@ export default function SmartExerciseCard({
         onSetInputChange(i, field, value);
       }
     }
-  }, [onSetInputChange, progressionSuggestion, exercise.sets]);
+  }, [onSetInputChange, progressionSuggestion, exercise.sets, exercise.weight_kg, exercise.id, setInputs, onUpdateSingleSetWeight, onUpdateAllSetsWeight]);
 
   const handleSetComplete = useCallback((setNumber: number) => {
     onSetComplete(setNumber);
@@ -685,6 +719,34 @@ export default function SmartExerciseCard({
           currentWeight={exercise.weight_kg || 0}
           onComplete={handleExerciseFeedback}
           onSkip={handleSkipFeedback}
+        />
+      )}
+
+      {/* Weight Update Dialog */}
+      {showWeightDialog && weightDialogData && (
+        <WeightUpdateDialog
+          isOpen={showWeightDialog}
+          onClose={() => {
+            setShowWeightDialog(false);
+            setWeightDialogData(null);
+          }}
+          onUpdateSingleSet={() => {
+            if (weightDialogData && onUpdateSingleSetWeight) {
+              onUpdateSingleSetWeight(exercise.id, weightDialogData.setNumber, weightDialogData.newWeight);
+            }
+            setShowWeightDialog(false);
+            setWeightDialogData(null);
+          }}
+          onUpdateAllSets={() => {
+            if (weightDialogData && onUpdateAllSetsWeight) {
+              onUpdateAllSetsWeight(exercise.id, weightDialogData.newWeight);
+            }
+            setShowWeightDialog(false);
+            setWeightDialogData(null);
+          }}
+          exerciseName={exercise.exercise_name}
+          currentWeight={weightDialogData.currentWeight}
+          newWeight={weightDialogData.newWeight}
         />
       )}
     </div>

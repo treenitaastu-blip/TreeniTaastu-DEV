@@ -473,6 +473,126 @@ export default function ModernWorkoutSession() {
     }));
   }, []);
 
+  // Weight update functions
+  const handleUpdateSingleSetWeight = useCallback(async (exerciseId: string, setNumber: number, newWeight: number) => {
+    if (!user) {
+      console.error('No user context for weight update');
+      return;
+    }
+    
+    // Validate that the exercise exists and belongs to the current user
+    const exercise = exercises.find(ex => ex.id === exerciseId);
+    if (!exercise) {
+      console.error(`Exercise ${exerciseId} not found for user ${user.id}`);
+      return;
+    }
+    
+    // Validate set number is within range
+    if (setNumber < 1 || setNumber > exercise.sets) {
+      console.error(`Invalid set number ${setNumber} for exercise ${exerciseId} (max: ${exercise.sets})`);
+      return;
+    }
+    
+    // Validate weight is reasonable
+    if (newWeight < 0 || newWeight > 1000) {
+      console.error(`Invalid weight ${newWeight}kg for exercise ${exerciseId}`);
+      return;
+    }
+    
+    try {
+      // Update the setInputs for this specific set
+      const key = `${exerciseId}:${setNumber}`;
+      setSetInputs(prev => ({
+        ...prev,
+        [key]: { ...prev[key], kg: newWeight }
+      }));
+      
+      console.log(`Updated single set weight: ${exerciseId}:${setNumber} = ${newWeight}kg for user ${user.id}`);
+    } catch (error) {
+      console.error('Error updating single set weight:', error);
+    }
+  }, [user, exercises]);
+
+  const handleUpdateAllSetsWeight = useCallback(async (exerciseId: string, newWeight: number) => {
+    if (!user) {
+      console.error('No user context for weight update');
+      return;
+    }
+    
+    // Validate that the exercise exists and belongs to the current user
+    const exercise = exercises.find(ex => ex.id === exerciseId);
+    if (!exercise) {
+      console.error(`Exercise ${exerciseId} not found for user ${user.id}`);
+      return;
+    }
+    
+    // Validate weight is reasonable
+    if (newWeight < 0 || newWeight > 1000) {
+      console.error(`Invalid weight ${newWeight}kg for exercise ${exerciseId}`);
+      return;
+    }
+    
+    // Store original values for rollback
+    const originalWeight = exercise.weight_kg;
+    const originalSetInputs = { ...setInputs };
+    
+    try {
+      // Optimistically update UI first for better UX
+      setSetInputs(prev => {
+        const updated = { ...prev };
+        for (let i = 1; i <= exercise.sets; i++) {
+          const key = `${exerciseId}:${i}`;
+          updated[key] = { ...updated[key], kg: newWeight };
+        }
+        return updated;
+      });
+      
+      setExercises(prev => prev.map(ex => 
+        ex.id === exerciseId 
+          ? { ...ex, weight_kg: newWeight }
+          : ex
+      ));
+      
+      // Update the client_items table with the new weight preference
+      // RLS policy ensures only the user who owns the exercise can update it
+      const { error } = await supabase
+        .from('client_items')
+        .update({ weight_kg: newWeight })
+        .eq('id', exerciseId);
+      
+      if (error) {
+        console.error('Error updating exercise weight in database:', error);
+        console.error('This could indicate a permission issue or exercise not found');
+        
+        // Rollback UI changes
+        setSetInputs(originalSetInputs);
+        setExercises(prev => prev.map(ex => 
+          ex.id === exerciseId 
+            ? { ...ex, weight_kg: originalWeight }
+            : ex
+        ));
+        
+        // Log the rollback
+        console.log(`Rolled back weight update for exercise ${exerciseId} due to database error`);
+        return;
+      }
+      
+      console.log(`Successfully updated all sets weight for exercise ${exerciseId} to ${newWeight}kg for user ${user.id}`);
+    } catch (error) {
+      console.error('Unexpected error updating all sets weight:', error);
+      
+      // Rollback UI changes
+      setSetInputs(originalSetInputs);
+      setExercises(prev => prev.map(ex => 
+        ex.id === exerciseId 
+          ? { ...ex, weight_kg: originalWeight }
+          : ex
+      ));
+      
+      console.log(`Rolled back weight update for exercise ${exerciseId} due to unexpected error`);
+    }
+  }, [user, exercises, setInputs]);
+
   const handleNotesChange = useCallback(async (exerciseId: string, notes: string) => {
     if (!session || !user) return;
     
@@ -1123,6 +1243,9 @@ export default function ModernWorkoutSession() {
               // New feedback system props
               onExerciseFeedback={handleExerciseFeedback}
               showExerciseFeedback={exerciseFeedbackEnabled}
+              // Weight update props
+              onUpdateSingleSetWeight={handleUpdateSingleSetWeight}
+              onUpdateAllSetsWeight={handleUpdateAllSetsWeight}
             />
           ))}
         </div>
