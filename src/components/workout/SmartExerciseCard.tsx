@@ -251,12 +251,12 @@ export default function SmartExerciseCard({
               Kordused
             </label>
             <div className="relative flex items-center gap-2">
-              <Button variant="outline" size="sm" className="h-12 w-12" onClick={() => handleRepStep(currentSet, -1)}>-</Button>
+              <Button variant="outline" size="sm" className="h-12 w-12 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleRepStep(currentSet, -1)}>-</Button>
               <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
                 suggestedReps && !inputs.reps && "border-accent/50 bg-accent/5")}> 
                 {inputs.reps !== undefined ? inputs.reps : suggestedReps || parseRepsToNumber(exercise.reps) || 0}
               </div>
-              <Button variant="outline" size="sm" className="h-12 w-12" onClick={() => handleRepStep(currentSet, 1)}>+</Button>
+              <Button variant="outline" size="sm" className="h-12 w-12 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleRepStep(currentSet, 1)}>+</Button>
               {suggestedReps && !inputs.reps && (
                 <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
               )}
@@ -271,12 +271,12 @@ export default function SmartExerciseCard({
                 Raskus (kg)
               </label>
               <div className="relative flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-12 w-12" onClick={() => handleWeightStep(currentSet, -0.25)}>-</Button>
+                <Button variant="outline" size="sm" className="h-12 w-12 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleWeightStep(currentSet, -0.25)}>-</Button>
                 <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
                   suggestedWeight && !inputs.kg && "border-accent/50 bg-accent/5")}> 
                   {(inputs.kg !== undefined ? inputs.kg : suggestedWeight || exercise.weight_kg || 0).toFixed(2)}
                 </div>
-                <Button variant="outline" size="sm" className="h-12 w-12" onClick={() => handleWeightStep(currentSet, 0.25)}>+</Button>
+                <Button variant="outline" size="sm" className="h-12 w-12 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleWeightStep(currentSet, 0.25)}>+</Button>
                 {suggestedWeight && !inputs.kg && (
                   <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
                 )}
@@ -367,7 +367,7 @@ export default function SmartExerciseCard({
               {exercise.exercise_name}
             </h3>
             
-            {/* Märgi kõik tehtuks button - only show if not all sets completed */}
+            {/* Exercise done button - only show if not all sets completed */}
             {!allSetsCompleted && (
               <Button
                 variant="outline"
@@ -378,9 +378,9 @@ export default function SmartExerciseCard({
                     handleSetComplete(i);
                   }
                 }}
-                className="text-[8px] px-1.5 py-0.5 h-5"
+                className="text-[10px] px-2 py-0.5 h-5"
               >
-                Märgi kõik tehtuks
+                Tehtud
               </Button>
             )}
           </div>
@@ -573,12 +573,12 @@ export default function SmartExerciseCard({
                           Kordused
                         </label>
                         <div className="relative flex items-center gap-2">
-                          <Button variant="outline" size="sm" className="h-12 w-10" onClick={() => handleRepStep(setNumber, -1)} disabled={isCompleted}>-</Button>
+                          <Button variant="outline" size="sm" className="h-12 w-10 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleRepStep(setNumber, -1)} disabled={isCompleted}>-</Button>
                           <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
                             suggestedReps && !inputs.reps && "border-accent/50 bg-accent/5")}> 
                             {inputs.reps !== undefined ? inputs.reps : suggestedReps || parseRepsToNumber(exercise.reps) || 0}
                           </div>
-                          <Button variant="outline" size="sm" className="h-12 w-10" onClick={() => handleRepStep(setNumber, 1)} disabled={isCompleted}>+</Button>
+                          <Button variant="outline" size="sm" className="h-12 w-10 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleRepStep(setNumber, 1)} disabled={isCompleted}>+</Button>
                           {suggestedReps && !inputs.reps && (
                             <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
                           )}
@@ -591,12 +591,12 @@ export default function SmartExerciseCard({
                             Kaal (kg)
                           </label>
                           <div className="relative flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="h-12 w-10" onClick={() => handleWeightStep(setNumber, -0.25)} disabled={isCompleted}>-</Button>
+                            <Button variant="outline" size="sm" className="h-12 w-10 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleWeightStep(setNumber, -0.25)} disabled={isCompleted}>-</Button>
                             <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
                               suggestedWeight && !inputs.kg && "border-accent/50 bg-accent/5")}> 
                               {(inputs.kg !== undefined ? inputs.kg : suggestedWeight || exercise.weight_kg || 0).toFixed(2)}
                             </div>
-                            <Button variant="outline" size="sm" className="h-12 w-10" onClick={() => handleWeightStep(setNumber, 0.25)} disabled={isCompleted}>+</Button>
+                            <Button variant="outline" size="sm" className="h-12 w-10 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleWeightStep(setNumber, 0.25)} disabled={isCompleted}>+</Button>
                             {suggestedWeight && !inputs.kg && (
                               <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
                             )}

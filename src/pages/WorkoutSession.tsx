@@ -1027,7 +1027,7 @@ export default function WorkoutSessionPage() {
                                 </label>
                                 <div className="flex items-center gap-2">
                                   <button
-                                    className="rounded-lg border bg-background px-3 py-2 text-sm"
+                                    className="rounded-lg border bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 text-sm"
                                     onClick={() => setSetInputs((m) => ({
                                       ...m,
                                       [key]: {
@@ -1041,7 +1041,7 @@ export default function WorkoutSessionPage() {
                                     {inputs.reps ?? (parseInt(String(it.reps).replace(/[^0-9]/g, ''), 10) || 0)}
                                   </div>
                                   <button
-                                    className="rounded-lg border bg-background px-3 py-2 text-sm"
+                                    className="rounded-lg border bg-green-100 text-green-700 hover:bg-green-200 px-3 py-2 text-sm"
                                     onClick={() => setSetInputs((m) => ({
                                       ...m,
                                       [key]: {
@@ -1083,7 +1083,7 @@ export default function WorkoutSessionPage() {
                                 </label>
                                 <div className="flex items-center gap-2">
                                   <button
-                                    className="rounded-lg border bg-background px-3 py-2 text-sm"
+                                    className="rounded-lg border bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 text-sm"
                                     onClick={() => setSetInputs((m) => {
                                       const base = m[key]?.kg ?? it.weight_kg ?? 0;
                                       const next = Math.max(0, Math.round((base - 0.25) * 4) / 4);
@@ -1095,7 +1095,7 @@ export default function WorkoutSessionPage() {
                                     {((inputs.kg ?? it.weight_kg ?? 0) as number).toFixed(2)}
                                   </div>
                                   <button
-                                    className="rounded-lg border bg-background px-3 py-2 text-sm"
+                                    className="rounded-lg border bg-green-100 text-green-700 hover:bg-green-200 px-3 py-2 text-sm"
                                     onClick={() => setSetInputs((m) => {
                                       const base = m[key]?.kg ?? it.weight_kg ?? 0;
                                       const next = Math.min(1000, Math.round((base + 0.25) * 4) / 4);

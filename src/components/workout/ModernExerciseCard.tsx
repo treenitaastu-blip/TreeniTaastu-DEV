@@ -189,19 +189,19 @@ export default function ModernExerciseCard({
 
                 <div className="flex-1 grid grid-cols-2 gap-2">
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="h-9 w-9" onClick={() => stepReps(setNumber, -1)} disabled={isCompleted}>-</Button>
+                    <Button variant="outline" size="sm" className="h-9 w-9 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => stepReps(setNumber, -1)} disabled={isCompleted}>-</Button>
                     <div className="flex-1 text-center border rounded-md h-9 flex items-center justify-center">
                       {setData.reps ?? (parseInt(exercise.reps.replace(/[^0-9]/g, ''), 10) || 0)}
                     </div>
-                    <Button variant="outline" size="sm" className="h-9 w-9" onClick={() => stepReps(setNumber, 1)} disabled={isCompleted}>+</Button>
+                    <Button variant="outline" size="sm" className="h-9 w-9 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => stepReps(setNumber, 1)} disabled={isCompleted}>+</Button>
                   </div>
                   {(exercise.weight_kg && exercise.weight_kg > 0) ? (
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" className="h-9 w-9" onClick={() => stepWeight(setNumber, -0.25)} disabled={isCompleted}>-</Button>
+                      <Button variant="outline" size="sm" className="h-9 w-9 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => stepWeight(setNumber, -0.25)} disabled={isCompleted}>-</Button>
                       <div className="flex-1 text-center border rounded-md h-9 flex items-center justify-center">
                         {(setData.kg ?? exercise.weight_kg ?? 0).toFixed(2)}
                       </div>
-                      <Button variant="outline" size="sm" className="h-9 w-9" onClick={() => stepWeight(setNumber, 0.25)} disabled={isCompleted}>+</Button>
+                      <Button variant="outline" size="sm" className="h-9 w-9 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => stepWeight(setNumber, 0.25)} disabled={isCompleted}>+</Button>
                     </div>
                   ) : (exercise.seconds && exercise.seconds > 0) ? (
                     <Input
