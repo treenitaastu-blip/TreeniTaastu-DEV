@@ -431,6 +431,21 @@ export default function ModernWorkoutSession() {
           day_id: dayId
         });
         
+        // Persist personalized reps default for this user (use last set reps if available)
+        try {
+          const repsToPersist = typeof actualReps === 'number' ? actualReps : (typeof actualReps === 'string' ? parseInt(String(actualReps).replace(/[^0-9]/g, '')) : null);
+          if (typeof repsToPersist === 'number' && Number.isFinite(repsToPersist) && repsToPersist > 0) {
+            await supabase
+              .from('client_items')
+              .update({ reps: String(repsToPersist) })
+              .eq('id', exerciseId);
+            // Optimistically reflect in local state so UI shows new default immediately
+            setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, reps: String(repsToPersist) } : ex));
+          }
+        } catch (persistErr) {
+          console.warn('Failed to persist reps default', persistErr);
+        }
+
         // Show success feedback first
         toast.success(`✅ ${exercise.exercise_name} lõpetatud!`, {
           description: "Hinda oma sooritust - see aitab järgmist treeningut kohandada"
