@@ -669,6 +669,26 @@ export default function ModernWorkoutSession() {
     }
   }, [session, user, dayId, programId]);
 
+  // Per-exercise progression confirmation state
+  const [showExerciseProgressionConfirm, setShowExerciseProgressionConfirm] = useState(false);
+  const [pendingExerciseProgression, setPendingExerciseProgression] = useState<{
+    exerciseId: string;
+    exerciseName: string;
+    currentWeight: number;
+    suggestedWeight: number;
+    delta: number;
+    reason: string;
+  } | null>(null);
+
+  const computeSuggestedWeight = (current: number, sense: 'too_easy' | 'just_right' | 'too_hard') => {
+    if (!Number.isFinite(current) || current < 0) current = 0;
+    const stepRaw = Math.max(0.25, Math.min(2.5, current * 0.02));
+    const step = Math.round(stepRaw * 4) / 4; // 0.25 rounding
+    if (sense === 'too_easy') return Math.min(1000, Math.round((current + step) * 4) / 4);
+    if (sense === 'too_hard') return Math.max(0, Math.round((current - step) * 4) / 4);
+    return current; // just_right -> maintain
+  };
+
   // Handle exercise feedback from new system
   const handleExerciseFeedback = useCallback(async (exerciseId: string, feedback: {
     feedback: 'too_easy' | 'just_right' | 'too_hard';
@@ -679,17 +699,7 @@ export default function ModernWorkoutSession() {
     if (!session || !user) return;
 
     try {
-      // Store progression data
-      setExerciseProgression(prev => ({
-        ...prev,
-        [exerciseId]: {
-          newWeight: feedback.newWeight || 0,
-          change: feedback.change || 0,
-          reason: feedback.reason
-        }
-      }));
-
-      // Save feedback to database
+      // Save feedback to database (do not auto-change weight here)
       await supabase.from("exercise_notes").upsert({
         session_id: session.id,
         client_day_id: dayId!,
@@ -702,19 +712,33 @@ export default function ModernWorkoutSession() {
         onConflict: "session_id,client_item_id"
       });
 
-      // Update exercise weight if provided
-      if (feedback.newWeight !== undefined && feedback.newWeight !== 0) {
-        await supabase
-          .from("client_items")
-          .update({ weight_kg: feedback.newWeight })
-          .eq("id", exerciseId);
-
-        // Update local state
-        setExercises(prev => prev.map(ex => 
-          ex.id === exerciseId 
-            ? { ...ex, weight_kg: feedback.newWeight! }
-            : ex
-        ));
+      // Fetch last two feedbacks for this exercise/user to gate recommendation
+      const { data: lastTwo, error: lastErr } = await supabase
+        .from('exercise_notes')
+        .select('id, created_at, exercise_feedback')
+        .eq('user_id', user.id)
+        .eq('client_item_id', exerciseId)
+        .order('created_at', { ascending: false })
+        .limit(2);
+      if (!lastErr && Array.isArray(lastTwo) && lastTwo.length === 2) {
+        const a = String(lastTwo[0]?.exercise_feedback || '');
+        const b = String(lastTwo[1]?.exercise_feedback || '');
+        const sameTwice = a && b && a === b && (a === feedback.feedback);
+        if (sameTwice) {
+          const ex = exercises.find(e => e.id === exerciseId);
+          const current = ex?.weight_kg ?? 0;
+          const suggested = computeSuggestedWeight(current, feedback.feedback);
+          const delta = Math.round((suggested - current) * 4) / 4;
+          setPendingExerciseProgression({
+            exerciseId,
+            exerciseName: ex?.exercise_name || 'Harjutus',
+            currentWeight: current,
+            suggestedWeight: suggested,
+            delta,
+            reason: feedback.reason
+          });
+          setShowExerciseProgressionConfirm(true);
+        }
       }
 
       toast.success("Tagasiside salvestatud!", {
@@ -725,7 +749,28 @@ export default function ModernWorkoutSession() {
       console.error('Error saving exercise feedback:', error);
       toast.error("Tagasiside salvestamine ebaõnnestus");
     }
-  }, [session, user, dayId, programId]);
+  }, [session, user, dayId, programId, exercises]);
+
+  const confirmApplyExerciseProgression = useCallback(async () => {
+    if (!pendingExerciseProgression) return;
+    const { exerciseId, suggestedWeight } = pendingExerciseProgression;
+    try {
+      // Apply new default weight to client_items
+      await supabase
+        .from('client_items')
+        .update({ weight_kg: suggestedWeight })
+        .eq('id', exerciseId);
+      // Optimistic local update
+      setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, weight_kg: suggestedWeight } : ex));
+      toast.success('Uus raskus rakendatud');
+    } catch (e) {
+      console.error('Apply exercise progression failed', e);
+      toast.error('Raskuse rakendamine ebaõnnestus');
+    } finally {
+      setShowExerciseProgressionConfirm(false);
+      setPendingExerciseProgression(null);
+    }
+  }, [pendingExerciseProgression]);
 
   // Calculate workout summary
   const getWorkoutSummary = useCallback(() => {
@@ -1362,6 +1407,23 @@ export default function ModernWorkoutSession() {
             variant="info"
             isLoading={isApplyingProgression}
             loadingText="Rakendan muudatusi..."
+          />
+        )}
+
+        {/* Per-exercise recommendation confirmation */}
+        {showExerciseProgressionConfirm && pendingExerciseProgression && (
+          <ConfirmationDialog
+            isOpen={showExerciseProgressionConfirm}
+            onClose={() => {
+              setShowExerciseProgressionConfirm(false);
+              setPendingExerciseProgression(null);
+            }}
+            onConfirm={confirmApplyExerciseProgression}
+            title="Soovitame muuta raskust"
+            description={`${pendingExerciseProgression.exerciseName}: ${pendingExerciseProgression.currentWeight.toFixed(2)} kg → ${pendingExerciseProgression.suggestedWeight.toFixed(2)} kg (${pendingExerciseProgression.delta >= 0 ? '+' : ''}${pendingExerciseProgression.delta.toFixed(2)} kg)`}
+            confirmText="Rakenda"
+            cancelText="Jäta samaks"
+            variant="info"
           />
         )}
 
