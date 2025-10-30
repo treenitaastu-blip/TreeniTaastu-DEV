@@ -1350,9 +1350,7 @@ export default function ModernWorkoutSession() {
               // New feedback system props
               onExerciseFeedback={handleExerciseFeedback}
               showExerciseFeedback={exerciseFeedbackEnabled}
-              // Weight update props
-              onUpdateSingleSetWeight={handleUpdateSingleSetWeight}
-              onUpdateAllSetsWeight={handleUpdateAllSetsWeight}
+              
             />
           ))}
         </div>

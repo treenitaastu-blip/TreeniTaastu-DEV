@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoModal } from "./VideoModal";
 import ExerciseFeedback from "./ExerciseFeedback";
-import { WeightUpdateDialog } from "./WeightUpdateDialog";
 import { cn } from "@/lib/utils";
 import { determineExerciseType, ExerciseType } from "./ExerciseFeedback";
 
@@ -102,15 +101,7 @@ export default function SmartExerciseCard({
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [manuallyExpanded, setManuallyExpanded] = useState(false);
-  const [weightPromptShown, setWeightPromptShown] = useState(false);
   
-  // Weight update dialog state
-  const [showWeightDialog, setShowWeightDialog] = useState(false);
-  const [weightDialogData, setWeightDialogData] = useState<{
-    setNumber: number;
-    currentWeight: number;
-    newWeight: number;
-  } | null>(null);
 
   // Auto-collapse when all sets are completed
   const allSetsCompleted = completedSets >= exercise.sets;
@@ -156,16 +147,7 @@ export default function SmartExerciseCard({
     // Apply immediately to current set
     applyValueWithSuggestion(setNumber, 'kg', next);
 
-    // Prompt once per exercise per session after first committed change away from default
-    if (!weightPromptShown && onUpdateSingleSetWeight && onUpdateAllSetsWeight) {
-      const defaultWeight = exercise.weight_kg || 0;
-      if (next !== defaultWeight && next > 0) {
-        setWeightDialogData({ setNumber, currentWeight: defaultWeight, newWeight: next });
-        setShowWeightDialog(true);
-        setWeightPromptShown(true);
-      }
-    }
-  }, [exercise.id, exercise.weight_kg, setInputs, applyValueWithSuggestion, weightPromptShown, onUpdateSingleSetWeight, onUpdateAllSetsWeight]);
+  }, [exercise.id, exercise.weight_kg, setInputs, applyValueWithSuggestion]);
 
   const handleSetComplete = useCallback((setNumber: number) => {
     onSetComplete(setNumber);
@@ -713,33 +695,7 @@ export default function SmartExerciseCard({
         />
       )}
 
-      {/* Weight Update Dialog */}
-      {showWeightDialog && weightDialogData && (
-        <WeightUpdateDialog
-          isOpen={showWeightDialog}
-          onClose={() => {
-            setShowWeightDialog(false);
-            setWeightDialogData(null);
-          }}
-          onUpdateSingleSet={() => {
-            if (weightDialogData && onUpdateSingleSetWeight) {
-              onUpdateSingleSetWeight(exercise.id, weightDialogData.setNumber, weightDialogData.newWeight);
-            }
-            setShowWeightDialog(false);
-            setWeightDialogData(null);
-          }}
-          onUpdateAllSets={() => {
-            if (weightDialogData && onUpdateAllSetsWeight) {
-              onUpdateAllSetsWeight(exercise.id, weightDialogData.newWeight);
-            }
-            setShowWeightDialog(false);
-            setWeightDialogData(null);
-          }}
-          exerciseName={exercise.exercise_name}
-          currentWeight={weightDialogData.currentWeight}
-          newWeight={weightDialogData.newWeight}
-        />
-      )}
+      
     </div>
   );
 }
