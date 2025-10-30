@@ -842,6 +842,13 @@ export default function ModernWorkoutSession() {
       } else if (progressionResults && progressionResults.length > 0) {
         const summary = progressionResults.map((r: any) => `${r.exercise_name}: ${r.old_reps}→${r.new_reps} reps, ${r.old_sets}→${r.new_sets} sets`).join(', ');
         toast.success('Rakendasime muudatused treeningmahule', { description: summary });
+        // Telemetry: confirmed apply
+        trackFeatureUsage?.('progression', 'applied', {
+          program_id: programId,
+          fatigue_level: pendingProgressionFeedback.fatigue_level,
+          energy_level: pendingProgressionFeedback.energy_level,
+          joint_pain: pendingProgressionFeedback.joint_pain
+        });
       }
     } finally {
       setIsApplyingProgression(false);
@@ -1334,7 +1341,19 @@ export default function ModernWorkoutSession() {
         {showProgressionConfirm && (
           <ConfirmationDialog
             isOpen={showProgressionConfirm}
-            onClose={() => setShowProgressionConfirm(false)}
+            onClose={() => {
+              setShowProgressionConfirm(false);
+              // Telemetry: declined apply
+              if (pendingProgressionFeedback) {
+                trackFeatureUsage?.('progression', 'declined', {
+                  program_id: programId,
+                  fatigue_level: pendingProgressionFeedback.fatigue_level,
+                  energy_level: pendingProgressionFeedback.energy_level,
+                  joint_pain: pendingProgressionFeedback.joint_pain
+                });
+              }
+              setPendingProgressionFeedback(null);
+            }}
             onConfirm={confirmApplyProgression}
             title="Rakenda treeningu muudatused?"
             description="Raporteerisid sama tunnet kaks korda järjest. Kas soovid, et kohandaksime automaatselt seeriate arvu ja/või kordusi järgmisteks treeninguteks?"
