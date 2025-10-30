@@ -102,6 +102,7 @@ export default function SmartExerciseCard({
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [manuallyExpanded, setManuallyExpanded] = useState(false);
+  const [weightPromptShown, setWeightPromptShown] = useState(false);
   
   // Weight update dialog state
   const [showWeightDialog, setShowWeightDialog] = useState(false);
@@ -124,37 +125,47 @@ export default function SmartExerciseCard({
     }
   }, [allSetsCompleted, isCollapsed, showFeedback, manuallyExpanded]);
 
-  // Smart auto-fill based on progression suggestion
-  const handleSetInputChangeWithSuggestion = useCallback((setNumber: number, field: string, value: number) => {
-    // Check if this is a weight change and show dialog
-    if (field === 'kg' && onUpdateSingleSetWeight && onUpdateAllSetsWeight) {
-      const currentWeight = exercise.weight_kg || 0;
-      const hasExistingInput = setInputs[`${exercise.id}:${setNumber}`]?.kg !== undefined;
-      
-      // Only show dialog if:
-      // 1. Weight is actually different from the exercise default
-      // 2. This is the first time changing weight for this exercise
-      // 3. Value is valid (not 0 or empty)
-      if (value !== currentWeight && !hasExistingInput && value > 0) {
-        setWeightDialogData({
-          setNumber,
-          currentWeight,
-          newWeight: value
-        });
-        setShowWeightDialog(true);
-        return; // Don't update yet, wait for user choice
-      }
-    }
-    
+  // Helpers for step logic
+  const roundToQuarter = (n: number) => Math.round(n * 4) / 4;
+  const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+
+  // Smart auto-fill based on progression suggestion (used by steppers)
+  const applyValueWithSuggestion = useCallback((setNumber: number, field: string, value: number) => {
     onSetInputChange(setNumber, field, value);
-    
-    // Auto-apply suggestion to all remaining sets
     if (progressionSuggestion && field === progressionSuggestion.type) {
       for (let i = setNumber + 1; i <= exercise.sets; i++) {
         onSetInputChange(i, field, value);
       }
     }
-  }, [onSetInputChange, progressionSuggestion, exercise.sets, exercise.weight_kg, exercise.id, setInputs, onUpdateSingleSetWeight, onUpdateAllSetsWeight]);
+  }, [onSetInputChange, progressionSuggestion, exercise.sets]);
+
+  // Stepper handlers
+  const handleRepStep = useCallback((setNumber: number, delta: number) => {
+    const key = `${exercise.id}:${setNumber}`;
+    const current = setInputs[key]?.reps ?? parseRepsToNumber(exercise.reps) ?? 0;
+    const next = clamp(current + delta, 0, 1000);
+    applyValueWithSuggestion(setNumber, 'reps', next);
+  }, [exercise.id, exercise.reps, setInputs, applyValueWithSuggestion]);
+
+  const handleWeightStep = useCallback((setNumber: number, delta: number) => {
+    const key = `${exercise.id}:${setNumber}`;
+    const base = setInputs[key]?.kg ?? exercise.weight_kg ?? 0;
+    const nextRaw = base + delta;
+    const next = clamp(roundToQuarter(nextRaw), 0, 1000);
+
+    // Apply immediately to current set
+    applyValueWithSuggestion(setNumber, 'kg', next);
+
+    // Prompt once per exercise per session after first committed change away from default
+    if (!weightPromptShown && onUpdateSingleSetWeight && onUpdateAllSetsWeight) {
+      const defaultWeight = exercise.weight_kg || 0;
+      if (next !== defaultWeight && next > 0) {
+        setWeightDialogData({ setNumber, currentWeight: defaultWeight, newWeight: next });
+        setShowWeightDialog(true);
+        setWeightPromptShown(true);
+      }
+    }
+  }, [exercise.id, exercise.weight_kg, setInputs, applyValueWithSuggestion, weightPromptShown, onUpdateSingleSetWeight, onUpdateAllSetsWeight]);
 
   const handleSetComplete = useCallback((setNumber: number) => {
     onSetComplete(setNumber);
@@ -257,17 +268,13 @@ export default function SmartExerciseCard({
               <Repeat className="h-3 w-3" />
               Kordused
             </label>
-            <div className="relative">
-              <Input
-                type="number"
-                placeholder={exercise.reps}
-                value={inputs.reps !== undefined ? inputs.reps : suggestedReps || parseRepsToNumber(exercise.reps) || ""}
-                onChange={(e) => handleSetInputChangeWithSuggestion(currentSet, "reps", Number(e.target.value))}
-                className={cn(
-                  "text-center text-lg h-12",
-                  suggestedReps && !inputs.reps && "border-accent/50 bg-accent/5"
-                )}
-              />
+            <div className="relative flex items-center gap-2">
+              <Button variant="outline" size="sm" className="h-12 w-12" onClick={() => handleRepStep(currentSet, -1)}>-</Button>
+              <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
+                suggestedReps && !inputs.reps && "border-accent/50 bg-accent/5")}> 
+                {inputs.reps !== undefined ? inputs.reps : suggestedReps || parseRepsToNumber(exercise.reps) || 0}
+              </div>
+              <Button variant="outline" size="sm" className="h-12 w-12" onClick={() => handleRepStep(currentSet, 1)}>+</Button>
               {suggestedReps && !inputs.reps && (
                 <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
               )}
@@ -281,18 +288,13 @@ export default function SmartExerciseCard({
                 <Weight className="h-3 w-3" />
                 Raskus (kg)
               </label>
-              <div className="relative">
-                <Input
-                  type="number"
-                  step="0.5"
-                  placeholder={exercise.weight_kg?.toString() || "0"}
-                  value={inputs.kg !== undefined ? inputs.kg : suggestedWeight || exercise.weight_kg || ""}
-                  onChange={(e) => handleSetInputChangeWithSuggestion(currentSet, "kg", Number(e.target.value))}
-                  className={cn(
-                    "text-center text-lg h-12",
-                    suggestedWeight && !inputs.kg && "border-accent/50 bg-accent/5"
-                  )}
-                />
+              <div className="relative flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-12 w-12" onClick={() => handleWeightStep(currentSet, -0.25)}>-</Button>
+                <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
+                  suggestedWeight && !inputs.kg && "border-accent/50 bg-accent/5")}> 
+                  {(inputs.kg !== undefined ? inputs.kg : suggestedWeight || exercise.weight_kg || 0).toFixed(2)}
+                </div>
+                <Button variant="outline" size="sm" className="h-12 w-12" onClick={() => handleWeightStep(currentSet, 0.25)}>+</Button>
                 {suggestedWeight && !inputs.kg && (
                   <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
                 )}
@@ -588,18 +590,13 @@ export default function SmartExerciseCard({
                         <label className="text-sm font-medium text-muted-foreground mb-1 block">
                           Kordused
                         </label>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            placeholder={exercise.reps}
-                            value={inputs.reps !== undefined ? inputs.reps : suggestedReps || parseRepsToNumber(exercise.reps) || ""}
-                            onChange={(e) => handleSetInputChangeWithSuggestion(setNumber, "reps", Number(e.target.value))}
-                            className={cn(
-                              "text-center text-lg h-12",
-                              suggestedReps && !inputs.reps && "border-accent/50 bg-accent/5"
-                            )}
-                            disabled={isCompleted}
-                          />
+                        <div className="relative flex items-center gap-2">
+                          <Button variant="outline" size="sm" className="h-12 w-10" onClick={() => handleRepStep(setNumber, -1)} disabled={isCompleted}>-</Button>
+                          <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
+                            suggestedReps && !inputs.reps && "border-accent/50 bg-accent/5")}> 
+                            {inputs.reps !== undefined ? inputs.reps : suggestedReps || parseRepsToNumber(exercise.reps) || 0}
+                          </div>
+                          <Button variant="outline" size="sm" className="h-12 w-10" onClick={() => handleRepStep(setNumber, 1)} disabled={isCompleted}>+</Button>
                           {suggestedReps && !inputs.reps && (
                             <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
                           )}
@@ -611,19 +608,13 @@ export default function SmartExerciseCard({
                           <label className="text-sm font-medium text-muted-foreground mb-1 block">
                             Kaal (kg)
                           </label>
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              step="0.5"
-                              placeholder={exercise.weight_kg.toString()}
-                              value={inputs.kg !== undefined ? inputs.kg : suggestedWeight || exercise.weight_kg || ""}
-                              onChange={(e) => handleSetInputChangeWithSuggestion(setNumber, "kg", Number(e.target.value))}
-                              className={cn(
-                                "text-center text-lg h-12",
-                                suggestedWeight && !inputs.kg && "border-accent/50 bg-accent/5"
-                              )}
-                              disabled={isCompleted}
-                            />
+                          <div className="relative flex items-center gap-2">
+                            <Button variant="outline" size="sm" className="h-12 w-10" onClick={() => handleWeightStep(setNumber, -0.25)} disabled={isCompleted}>-</Button>
+                            <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
+                              suggestedWeight && !inputs.kg && "border-accent/50 bg-accent/5")}> 
+                              {(inputs.kg !== undefined ? inputs.kg : suggestedWeight || exercise.weight_kg || 0).toFixed(2)}
+                            </div>
+                            <Button variant="outline" size="sm" className="h-12 w-10" onClick={() => handleWeightStep(setNumber, 0.25)} disabled={isCompleted}>+</Button>
                             {suggestedWeight && !inputs.kg && (
                               <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
                             )}

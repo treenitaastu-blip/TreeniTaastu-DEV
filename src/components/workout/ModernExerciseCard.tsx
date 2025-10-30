@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +69,21 @@ export default function ModernExerciseCard({
 
   const progress = (completedSets / exercise.sets) * 100;
   const isCompleted = completedSets >= exercise.sets;
+
+  const roundToQuarter = (n: number) => Math.round(n * 4) / 4;
+  const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+
+  const stepReps = useCallback((setNumber: number, delta: number) => {
+    const current = (setInputs[setNumber]?.reps ?? parseInt(exercise.reps.replace(/[^0-9]/g, ''), 10) || 0);
+    const next = clamp(current + delta, 0, 1000);
+    onSetInputChange(setNumber, 'reps', next);
+  }, [setInputs, exercise.reps, onSetInputChange]);
+
+  const stepWeight = useCallback((setNumber: number, delta: number) => {
+    const base = (setInputs[setNumber]?.kg ?? exercise.weight_kg ?? 0);
+    const next = clamp(roundToQuarter(base + delta), 0, 1000);
+    onSetInputChange(setNumber, 'kg', next);
+  }, [setInputs, exercise.weight_kg, onSetInputChange]);
 
   const handleSetComplete = (setNumber: number) => {
     const setData = setInputs[setNumber] || {};
@@ -173,24 +188,21 @@ export default function ModernExerciseCard({
                 </div>
 
                 <div className="flex-1 grid grid-cols-2 gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Kordused"
-                    value={setData.reps || ''}
-                    onChange={(e) => onSetInputChange(setNumber, 'reps', Number(e.target.value))}
-                    disabled={isCompleted}
-                    className="text-center"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="h-9 w-9" onClick={() => stepReps(setNumber, -1)} disabled={isCompleted}>-</Button>
+                    <div className="flex-1 text-center border rounded-md h-9 flex items-center justify-center">
+                      {setData.reps ?? (parseInt(exercise.reps.replace(/[^0-9]/g, ''), 10) || 0)}
+                    </div>
+                    <Button variant="outline" size="sm" className="h-9 w-9" onClick={() => stepReps(setNumber, 1)} disabled={isCompleted}>+</Button>
+                  </div>
                   {(exercise.weight_kg && exercise.weight_kg > 0) ? (
-                    <Input
-                      type="number"
-                      step="0.5"
-                      placeholder="Raskus (kg)"
-                      value={setData.kg || ''}
-                      onChange={(e) => onSetInputChange(setNumber, 'kg', Number(e.target.value))}
-                      disabled={isCompleted}
-                      className="text-center"
-                    />
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" className="h-9 w-9" onClick={() => stepWeight(setNumber, -0.25)} disabled={isCompleted}>-</Button>
+                      <div className="flex-1 text-center border rounded-md h-9 flex items-center justify-center">
+                        {(setData.kg ?? exercise.weight_kg ?? 0).toFixed(2)}
+                      </div>
+                      <Button variant="outline" size="sm" className="h-9 w-9" onClick={() => stepWeight(setNumber, 0.25)} disabled={isCompleted}>+</Button>
+                    </div>
                   ) : (exercise.seconds && exercise.seconds > 0) ? (
                     <Input
                       type="number"

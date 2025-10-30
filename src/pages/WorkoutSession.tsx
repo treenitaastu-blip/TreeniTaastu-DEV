@@ -1025,23 +1025,33 @@ export default function WorkoutSessionPage() {
                                 <label className="block text-xs font-medium text-muted-foreground mb-1">
                                   Reps
                                 </label>
-                                <input
-                                  type="number"
-                                  inputMode="numeric"
-                                  placeholder={it.reps}
-                                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none"
-                                  value={inputs.reps ?? ""}
-                                  onChange={(e) =>
-                                    setSetInputs((m) => ({
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    className="rounded-lg border bg-background px-3 py-2 text-sm"
+                                    onClick={() => setSetInputs((m) => ({
                                       ...m,
                                       [key]: {
                                         ...m[key],
-                                        reps: e.target.value === "" ? undefined : Number(e.target.value),
+                                        reps: Math.max(0, (m[key]?.reps ?? parseInt(String(it.reps).replace(/[^0-9]/g, ''), 10) || 0) - 1),
                                       },
-                                    }))
-                                  }
-                                  disabled={!!programInactive}
-                                />
+                                    }))}
+                                    disabled={!!programInactive}
+                                  >-</button>
+                                  <div className="flex-1 text-center rounded-lg border bg-background px-3 py-2 text-sm">
+                                    {inputs.reps ?? (parseInt(String(it.reps).replace(/[^0-9]/g, ''), 10) || 0)}
+                                  </div>
+                                  <button
+                                    className="rounded-lg border bg-background px-3 py-2 text-sm"
+                                    onClick={() => setSetInputs((m) => ({
+                                      ...m,
+                                      [key]: {
+                                        ...m[key],
+                                        reps: Math.min(1000, (m[key]?.reps ?? parseInt(String(it.reps).replace(/[^0-9]/g, ''), 10) || 0) + 1),
+                                      },
+                                    }))}
+                                    disabled={!!programInactive}
+                                  >+</button>
+                                </div>
                               </div>
                               
                               <div>
@@ -1071,24 +1081,29 @@ export default function WorkoutSessionPage() {
                                 <label className="block text-xs font-medium text-muted-foreground mb-1">
                                   Kg
                                 </label>
-                                <input
-                                  type="number"
-                                  inputMode="decimal"
-                                  step="0.5"
-                                  placeholder={it.weight_kg?.toString() || ""}
-                                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none"
-                                  value={inputs.kg ?? ""}
-                                  onChange={(e) =>
-                                    setSetInputs((m) => ({
-                                      ...m,
-                                      [key]: {
-                                        ...m[key],
-                                        kg: e.target.value === "" ? undefined : Number(e.target.value),
-                                      },
-                                    }))
-                                  }
-                                  disabled={!!programInactive}
-                                />
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    className="rounded-lg border bg-background px-3 py-2 text-sm"
+                                    onClick={() => setSetInputs((m) => {
+                                      const base = m[key]?.kg ?? it.weight_kg ?? 0;
+                                      const next = Math.max(0, Math.round((base - 0.25) * 4) / 4);
+                                      return { ...m, [key]: { ...m[key], kg: next } };
+                                    })}
+                                    disabled={!!programInactive}
+                                  >-</button>
+                                  <div className="flex-1 text-center rounded-lg border bg-background px-3 py-2 text-sm">
+                                    {((inputs.kg ?? it.weight_kg ?? 0) as number).toFixed(2)}
+                                  </div>
+                                  <button
+                                    className="rounded-lg border bg-background px-3 py-2 text-sm"
+                                    onClick={() => setSetInputs((m) => {
+                                      const base = m[key]?.kg ?? it.weight_kg ?? 0;
+                                      const next = Math.min(1000, Math.round((base + 0.25) * 4) / 4);
+                                      return { ...m, [key]: { ...m[key], kg: next } };
+                                    })}
+                                    disabled={!!programInactive}
+                                  >+</button>
+                                </div>
                               </div>
                             </div>
                             
