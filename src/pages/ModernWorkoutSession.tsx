@@ -20,6 +20,7 @@ import PersonalTrainingCompletionDialog from "@/components/workout/PersonalTrain
 import PTAccessValidator from "@/components/PTAccessValidator";
 import ErrorRecovery from "@/components/ErrorRecovery";
 import WorkoutFeedback from "@/components/workout/WorkoutFeedback";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 // Removed unused import: calculateExerciseProgression from progressionLogic
 
 // Helper function to parse reps string to number
@@ -751,6 +752,15 @@ export default function ModernWorkoutSession() {
     };
   }, [session, setLogs]);
 
+  // Confirmation state for applying progression changes
+  const [showProgressionConfirm, setShowProgressionConfirm] = useState(false);
+  const [pendingProgressionFeedback, setPendingProgressionFeedback] = useState<{
+    fatigue_level: number;
+    energy_level: 'low' | 'normal' | 'high';
+    joint_pain: boolean;
+  } | null>(null);
+  const [isApplyingProgression, setIsApplyingProgression] = useState(false);
+
   // Handle workout-level feedback
   const handleWorkoutFeedback = useCallback(async (feedback: {
     joint_pain: boolean;
@@ -774,30 +784,33 @@ export default function ModernWorkoutSession() {
         notes: feedback.notes
       });
 
-      // Apply volume progression based on feedback
-      const { data: progressionResults, error: progressionError } = await supabase.rpc('apply_volume_progression', {
-        p_user_id: user.id,
-        p_program_id: programId!,
-        p_fatigue_level: feedback.fatigue_level,
-        p_energy_level: feedback.energy_level,
-        p_joint_pain: feedback.joint_pain
-      });
-
-      if (progressionError) {
-        console.error('Volume progression error:', progressionError);
-        // Don't show error to user, just log it
-      } else if (progressionResults && progressionResults.length > 0) {
-        // Show progression summary
-        const progressionSummary = progressionResults.map((result: any) => 
-          `${result.exercise_name}: ${result.old_reps}→${result.new_reps} reps, ${result.old_sets}→${result.new_sets} sets`
-        ).join(', ');
-        
-        toast.success("Treeningu tagasiside salvestatud!", {
-          description: `Progression: ${progressionSummary}`
-        });
-      } else {
-        toast.success("Treeningu tagasiside salvestatud!");
+      // Check last two feedback entries for gating condition
+      const { data: lastTwo, error: fetchErr } = await supabase
+        .from('workout_feedback')
+        .select('id, created_at, joint_pain, fatigue_level, energy_level')
+        .eq('user_id', user.id)
+        .eq('program_id', programId!)
+        .order('created_at', { ascending: false })
+        .limit(2);
+      if (fetchErr) {
+        console.warn('Failed to fetch last feedbacks', fetchErr);
+      } else if (Array.isArray(lastTwo) && lastTwo.length === 2) {
+        const a = lastTwo[0];
+        const b = lastTwo[1];
+        const samePain = Boolean(a.joint_pain) && Boolean(b.joint_pain);
+        const highFatigueTwice = Number(a.fatigue_level) >= 8 && Number(b.fatigue_level) >= 8;
+        const lowEnergyTwice = String(a.energy_level) === 'low' && String(b.energy_level) === 'low';
+        if (samePain || highFatigueTwice || lowEnergyTwice) {
+          setPendingProgressionFeedback({
+            fatigue_level: feedback.fatigue_level,
+            energy_level: feedback.energy_level,
+            joint_pain: feedback.joint_pain
+          });
+          setShowProgressionConfirm(true);
+        }
       }
+
+      toast.success("Treeningu tagasiside salvestatud!");
 
       setShowWorkoutFeedback(false);
       
@@ -809,6 +822,33 @@ export default function ModernWorkoutSession() {
       toast.error("Treeningu tagasiside salvestamine ebaõnnestus");
     }
   }, [session, user, programId]);
+
+  const confirmApplyProgression = useCallback(async () => {
+    if (!user || !programId || !pendingProgressionFeedback) {
+      setShowProgressionConfirm(false);
+      return;
+    }
+    try {
+      setIsApplyingProgression(true);
+      const { data: progressionResults, error: progressionError } = await supabase.rpc('apply_volume_progression', {
+        p_user_id: user.id,
+        p_program_id: programId!,
+        p_fatigue_level: pendingProgressionFeedback.fatigue_level,
+        p_energy_level: pendingProgressionFeedback.energy_level,
+        p_joint_pain: pendingProgressionFeedback.joint_pain
+      });
+      if (progressionError) {
+        console.error('Volume progression error:', progressionError);
+      } else if (progressionResults && progressionResults.length > 0) {
+        const summary = progressionResults.map((r: any) => `${r.exercise_name}: ${r.old_reps}→${r.new_reps} reps, ${r.old_sets}→${r.new_sets} sets`).join(', ');
+        toast.success('Rakendasime muudatused treeningmahule', { description: summary });
+      }
+    } finally {
+      setIsApplyingProgression(false);
+      setShowProgressionConfirm(false);
+      setPendingProgressionFeedback(null);
+    }
+  }, [user, programId, pendingProgressionFeedback]);
 
 
   // REMOVED: Old RPE/RIR progression system - replaced with new feedback system
@@ -1287,6 +1327,22 @@ export default function ModernWorkoutSession() {
               setShowWorkoutFeedback(false);
               setShowCompletionDialog(true);
             }}
+          />
+        )}
+
+        {/* Progression confirmation */}
+        {showProgressionConfirm && (
+          <ConfirmationDialog
+            isOpen={showProgressionConfirm}
+            onClose={() => setShowProgressionConfirm(false)}
+            onConfirm={confirmApplyProgression}
+            title="Rakenda treeningu muudatused?"
+            description="Raporteerisid sama tunnet kaks korda järjest. Kas soovid, et kohandaksime automaatselt seeriate arvu ja/või kordusi järgmisteks treeninguteks?"
+            confirmText={isApplyingProgression ? "Rakendan..." : "Jah, rakenda"}
+            cancelText="Ei, jäta muutmata"
+            variant="info"
+            isLoading={isApplyingProgression}
+            loadingText="Rakendan muudatusi..."
           />
         )}
 
