@@ -156,10 +156,10 @@ export default function IndexPublic() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Hero Section - Matching marketing site style */}
         <div className="text-center mb-20">
-          <h1 className="text-[60px] md:text-[85px] font-black uppercase tracking-[-3px] leading-[102px] mb-8 text-foreground">
-            <span className="accent-handwriting text-[#00B6E5] lowercase not-uppercase">muuda oma elu</span>
+          <h1 className="text-[60px] md:text-[85px] font-black tracking-[-3px] leading-[102px] mb-8">
+            <span className="accent-handwriting text-[#00B6E5] lowercase">muuda oma elu</span>
             <br />
-            <span className="accent-handwriting text-[#00B6E5] lowercase not-uppercase text-[48px] md:text-[85px]">28 päevaga</span>
+            <span className="accent-handwriting text-[#00B6E5] lowercase text-[48px] md:text-[85px]">28 päevaga</span>
           </h1>
           <p className="text-lg font-bold text-[#212121] mb-6 max-w-4xl mx-auto leading-6">
             Treeningprogrammid, mis sobivad nii algajatele kui kogenud treenijatele.
