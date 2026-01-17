@@ -274,9 +274,11 @@ if (container) {
                     <Route path="/settings" element={<Navigate to="/konto" replace />} />
                     <Route path="/change-password" element={<ChangePasswordPage />} />
                     <Route path="/mindfulness" element={
-                      <Suspense fallback={<div className="p-6">Laen…</div>}>
-                        <MindfulnessPage />
-                      </Suspense>
+                      <ErrorBoundary fallback={<div className="p-6 text-center"><h2 className="text-xl font-bold mb-2">Viga lehel</h2><p>Hingamise lehe laadimise viga. Palun laadige leht uuesti.</p></div>}>
+                        <Suspense fallback={<div className="p-6">Laen…</div>}>
+                          <MindfulnessPage />
+                        </Suspense>
+                      </ErrorBoundary>
                     } />
                     <Route path="/kalkulaatorid" element={
                       <Suspense fallback={<div className="p-6">Laen…</div>}>
