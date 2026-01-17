@@ -68,8 +68,6 @@ export default function Home() {
       return "Ma olen see, mida ma korduvalt teen. Järjepidevus on minu võti.";
     } else if (currentStreak >= 3) {
       return "Ma valin raskema tee. See muudab mind tugevamaks.";
-    } else if (progressPct >= 50) {
-      return "Ma investeerin oma aega olulistesse asjadesse, mis loovad tulevikku.";
     } else {
       return "Täna on hea päev. Iga treening viib mind eesmärgile lähemale.";
     }
