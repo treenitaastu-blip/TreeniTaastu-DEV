@@ -271,7 +271,7 @@ export default function Home() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center space-y-4">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="text-muted-foreground">Laen sinu andmeid...</p>
+            <p className="text-[#212121] font-bold">Laen sinu andmeid...</p>
           </div>
         </div>
       </div>
@@ -330,11 +330,11 @@ export default function Home() {
           isFirstShow={popupManager.isFirstShow}
         />
 
-        {/* Welcome Header - Clean Apple-style */}
+        {/* Welcome Header - Matching marketing site style */}
         <div className="text-center space-y-6 pt-8">
           <div className="space-y-4">
             {user?.full_name && (
-              <h1 className="text-4xl md:text-5xl font-bold text-black">
+              <h1 className="text-[40px] md:text-[52px] font-black uppercase text-black tracking-tight">
                 Tere, {user.full_name.split(' ')[0]}!
               </h1>
             )}
@@ -349,7 +349,7 @@ export default function Home() {
               onClick={() => trackButtonClick('journal', '/programs/journal', 'home_quick_actions')}
             >
               <BookOpen className="h-5 w-5" />
-              <span className="text-sm font-medium">Märkmik</span>
+              <span className="text-sm font-bold">Märkmik</span>
             </Link>
           </Button>
           <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700">
@@ -358,7 +358,7 @@ export default function Home() {
               onClick={() => trackButtonClick('analytics', '/programs/stats', 'home_quick_actions')}
             >
               <BarChart3 className="h-5 w-5" />
-              <span className="text-sm font-medium">Analüütika</span>
+              <span className="text-sm font-bold">Analüütika</span>
             </Link>
           </Button>
           <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700">
@@ -367,7 +367,7 @@ export default function Home() {
               onClick={() => trackButtonClick('teenused', '/teenused', 'home_quick_actions')}
             >
               <Target className="h-5 w-5" />
-              <span className="text-sm font-medium">Teenused</span>
+              <span className="text-sm font-bold">Teenused</span>
             </Link>
           </Button>
         </div>
@@ -378,11 +378,11 @@ export default function Home() {
           {/* Personal Training Card - Apple Liquid Glass */}
           <Card className="bg-white/70 backdrop-blur-sm border border-gray-200/50 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl text-gray-900">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
                 <Dumbbell className="h-6 w-6 text-gray-700" />
                 Personaaltreening
               </CardTitle>
-              <CardDescription className="text-gray-600">
+              <CardDescription className="text-[#212121] font-bold">
                 {stats.lastWorkout 
                   ? `Viimane treening: ${new Date(stats.lastWorkout).toLocaleDateString("et-EE")}`
                   : "Valmis järgmiseks treeningukorraks?"
@@ -423,11 +423,11 @@ export default function Home() {
           {/* Programs Card - Apple Liquid Glass */}
           <Card className="bg-white/70 backdrop-blur-sm border border-gray-200/50 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl text-gray-900">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
                 <Target className="h-6 w-6 text-gray-700" />
                 Programmid
               </CardTitle>
-              <CardDescription className="text-gray-600">
+              <CardDescription className="text-[#212121] font-bold">
                 Vali oma treeningprogramm ja alusta teekonda
               </CardDescription>
             </CardHeader>
@@ -436,7 +436,7 @@ export default function Home() {
               <div className="grid grid-cols-1 gap-4">
                 <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
                   <div className="text-lg font-bold text-gray-900 mb-2">Kontorikeha Reset</div>
-                  <div className="text-sm text-gray-600 mb-3">20 päeva • Alustaja</div>
+                  <div className="text-sm font-bold text-[#212121] mb-3">20 päeva • Alustaja</div>
                   <div className="text-xs text-green-600 font-medium">✓ Saadaval</div>
                 </div>
               </div>
