@@ -432,9 +432,19 @@ export default function ProgramEdit() {
               </Button>
               
               <Button
-                onClick={() => setShowContentEditor(true)}
+                onClick={() => {
+                  if (id) {
+                    setShowContentEditor(true);
+                  } else {
+                    toast({
+                      title: "Viga",
+                      description: "Programmi ID puudub",
+                      variant: "destructive",
+                    });
+                  }
+                }}
                 variant="outline"
-                disabled={saving || deleting}
+                disabled={saving || deleting || !id}
                 className="flex items-center gap-2"
               >
                 <Edit3 className="h-4 w-4" />
@@ -465,16 +475,18 @@ export default function ProgramEdit() {
       </AdminCard>
 
       {/* Program Content Editor Modal */}
-      <ProgramContentEditor
-        programId={id!}
-        isOpen={showContentEditor}
-        onOpenChange={setShowContentEditor}
-        onSuccess={() => {
-          setShowContentEditor(false);
-          // Optionally reload program data
-          loadProgram();
-        }}
-      />
+      {id && (
+        <ProgramContentEditor
+          programId={id}
+          isOpen={showContentEditor}
+          onOpenChange={setShowContentEditor}
+          onSuccess={() => {
+            setShowContentEditor(false);
+            // Optionally reload program data
+            loadProgram();
+          }}
+        />
+      )}
     </AdminLayout>
   );
 }
