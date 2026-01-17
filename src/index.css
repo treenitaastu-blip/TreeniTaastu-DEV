@@ -288,6 +288,13 @@
     font-variation-settings: normal;
     line-height: var(--leading-normal);
   }
+  
+  /* Handwriting-style accent text (matching marketing site) */
+  .accent-handwriting {
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    color: #00B6E5; /* Marketing site blue */
+  }
 
   #root {
     @apply bg-background;

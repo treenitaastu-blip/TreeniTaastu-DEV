@@ -97,6 +97,7 @@ const config: Config = {
       fontFamily: {
         sans: ['DM Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+        handwriting: ['Georgia', 'serif'], // For handwriting-style accent text (matching marketing site)
       },
       fontSize: {
         xs: ['var(--font-size-xs)', { lineHeight: 'var(--leading-tight)' }],

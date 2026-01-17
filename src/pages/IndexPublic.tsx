@@ -213,7 +213,7 @@ export default function IndexPublic() {
               </h2>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                 Liitu üle 500 inimesega, kes on juba alustanud oma fitness-teekonda. 
-                Alusta tasuta prooviga ja kogeda erinevust juba esimese nädala jooksul.
+                <span className="accent-handwriting text-[#00B6E5] text-[28px] md:text-[36px] block mt-2">Alusta tasuta prooviga</span>
               </p>
               
               {/* Urgency indicators */}
