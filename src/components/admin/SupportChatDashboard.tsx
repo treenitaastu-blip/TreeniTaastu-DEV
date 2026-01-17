@@ -12,13 +12,18 @@ import { MessageCircle, Send, User, Clock, RefreshCw, AlertCircle, Shield } from
 import { SupportMessage, SupportConversation } from '@/hooks/useSupportChat';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-interface ConversationWithProfile extends SupportConversation {
+interface ConversationWithProfile {
+  id: string;
+  user_id: string;
+  status: 'active' | 'closed' | 'archived' | 'new';
+  created_at: string;
+  updated_at: string;
+  last_message_at: string;
   user_email?: string;
   user_name?: string | null;
   user_created_at?: string;
   latest_message_preview?: string;
   latest_message_time?: string;
-  status?: 'active' | 'closed' | 'archived' | 'new'; // Allow 'new' status
 }
 
 export function SupportChatDashboard() {
