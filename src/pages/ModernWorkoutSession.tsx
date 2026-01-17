@@ -115,7 +115,7 @@ export default function ModernWorkoutSession() {
   });
 
   // New feedback system state
-  const [exerciseFeedbackEnabled, setExerciseFeedbackEnabled] = useState(true);
+  const [exerciseFeedbackEnabled, setExerciseFeedbackEnabled] = useState(false); // Disabled - clients control weight manually
   const [showWorkoutFeedback, setShowWorkoutFeedback] = useState(false);
   const [exerciseProgression, setExerciseProgression] = useState<Record<string, {
     newWeight: number;

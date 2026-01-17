@@ -166,10 +166,7 @@ export default function SmartExerciseCard({
     setTimerActive(prev => ({ ...prev, [setNumber]: false }));
     setTimerSeconds(prev => ({ ...prev, [setNumber]: undefined }));
     
-    // Show feedback if this is the last set and feedback is enabled
-    if (setNumber === exercise.sets && showExerciseFeedback && onExerciseFeedback) {
-      setShowFeedback(true);
-    }
+    // Exercise feedback removed - clients now control weight progression manually
     
     // Auto-start rest timer if it's not the last set
     if (setNumber < exercise.sets) {
