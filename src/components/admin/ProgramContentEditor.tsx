@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { processExerciseInput as processExerciseInputUtil, validateExercise } from "@/utils/exerciseUtils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -83,35 +84,17 @@ export default function ProgramContentEditor({
   });
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
 
-  // Process exercise input for unilateral exercises
+  // Use shared exercise processing utility
   const processExerciseInput = (input: typeof newExercise) => {
-    const { reps, is_unilateral, weight_kg } = input;
-    
-    let reps_per_side: number | null = null;
-    let total_reps: number;
-    let display_reps: string;
-    
-    if (is_unilateral) {
-      // For unilateral exercises, extract the number from "8 per side" or just "8"
-      const repsNumber = parseInt(reps.replace(/[^\d]/g, ''));
-      reps_per_side = repsNumber;
-      total_reps = repsNumber * 2;
-      display_reps = `${repsNumber} per side`;
-    } else {
-      // For bilateral exercises, use the number as-is
-      const repsNumber = parseInt(reps.replace(/[^\d]/g, ''));
-      total_reps = repsNumber;
-      display_reps = repsNumber.toString();
-    }
-    
-    const is_bodyweight = weight_kg === 0 || weight_kg === null;
+    const processed = processExerciseInputUtil({
+      reps: input.reps,
+      is_unilateral: input.is_unilateral,
+      weight_kg: input.weight_kg
+    });
     
     return {
       ...input,
-      reps: display_reps,
-      reps_per_side,
-      total_reps,
-      is_bodyweight
+      ...processed
     };
   };
 
@@ -183,10 +166,20 @@ export default function ProgramContentEditor({
   };
 
   const handleAddExercise = async (dayId: string) => {
-    if (!newExercise.exercise_name.trim()) {
+    // Validate exercise using shared validation utility
+    const errors = validateExercise({
+      exercise_name: newExercise.exercise_name,
+      sets: newExercise.sets,
+      reps: newExercise.reps,
+      weight_kg: newExercise.weight_kg,
+      seconds: null // ProgramContentEditor doesn't have seconds in state yet
+    });
+    
+    if (Object.keys(errors).length > 0) {
+      const errorMessage = Object.values(errors).join(', ');
       toast({
-        title: "Viga",
-        description: "Palun sisesta harjutuse nimi",
+        title: "Valideerimise viga",
+        description: errorMessage,
         variant: "destructive",
       });
       return;

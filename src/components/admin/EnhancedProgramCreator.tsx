@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { processExerciseInput as processExerciseInputUtil, validateExercise } from "@/utils/exerciseUtils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -249,31 +250,21 @@ export default function EnhancedProgramCreator({
     ));
   };
 
+  // Use shared exercise processing utility
   const processExerciseInput = (exercise: Exercise) => {
-    const { reps, is_unilateral, weight_kg } = exercise;
-
-    let reps_per_side: number | null = null;
-    let total_reps: number;
-    let display_reps: string;
-
-    if (is_unilateral) {
-      // For unilateral, extract the first number from reps (e.g., "8" from "8-12")
-      const repsNumber = parseInt(reps.match(/\d+/)?.[0] || '0');
-      reps_per_side = repsNumber;
-      total_reps = repsNumber * 2;
-      display_reps = `${repsNumber} mõlemal poolel`;
-    } else {
-      // For regular exercises, keep the original reps string
-      const repsNumber = parseInt(reps.match(/\d+/)?.[0] || '0');
-      total_reps = repsNumber;
-      display_reps = reps; // Keep original format like "8-12"
-    }
-
+    const processed = processExerciseInputUtil({
+      reps: exercise.reps,
+      is_unilateral: exercise.is_unilateral,
+      weight_kg: exercise.weight_kg
+    });
+    
     return {
       ...exercise,
-      reps: display_reps,
-      reps_per_side,
-      total_reps,
+      ...processed,
+      // Keep Estonian format for display
+      reps: exercise.is_unilateral && processed.reps_per_side
+        ? `${processed.reps_per_side} mõlemal poolel`
+        : processed.reps
     };
   };
 
@@ -340,6 +331,42 @@ export default function EnhancedProgramCreator({
       toast({
         title: "Viga",
         description: `Päevad ${emptyDays.map(d => d.day_number).join(", ")} vajavad vähemalt ühte harjutust`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate all exercises using shared validation utility
+    const invalidExercises: Array<{day: number; exercise: string; errors: string[]}> = [];
+    
+    trainingDays.forEach(day => {
+      day.exercises.forEach(exercise => {
+        const errors = validateExercise({
+          exercise_name: exercise.exercise_name,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          weight_kg: exercise.weight_kg,
+          seconds: null // EnhancedProgramCreator doesn't have seconds field yet, handled in creation logic
+        });
+        
+        if (Object.keys(errors).length > 0) {
+          invalidExercises.push({
+            day: day.day_number,
+            exercise: exercise.exercise_name || 'Nimetu harjutus',
+            errors: Object.values(errors)
+          });
+        }
+      });
+    });
+    
+    if (invalidExercises.length > 0) {
+      const errorMessages = invalidExercises.map(
+        inv => `Päev ${inv.day}: ${inv.exercise} - ${inv.errors.join(', ')}`
+      ).join('\n');
+      
+      toast({
+        title: "Valideerimise viga",
+        description: `Mõned harjutused on valed:\n${errorMessages}`,
         variant: "destructive",
       });
       return;
@@ -768,7 +795,7 @@ export default function EnhancedProgramCreator({
                                 <label className="block text-xs font-medium mb-1">Tüüp</label>
                                 <select
                                   value={exercise.exercise_type || 'isolation'}
-                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { exercise_type: e.target.value })}
+                                  onChange={(e) => updateExercise(dayIndex, exerciseIndex, { exercise_type: e.target.value as 'compound' | 'isolation' | 'bodyweight' })}
                                   className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs sm:text-sm h-7 sm:h-8"
                                 >
                                   <option value="compound">Liigend (2.5kg)</option>

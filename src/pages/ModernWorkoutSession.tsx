@@ -396,8 +396,17 @@ export default function ModernWorkoutSession() {
       setSaving(true);
       setLoadingState(LOADING_KEYS.SET_COMPLETE, true, getLoadingMessage(LOADING_KEYS.SET_COMPLETE));
       
-      // Parse target reps for fallback
+      // Parse target reps for fallback (only for non-time-based exercises)
       const targetReps = exercise?.reps ? parseInt(exercise.reps.replace(/[^\d]/g, '')) || null : null;
+      
+      // Determine if this is a time-based exercise
+      const isTimeBased = exercise?.seconds !== null && exercise?.seconds !== undefined && exercise.seconds > 0;
+      
+      // For time-based exercises, allow completion with just seconds_done (reps_done can be null)
+      // For weight/bodyweight exercises, require reps_done
+      const repsDone = isTimeBased 
+        ? (inputs.reps || targetReps) // Optional for time-based, but allow if provided
+        : (inputs.reps || targetReps); // Required for non-time-based
       
       const setLogData = {
         session_id: session.id,
@@ -406,11 +415,20 @@ export default function ModernWorkoutSession() {
         program_id: programId!,
         user_id: user.id,
         set_number: setNumber,
-        reps_done: inputs.reps || targetReps,
+        reps_done: repsDone,
         seconds_done: inputs.seconds || exercise?.seconds,
         weight_kg_done: inputs.kg || exercise?.weight_kg,
         marked_done_at: new Date().toISOString()
       };
+      
+      // Validation: For time-based exercises, ensure seconds_done is present
+      // For non-time-based, ensure reps_done is present
+      if (isTimeBased && !setLogData.seconds_done) {
+        throw new Error('Ajaharjutus nõuab aja sisestamist');
+      }
+      if (!isTimeBased && !setLogData.reps_done) {
+        throw new Error('Harjutus nõuab korduste sisestamist');
+      }
       
       // Bug #1 fix: Use upsert instead of insert to handle duplicates
       const { error: upsertError } = await supabase
