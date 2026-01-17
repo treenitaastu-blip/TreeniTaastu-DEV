@@ -1421,7 +1421,7 @@ export default function ModernWorkoutSession() {
           totalSets={totalSets}
         />
 
-        {/* Workout Rest Timer - Positioned above chat bubble */}
+        {/* Workout Rest Timer */}
         <WorkoutRestTimer
           isOpen={restTimer.isOpen}
           initialSeconds={restTimer.seconds}

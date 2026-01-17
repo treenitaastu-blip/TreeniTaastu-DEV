@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from "react";
-import { Play, Check, Clock, Weight, Repeat, MessageSquare, Star, TrendingUp, Zap, Activity, Info, Target, Timer } from "lucide-react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { Play, Check, Clock, Weight, Repeat, MessageSquare, Star, TrendingUp, Zap, Activity, Info, Target, Timer, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,6 +98,11 @@ export default function SmartExerciseCard({
   const [showVideo, setShowVideo] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [currentSet, setCurrentSet] = useState((completedSets || 0) + 1);
+  
+  // Timer state for time-based exercises
+  const [timerActive, setTimerActive] = useState<Record<number, boolean>>({});
+  const [timerSeconds, setTimerSeconds] = useState<Record<number, number>>({});
+  const timerIntervalRef = useRef<Record<number, NodeJS.Timeout>>({});
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [manuallyExpanded, setManuallyExpanded] = useState(false);
@@ -149,9 +154,17 @@ export default function SmartExerciseCard({
 
   }, [exercise.id, exercise.weight_kg, setInputs, applyValueWithSuggestion]);
 
-  const handleSetComplete = useCallback((setNumber: number) => {
-    onSetComplete(setNumber);
+  const handleSetComplete = useCallback((setNumber: number, data?: Record<string, unknown>) => {
+    onSetComplete(setNumber, data);
     setCurrentSet(setNumber + 1);
+    
+    // Clear timer state for completed set
+    if (timerIntervalRef.current[setNumber]) {
+      clearInterval(timerIntervalRef.current[setNumber]);
+      delete timerIntervalRef.current[setNumber];
+    }
+    setTimerActive(prev => ({ ...prev, [setNumber]: false }));
+    setTimerSeconds(prev => ({ ...prev, [setNumber]: undefined }));
     
     // Show feedback if this is the last set and feedback is enabled
     if (setNumber === exercise.sets && showExerciseFeedback && onExerciseFeedback) {
@@ -288,15 +301,17 @@ export default function SmartExerciseCard({
                 <Clock className="h-3 w-3" />
                 Aeg (s)
               </label>
-              <div className="relative">
-                <Input
-                  type="number"
-                  placeholder={exercise.seconds?.toString() || "0"}
-                  value={inputs.seconds !== undefined ? inputs.seconds : exercise.seconds || ""}
-                  onChange={(e) => handleSetInputChangeWithSuggestion(currentSet, "seconds", Number(e.target.value))}
-                  className="text-center text-lg h-12"
-                />
-              </div>
+              {timerActive[currentSet] ? (
+                // Timer is running - show countdown
+                <div className="text-center text-4xl font-bold text-primary h-16 flex items-center justify-center border-2 border-primary rounded-lg bg-primary/5">
+                  {timerSeconds[currentSet] ?? (exercise.seconds || 0)}
+                </div>
+              ) : (
+                // Timer not started - show assigned time
+                <div className="text-center text-lg h-12 border rounded-md bg-muted/20 flex items-center justify-center text-muted-foreground">
+                  {exercise.seconds}s
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -311,14 +326,80 @@ export default function SmartExerciseCard({
           )}
         </div>
 
-        <Button
-          onClick={() => handleSetComplete(currentSet)}
-          size="sm"
-          className="w-full h-8 text-sm font-medium"
-        >
-          <Check className="h-3 w-3 mr-1" />
-          Seeria tehtud
-        </Button>
+        {/* For time-based exercises, show "Alusta" button that starts countdown timer */}
+        {exercise.seconds && exercise.seconds > 0 ? (
+          timerActive[currentSet] ? (
+            // Timer is running - show pause/cancel option
+            <Button
+              onClick={() => {
+                // Stop timer
+                if (timerIntervalRef.current[currentSet]) {
+                  clearInterval(timerIntervalRef.current[currentSet]);
+                  delete timerIntervalRef.current[currentSet];
+                }
+                setTimerActive(prev => ({ ...prev, [currentSet]: false }));
+                setTimerSeconds(prev => ({ ...prev, [currentSet]: exercise.seconds || 0 }));
+              }}
+              variant="outline"
+              size="sm"
+              className="w-full h-8 text-sm font-medium"
+            >
+              <Pause className="h-3 w-3 mr-1" />
+              Peata
+            </Button>
+          ) : (
+            // Timer not started - show "Alusta" button
+            <Button
+              onClick={() => {
+                const targetSeconds = exercise.seconds || 0;
+                setTimerSeconds(prev => ({ ...prev, [currentSet]: targetSeconds }));
+                setTimerActive(prev => ({ ...prev, [currentSet]: true }));
+                
+                // Start countdown
+                timerIntervalRef.current[currentSet] = setInterval(() => {
+                  setTimerSeconds(prev => {
+                    const current = (prev[currentSet] ?? targetSeconds);
+                    const next = current - 1;
+                    
+                    if (next <= 0) {
+                      // Timer reached 0 - automatically complete the set
+                      setTimeout(() => {
+                        if (timerIntervalRef.current[currentSet]) {
+                          clearInterval(timerIntervalRef.current[currentSet]);
+                          delete timerIntervalRef.current[currentSet];
+                        }
+                        setTimerActive(prev => ({ ...prev, [currentSet]: false }));
+                        
+                        // Mark set as complete with the seconds value
+                        const key = `${exercise.id}:${currentSet}`;
+                        const setData = setInputs[key] || {};
+                        handleSetComplete(currentSet, { ...setData, seconds: targetSeconds });
+                      }, 0);
+                      
+                      return { ...prev, [currentSet]: 0 };
+                    }
+                    return { ...prev, [currentSet]: next };
+                  });
+                }, 1000);
+              }}
+              size="sm"
+              className="w-full h-8 text-sm font-medium"
+            >
+              <Play className="h-3 w-3 mr-1" />
+              Alusta
+            </Button>
+          )
+        ) : (
+          // Non-time-based exercise - show regular "Seeria tehtud" button
+          <Button
+            onClick={() => handleSetComplete(currentSet)}
+            size="sm"
+            className="w-full h-8 text-sm font-medium"
+          >
+            <Check className="h-3 w-3 mr-1" />
+            Seeria tehtud
+          </Button>
+        )}
       </div>
     );
   };
@@ -611,7 +692,7 @@ export default function SmartExerciseCard({
                             type="number"
                             placeholder={exercise.seconds.toString()}
                             value={inputs.seconds !== undefined ? inputs.seconds : exercise.seconds || ""}
-                            onChange={(e) => handleSetInputChangeWithSuggestion(setNumber, "seconds", Number(e.target.value))}
+                            onChange={(e) => onSetInputChange(setNumber, "seconds", Number(e.target.value))}
                             className="text-center text-lg h-12"
                             disabled={isCompleted}
                           />
@@ -698,4 +779,13 @@ export default function SmartExerciseCard({
       
     </div>
   );
+  
+  // Cleanup timers on unmount or when exercise changes
+  useEffect(() => {
+    return () => {
+      Object.values(timerIntervalRef.current).forEach(interval => {
+        if (interval) clearInterval(interval);
+      });
+    };
+  }, [exercise.id]);
 }
