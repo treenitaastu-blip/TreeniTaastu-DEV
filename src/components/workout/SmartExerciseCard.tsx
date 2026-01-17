@@ -50,6 +50,7 @@ interface SmartExerciseCardProps {
   onRPEChange?: (rpe: number) => void;
   rir?: number;
   onRIRChange?: (rir: number) => void;
+  previousRIR?: number; // Previous session's RIR for reference
   progressionSuggestion?: {
     type: 'weight' | 'reps';
     value: number;
@@ -94,6 +95,7 @@ export default function SmartExerciseCard({
   onRPEChange,
   rir,
   onRIRChange,
+  previousRIR,
   progressionSuggestion,
   onSwitchToAlternative,
   showAlternatives = false,
@@ -614,6 +616,16 @@ export default function SmartExerciseCard({
             </div>
           </div>
         </div>
+        
+        {/* Previous RIR display - show only if available */}
+        {previousRIR !== undefined && previousRIR !== null && (
+          <div className="mt-3 pt-3 border-t border-muted/30">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Target className="h-3.5 w-3.5" />
+              <span>Eelmine RIR: <span className="font-semibold text-foreground">{previousRIR}</span></span>
+            </div>
+          </div>
+        )}
         
         {/* Minimal progress bar */}
         <div className="mt-3 w-full bg-muted rounded-full h-1.5 overflow-hidden">

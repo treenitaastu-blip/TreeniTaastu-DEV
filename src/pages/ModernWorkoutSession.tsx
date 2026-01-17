@@ -7,6 +7,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useSmartProgression, type ExerciseProgression } from "@/hooks/useSmartProgression";
 import { useProgressionRecommendations } from "@/hooks/useProgressionRecommendations";
 import ProgressionRecommendationDialog from "@/components/workout/ProgressionRecommendationDialog";
+import RIRDialog from "@/components/workout/RIRDialog";
 import { toast } from "sonner";
 import { getErrorMessage, getSeverityStyles, getActionButtonText } from '@/utils/errorMessages';
 import { useLoadingState, LOADING_KEYS, getLoadingMessage } from '@/hooks/useLoadingState';
@@ -88,6 +89,7 @@ export default function ModernWorkoutSession() {
   const [setInputs, setSetInputs] = useState<Record<string, { reps?: number; seconds?: number; kg?: number }>>({});
   const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
   const [exerciseRPE, setExerciseRPE] = useState<Record<string, number>>({});
+  const [previousRIR, setPreviousRIR] = useState<Record<string, number>>({}); // Last session's RIR per exercise
   
   // Track completed exercises for RPE/RIR collection
   const [completedExerciseIds, setCompletedExerciseIds] = useState<Set<string>>(new Set());
@@ -334,14 +336,20 @@ export default function ModernWorkoutSession() {
           if (notesData) {
             const notesMap: Record<string, string> = {};
             const rpeMap: Record<string, number> = {};
+            const rirMap: Record<string, number> = {};
             
             // Group by client_item_id and take the latest note for each exercise
+            // But for RIR, we want the previous session (not current), so exclude current session
             type ExerciseNote = {
               client_item_id: string;
+              session_id: string;
               notes?: string | null;
               rpe?: number | null;
+              rir_done?: number | null;
               updated_at: string;
             };
+            
+            const currentSessionId = sessionData.id;
             const latestNotes = notesData.reduce((acc: Record<string, ExerciseNote>, note: ExerciseNote) => {
               if (!acc[note.client_item_id] || new Date(note.updated_at) > new Date(acc[note.client_item_id].updated_at)) {
                 acc[note.client_item_id] = note;
@@ -349,13 +357,30 @@ export default function ModernWorkoutSession() {
               return acc;
             }, {});
             
+            // For RIR, get the most recent note from a different session (previous session)
+            const previousRIRNotes = notesData
+              .filter((note: ExerciseNote) => note.session_id !== currentSessionId && note.rir_done !== null && note.rir_done !== undefined)
+              .reduce((acc: Record<string, ExerciseNote>, note: ExerciseNote) => {
+                if (!acc[note.client_item_id] || new Date(note.updated_at) > new Date(acc[note.client_item_id].updated_at)) {
+                  acc[note.client_item_id] = note;
+                }
+                return acc;
+              }, {});
+            
             Object.values(latestNotes).forEach((note: ExerciseNote) => {
               if (note.notes) notesMap[note.client_item_id] = note.notes;
               if (note.rpe) rpeMap[note.client_item_id] = note.rpe;
             });
             
+            Object.values(previousRIRNotes).forEach((note: ExerciseNote) => {
+              if (note.rir_done !== null && note.rir_done !== undefined) {
+                rirMap[note.client_item_id] = note.rir_done;
+              }
+            });
+            
             setExerciseNotes(notesMap);
             setExerciseRPE(rpeMap);
+            setPreviousRIR(rirMap);
           }
         }
 
@@ -578,6 +603,15 @@ export default function ModernWorkoutSession() {
         toast.success(`✅ ${exercise.exercise_name} lõpetatud!`, {
           description: "Hinda oma sooritust - see aitab järgmist treeningut kohandada"
         });
+        
+        // Show RIR dialog after last set (with small delay for better UX)
+        setTimeout(() => {
+          setRirDialogState({
+            isOpen: true,
+            exerciseId,
+            exerciseName: exercise.exercise_name
+          });
+        }, 500);
         
       }
 
@@ -839,6 +873,34 @@ export default function ModernWorkoutSession() {
     }
   }, [session, user, dayId, programId]);
 
+  const handleRIRSave = useCallback(async (exerciseId: string, rir: number) => {
+    if (!session || !user) return;
+    
+    // Save RIR to database
+    try {
+      const { error } = await supabase.from("exercise_notes").upsert({
+        session_id: session.id,
+        client_day_id: dayId!,
+        client_item_id: exerciseId,
+        program_id: programId!,
+        user_id: user.id,
+        rir_done: rir
+      }, {
+        onConflict: "session_id,client_item_id"
+      });
+      
+      if (error) throw error;
+      
+      // Close dialog
+      setRirDialogState({ isOpen: false, exerciseId: null, exerciseName: "" });
+      
+      toast.success("RIR salvestatud!");
+    } catch (error) {
+      console.error('Failed to save RIR:', error);
+      toast.error("RIR salvestamine ebaõnnestus");
+    }
+  }, [session, user, dayId, programId]);
+
   // Per-exercise progression confirmation state
   const [showExerciseProgressionConfirm, setShowExerciseProgressionConfirm] = useState(false);
   const [pendingExerciseProgression, setPendingExerciseProgression] = useState<{
@@ -857,6 +919,13 @@ export default function ModernWorkoutSession() {
     isOpen: boolean;
     exerciseId: string | null;
   }>({ isOpen: false, exerciseId: null });
+
+  // RIR dialog state
+  const [rirDialogState, setRirDialogState] = useState<{
+    isOpen: boolean;
+    exerciseId: string | null;
+    exerciseName: string;
+  }>({ isOpen: false, exerciseId: null, exerciseName: "" });
 
   const computeSuggestedWeight = (current: number, sense: 'too_easy' | 'just_right' | 'too_hard') => {
     if (!Number.isFinite(current) || current < 0) current = 0;
@@ -1514,6 +1583,7 @@ export default function ModernWorkoutSession() {
               onNotesChange={(notes) => handleNotesChange(exercise.id, notes)}
               rpe={exerciseRPE[exercise.id]}
               onRPEChange={(rpe) => handleRPEChange(exercise.id, rpe)}
+              previousRIR={previousRIR[exercise.id]}
               onSwitchToAlternative={switchToAlternative}
               showAlternatives={openAlternativesFor[exercise.id] || false}
               onToggleAlternatives={(exerciseId) => setOpenAlternativesFor(prev => ({ ...prev, [exerciseId]: !prev[exerciseId] }))}
@@ -1613,6 +1683,16 @@ export default function ModernWorkoutSession() {
             />
           );
         })()}
+
+        {/* RIR Dialog */}
+        {rirDialogState.isOpen && rirDialogState.exerciseId && (
+          <RIRDialog
+            isOpen={true}
+            onClose={() => setRirDialogState({ isOpen: false, exerciseId: null, exerciseName: "" })}
+            onSave={(rir) => handleRIRSave(rirDialogState.exerciseId!, rir)}
+            exerciseName={rirDialogState.exerciseName}
+          />
+        )}
 
         {/* Loading Overlay */}
         {saving && (
