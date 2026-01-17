@@ -157,13 +157,15 @@ export default function IndexPublic() {
         {/* Hero Section - Matching marketing site style */}
         <div className="text-center mb-20">
           <h1 className="text-[60px] md:text-[85px] font-black uppercase tracking-[-3px] leading-[102px] mb-8 text-foreground">
-            Muuda oma elu
+            <span className="accent-handwriting text-[#00B6E5] lowercase not-uppercase">muuda oma elu</span>
             <br />
-            <span className="text-[48px] md:text-[85px]">28 päevaga</span>
+            <span className="accent-handwriting text-[#00B6E5] lowercase not-uppercase text-[48px] md:text-[85px]">28 päevaga</span>
           </h1>
-          <p className="text-lg font-bold text-[#212121] mb-12 max-w-4xl mx-auto leading-6">
-            Professionaalsed treeningprogrammid, mis sobivad nii algajatele kui kogenud treenijatele. 
-            Alusta tasuta prooviga ja kogeda erinevust.
+          <p className="text-lg font-bold text-[#212121] mb-6 max-w-4xl mx-auto leading-6">
+            Treeningprogrammid, mis sobivad nii algajatele kui kogenud treenijatele.
+          </p>
+          <p className="accent-handwriting text-[#00B6E5] text-[28px] md:text-[36px] mb-12">
+            Alusta tasuta prooviga ja koge erinevust.
           </p>
           
           {/* Enhanced Trust Indicators */}

@@ -94,29 +94,13 @@ export default function Home() {
     const currentStreak = streaks?.current_streak ?? stats.streak;
     
     if (currentStreak >= 7) {
-      return {
-        title: "Võrratu sooritus!",
-        message: `${currentStreak} päeva järjest! Sa oled tõeline kangelane!`,
-        color: "text-orange-600"
-      };
+      return `${currentStreak} päeva järjest! Sa oled tõeline kangelane!`;
     } else if (currentStreak >= 3) {
-      return {
-        title: "Suurepärane tempo!",
-        message: `${currentStreak} päeva järjest - jätka samas vaimus!`,
-        color: "text-green-600"
-      };
+      return `${currentStreak} päeva järjest - jätka samas vaimus!`;
     } else if (progressPct >= 50) {
-      return {
-        title: "Suurepärane edenemine!",
-        message: `${progressPct}% programmist tehtud - tubli töö!`,
-        color: "text-blue-600"
-      };
+      return `${progressPct}% programmist tehtud - tubli töö!`;
     } else {
-      return {
-        title: "Täna on hea päev!",
-        message: "Iga treening viib sind eesmärgile lähemale",
-        color: "text-primary"
-      };
+      return "Iga treening viib sind eesmärgile lähemale";
     }
   };
 
@@ -374,12 +358,9 @@ export default function Home() {
           </div>
           
           {/* Motivational Message */}
-          <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary-foreground/10 border border-primary/20 animate-scale-in`}>
-            <div className="text-center">
-              <p className="font-bold text-[#212121]">{motivationalMsg.title}</p>
-              <p className={`text-sm opacity-90 font-bold accent-handwriting text-[#00B6E5]`}>{motivationalMsg.message}</p>
-            </div>
-          </div>
+          <p className="accent-handwriting text-[#00B6E5] text-lg md:text-xl text-center">
+            {motivationalMsg.message.toLowerCase()}
+          </p>
         </div>
 
         {/* Quick Actions - Apple Liquid Glass */}
