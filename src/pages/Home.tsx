@@ -359,7 +359,7 @@ export default function Home() {
           
           {/* Motivational Message */}
           <p className="accent-handwriting text-[#00B6E5] text-lg md:text-xl text-center">
-            {motivationalMsg.message.toLowerCase()}
+            {motivationalMsg.toLowerCase()}
           </p>
         </div>
 
