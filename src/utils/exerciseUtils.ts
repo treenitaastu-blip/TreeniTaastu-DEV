@@ -178,6 +178,4 @@ export function isTimeBasedExercise(exercise: {
   }
   
   return false;
-}const errors = validateExercise(input);
-  return Object.keys(errors).length === 0;
 }

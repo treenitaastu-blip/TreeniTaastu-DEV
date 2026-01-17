@@ -406,7 +406,7 @@ export default function ModernWorkoutSession() {
     loadWorkout();
   }, [user, programId, dayId]);
 
-  const handleSetComplete = useCallback(async (exerciseId: string, setNumber: number) => {
+  const handleSetComplete = useCallback(async (exerciseId: string, setNumber: number, overrideData?: Record<string, unknown>) => {
     if (!session || !user) return;
 
     const key = `${exerciseId}:${setNumber}`;
@@ -436,6 +436,10 @@ export default function ModernWorkoutSession() {
         ? (inputs.reps || targetReps) // Optional for time-based, but allow if provided
         : (inputs.reps || targetReps); // Required for non-time-based
       
+      // Use overrideData (e.g. from timer) when provided, so we don't rely on async setInputs
+      const secondsDone = (overrideData?.seconds as number | undefined) ?? inputs.seconds ?? exercise?.seconds;
+      const weightDone = (overrideData?.kg as number | undefined) ?? inputs.kg ?? exercise?.weight_kg;
+      
       const setLogData = {
         session_id: session.id,
         client_item_id: exerciseId,
@@ -444,8 +448,8 @@ export default function ModernWorkoutSession() {
         user_id: user.id,
         set_number: setNumber,
         reps_done: repsDone,
-        seconds_done: inputs.seconds || exercise?.seconds,
-        weight_kg_done: inputs.kg || exercise?.weight_kg,
+        seconds_done: secondsDone,
+        weight_kg_done: weightDone,
         marked_done_at: new Date().toISOString()
       };
       
@@ -503,8 +507,8 @@ export default function ModernWorkoutSession() {
 
       // Update local state with actual saved values
       const actualReps = inputs.reps || targetReps;
-      const actualSeconds = inputs.seconds || exercise?.seconds;
-      const actualWeight = inputs.kg || exercise?.weight_kg;
+      const actualSeconds = secondsDone;
+      const actualWeight = weightDone;
       
       setSetLogs(prev => ({ 
         ...prev, 
@@ -1071,7 +1075,7 @@ export default function ModernWorkoutSession() {
         user_id: user.id,
         program_id: programId!,
         joint_pain: feedback.joint_pain,
-        joint_pain_location: feedback.joint_pain_location,
+        joint_pain_location: feedback.joint_pain_location ?? null,
         fatigue_level: feedback.fatigue_level,
         energy_level: feedback.energy_level,
         notes: feedback.notes
@@ -1570,10 +1574,10 @@ export default function ModernWorkoutSession() {
                   const key = `${exercise.id}:${setNumber}`;
                   setSetInputs(prev => ({
                     ...prev,
-                    [key]: { ...prev[key], ...data }
+                    [key]: { ...(prev[key] || {}), ...data }
                   }));
                 }
-                handleSetComplete(exercise.id, setNumber);
+                handleSetComplete(exercise.id, setNumber, data);
               }}
               onStartRest={() => handleStartRest(exercise)}
               setInputs={setInputs}

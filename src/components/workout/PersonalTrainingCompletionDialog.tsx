@@ -44,15 +44,15 @@ export default function PersonalTrainingCompletionDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm bg-card border-border text-card-foreground shadow-lg">
         <DialogHeader className="text-center pb-4">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <CheckCircle className="h-8 w-8 text-primary" />
           </div>
-          <DialogTitle className="text-xl font-semibold">
+          <DialogTitle className="text-xl font-semibold text-foreground">
             Treening lõpetatud!
           </DialogTitle>
-          <DialogDescription className="text-base">
+          <DialogDescription className="text-base text-muted-foreground">
             Hästi tehtud!
           </DialogDescription>
         </DialogHeader>

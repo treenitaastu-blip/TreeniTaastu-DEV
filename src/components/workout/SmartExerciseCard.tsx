@@ -672,15 +672,66 @@ export default function SmartExerciseCard({
                     </div>
                     
                     {isCurrent && !isCompleted && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleSetComplete(setNumber)}
-                        className="h-8 px-3 text-sm font-medium bg-primary hover:bg-primary/90"
-                        disabled={!inputs.reps && !parseRepsToNumber(exercise.reps)}
-                      >
-                        <Check className="h-3 w-3 mr-1" />
-                        Seeria tehtud
-                      </Button>
+                      isTimeBasedExercise(exercise) ? (
+                        timerActive[setNumber] ? (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              if (timerIntervalRef.current[setNumber]) {
+                                clearInterval(timerIntervalRef.current[setNumber]);
+                                delete timerIntervalRef.current[setNumber];
+                              }
+                              setTimerActive(prev => ({ ...prev, [setNumber]: false }));
+                              const t = exercise.seconds && exercise.seconds > 0 ? exercise.seconds : 60;
+                              setTimerSeconds(prev => ({ ...prev, [setNumber]: t }));
+                            }}
+                            variant="outline"
+                            className="h-8 px-3 text-sm font-medium"
+                          >
+                            <Pause className="h-3 w-3 mr-1" />
+                            Peata
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const targetSeconds = exercise.seconds && exercise.seconds > 0 ? exercise.seconds : 60;
+                              setTimerSeconds(prev => ({ ...prev, [setNumber]: targetSeconds }));
+                              setTimerActive(prev => ({ ...prev, [setNumber]: true }));
+                              timerIntervalRef.current[setNumber] = setInterval(() => {
+                                setTimerSeconds(prev => {
+                                  const cur = prev[setNumber] ?? targetSeconds;
+                                  const next = cur - 1;
+                                  if (next <= 0) {
+                                    if (timerIntervalRef.current[setNumber]) {
+                                      clearInterval(timerIntervalRef.current[setNumber]);
+                                      delete timerIntervalRef.current[setNumber];
+                                    }
+                                    setTimerActive(p => ({ ...p, [setNumber]: false }));
+                                    handleSetComplete(setNumber, { seconds: targetSeconds });
+                                    return { ...prev, [setNumber]: 0 };
+                                  }
+                                  return { ...prev, [setNumber]: next };
+                                });
+                              }, 1000);
+                            }}
+                            className="h-8 px-3 text-sm font-medium bg-primary hover:bg-primary/90"
+                          >
+                            <Play className="h-3 w-3 mr-1" />
+                            Alusta
+                          </Button>
+                        )
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSetComplete(setNumber)}
+                          className="h-8 px-3 text-sm font-medium bg-primary hover:bg-primary/90"
+                          disabled={!inputs.reps && !parseRepsToNumber(exercise.reps)}
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Seeria tehtud
+                        </Button>
+                      )
                     )}
                   </div>
 
@@ -727,14 +778,15 @@ export default function SmartExerciseCard({
                           <label className="text-sm font-medium text-muted-foreground mb-1 block">
                             Aeg (sek)
                           </label>
-                          <Input
-                            type="number"
-                            placeholder={(exercise.seconds && exercise.seconds > 0 ? exercise.seconds : 60).toString()}
-                            value={inputs.seconds !== undefined ? inputs.seconds : (exercise.seconds && exercise.seconds > 0 ? exercise.seconds : "")}
-                            onChange={(e) => onSetInputChange(setNumber, "seconds", Number(e.target.value))}
-                            className="text-center text-lg h-12"
-                            disabled={isCompleted}
-                          />
+                          {timerActive[setNumber] ? (
+                            <div className="text-center text-2xl font-bold text-primary h-12 flex items-center justify-center border-2 border-primary rounded-lg bg-primary/5">
+                              {timerSeconds[setNumber] ?? (exercise.seconds && exercise.seconds > 0 ? exercise.seconds : 60)}
+                            </div>
+                          ) : (
+                            <div className="text-center text-lg h-12 border rounded-md bg-muted/20 flex items-center justify-center text-muted-foreground">
+                              {(exercise.seconds && exercise.seconds > 0 ? exercise.seconds : 60)}s
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="text-center py-3 text-sm text-muted-foreground bg-muted/20 rounded-lg">
