@@ -89,6 +89,39 @@ export default function Home() {
     );
   }, [stats.completedDays, stats.totalDays]);
 
+  // Get motivational message based on streak and progress
+  const getMotivationalMessage = () => {
+    const currentStreak = streaks?.current_streak ?? stats.streak;
+    
+    if (currentStreak >= 7) {
+      return {
+        title: "Võrratu sooritus!",
+        message: `${currentStreak} päeva järjest! Sa oled tõeline kangelane!`,
+        color: "text-orange-600"
+      };
+    } else if (currentStreak >= 3) {
+      return {
+        title: "Suurepärane tempo!",
+        message: `${currentStreak} päeva järjest - jätka samas vaimus!`,
+        color: "text-green-600"
+      };
+    } else if (progressPct >= 50) {
+      return {
+        title: "Suurepärane edenemine!",
+        message: `${progressPct}% programmist tehtud - tubli töö!`,
+        color: "text-blue-600"
+      };
+    } else {
+      return {
+        title: "Täna on hea päev!",
+        message: "Iga treening viib sind eesmärgile lähemale",
+        color: "text-primary"
+      };
+    }
+  };
+
+  const motivationalMsg = getMotivationalMessage();
+
   // Track page view on mount
   useEffect(() => {
     if (user) {
@@ -338,6 +371,14 @@ export default function Home() {
                 Tere, {user.full_name.split(' ')[0]}!
               </h1>
             )}
+          </div>
+          
+          {/* Motivational Message */}
+          <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary-foreground/10 border border-primary/20 ${motivationalMsg.color} animate-scale-in`}>
+            <div className="text-center">
+              <p className="font-bold">{motivationalMsg.title}</p>
+              <p className="text-sm opacity-80 font-bold">{motivationalMsg.message}</p>
+            </div>
           </div>
         </div>
 
