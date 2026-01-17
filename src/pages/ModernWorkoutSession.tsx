@@ -8,6 +8,7 @@ import { useSmartProgression, type ExerciseProgression } from "@/hooks/useSmartP
 import { useProgressionRecommendations } from "@/hooks/useProgressionRecommendations";
 import ProgressionRecommendationDialog from "@/components/workout/ProgressionRecommendationDialog";
 import RIRDialog from "@/components/workout/RIRDialog";
+import { isTimeBasedExercise } from "@/utils/exerciseUtils";
 import { toast } from "sonner";
 import { getErrorMessage, getSeverityStyles, getActionButtonText } from '@/utils/errorMessages';
 import { useLoadingState, LOADING_KEYS, getLoadingMessage } from '@/hooks/useLoadingState';
@@ -427,7 +428,7 @@ export default function ModernWorkoutSession() {
       const targetReps = exercise?.reps ? parseInt(exercise.reps.replace(/[^\d]/g, '')) || null : null;
       
       // Determine if this is a time-based exercise
-      const isTimeBased = exercise?.seconds !== null && exercise?.seconds !== undefined && exercise.seconds > 0;
+      const isTimeBased = exercise ? isTimeBasedExercise(exercise) : false;
       
       // For time-based exercises, allow completion with just seconds_done (reps_done can be null)
       // For weight/bodyweight exercises, require reps_done
@@ -1610,7 +1611,7 @@ export default function ModernWorkoutSession() {
 
         {/* Alternative Exercise Auto-Switch - No confirmation needed */}
 
-        {/* Workout Feedback */}
+        {/* Workout Feedback - positioned to avoid covering bottom-right timer */}
         {showWorkoutFeedback && (
           <WorkoutFeedback
             workoutSummary={getWorkoutSummary()}

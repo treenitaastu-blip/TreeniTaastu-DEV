@@ -1,17 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Zap, 
-  Moon, 
-  Activity, 
-  Heart, 
-  AlertTriangle, 
-  CheckCircle,
-  TrendingUp,
-  TrendingDown
-} from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Star } from 'lucide-react';
 
 interface WorkoutFeedbackProps {
   workoutSummary?: {
@@ -23,7 +14,7 @@ interface WorkoutFeedbackProps {
   onComplete: (feedback: {
     joint_pain: boolean;
     joint_pain_location?: string;
-    fatigue_level: number; // 0-10
+    fatigue_level: number; // 0-10 (RPE)
     energy_level: 'low' | 'normal' | 'high';
     notes?: string;
   }) => void;
@@ -31,147 +22,93 @@ interface WorkoutFeedbackProps {
 }
 
 export default function WorkoutFeedback({ workoutSummary, onComplete, onSkip }: WorkoutFeedbackProps) {
-  const [jointPain, setJointPain] = useState<boolean | null>(null);
-  const [jointPainLocation, setJointPainLocation] = useState('');
-  const [fatigueLevel, setFatigueLevel] = useState<number>(5);
-  const [energyLevel, setEnergyLevel] = useState<'low' | 'normal' | 'high' | null>(null);
+  const [rpe, setRpe] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
 
   const handleSubmit = () => {
-    if (jointPain !== null && energyLevel) {
+    if (rpe !== null) {
       onComplete({
-        joint_pain: jointPain,
-        joint_pain_location: jointPain ? jointPainLocation.trim() : undefined,
-        fatigue_level: fatigueLevel,
-        energy_level: energyLevel,
+        joint_pain: false, // Default to false since we removed the question
+        fatigue_level: rpe,
+        energy_level: 'normal', // Default since we removed the question
         notes: notes.trim() || undefined
       });
     }
   };
 
-  const isComplete = jointPain !== null && energyLevel;
+  const isComplete = rpe !== null;
 
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center pb-3">
-          <CardTitle className="text-lg">Kuidas treening läks?</CardTitle>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 pb-32">
+      <Card className="w-full max-w-sm shadow-lg">
+        <CardHeader className="text-center pb-2 space-y-2">
+          <CardTitle className="text-base">Kuidas treening läks?</CardTitle>
           {workoutSummary && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
-              <div className="text-sm text-green-800 font-medium">
-                ✅ {workoutSummary.setsCompleted} seeriat tehtud • {workoutSummary.duration} minutit • {workoutSummary.totalWeight}kg tõstetud
+            <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+              <div className="text-xs text-green-800 font-medium">
+                ✅ {workoutSummary.setsCompleted} seeriat • {workoutSummary.duration} min
               </div>
             </div>
           )}
         </CardHeader>
         
-        <CardContent className="space-y-4">
-          {/* Joint Pain Question */}
+        <CardContent className="space-y-3 pb-4">
+          {/* RPE (Rate of Perceived Exertion) */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Kas oli liigesevalu?</label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={jointPain === false ? "default" : "outline"}
-                onClick={() => setJointPain(false)}
-                className="h-10"
-              >
-                Ei
-              </Button>
-              <Button
-                variant={jointPain === true ? "default" : "outline"}
-                onClick={() => setJointPain(true)}
-                className="h-10"
-              >
-                Jah
-              </Button>
+            <label className="text-sm font-medium flex items-center gap-1">
+              <Star className="h-3.5 w-3.5 text-primary" />
+              RPE (1-10)
+            </label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {Array.from({ length: 10 }, (_, i) => {
+                const value = i + 1;
+                return (
+                  <Button
+                    key={value}
+                    variant={rpe === value ? "default" : "outline"}
+                    onClick={() => setRpe(value)}
+                    className="h-9 text-sm px-2"
+                    size="sm"
+                  >
+                    {value}
+                  </Button>
+                );
+              })}
             </div>
-            
-            {/* Joint Pain Location - Show only if "Jah" is selected */}
-            {jointPain === true && (
-              <div className="mt-3">
-                <label className="text-sm font-medium text-muted-foreground">Kus valutab?</label>
-                <input
-                  type="text"
-                  value={jointPainLocation}
-                  onChange={(e) => setJointPainLocation(e.target.value)}
-                  placeholder="Näiteks: õlavöötmed, põlved, selg..."
-                  className="w-full p-3 border rounded-lg text-sm mt-1"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Fatigue Level */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Kui väsinud oled trennist? (0-10)</label>
-            <div className="grid grid-cols-6 gap-1.5">
-              {Array.from({ length: 11 }, (_, i) => (
-                <Button
-                  key={i}
-                  variant={fatigueLevel === i ? "default" : "outline"}
-                  onClick={() => setFatigueLevel(i)}
-                  className="h-9 text-sm px-2"
-                  size="sm"
-                >
-                  {i}
-                </Button>
-              ))}
-            </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>0 - Ei tunne üldse väsimust</span>
-              <span>5 - Mõõdukas väsimus</span>
-              <span>10 - Täiesti läbi</span>
-            </div>
-          </div>
-
-          {/* Energy Level */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Kui energilisena end trennis tundsid?</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 'low', label: 'Madal' },
-                { value: 'normal', label: 'Normaalne' },
-                { value: 'high', label: 'Kõrge' }
-              ].map((option) => (
-                <Button
-                  key={option.value}
-                  variant={energyLevel === option.value ? "default" : "outline"}
-                  onClick={() => setEnergyLevel(option.value as any)}
-                  className="h-10"
-                >
-                  {option.label}
-                </Button>
-              ))}
+            <div className="flex justify-between text-xs text-muted-foreground px-1">
+              <span>1 - Väga kerge</span>
+              <span>5-6 - Normaalne</span>
+              <span>10 - Maksimaalne</span>
             </div>
           </div>
 
           {/* Notes */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Lisamärkused (valikuline)</label>
-            <textarea
+            <label className="text-sm font-medium">Märkused (valikuline)</label>
+            <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Kuidas tundus?"
-              className="w-full p-3 border rounded-lg resize-none text-sm"
+              className="min-h-[60px] text-sm resize-none"
               rows={2}
             />
           </div>
 
           {/* Submit Buttons */}
-          <div className="flex gap-2 pt-3">
+          <div className="flex gap-2 pt-1">
             <Button
               onClick={handleSubmit}
               disabled={!isComplete}
               className="flex-1 h-9 text-sm"
             >
-              Saada tagasiside
+              Salvesta
             </Button>
             {onSkip && (
               <Button
                 variant="outline"
                 onClick={onSkip}
-                className="h-9 text-sm px-4"
+                className="h-9 text-sm px-3"
               >
                 Jäta vahele
               </Button>

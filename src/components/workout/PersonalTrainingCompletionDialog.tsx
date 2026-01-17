@@ -44,44 +44,47 @@ export default function PersonalTrainingCompletionDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm bg-white border-0 shadow-2xl">
-        <DialogHeader className="text-center pb-6">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-black">
-            <CheckCircle className="h-10 w-10 text-white" />
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader className="text-center pb-4">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <CheckCircle className="h-8 w-8 text-primary" />
           </div>
-          <DialogTitle className="text-2xl font-bold text-black">
+          <DialogTitle className="text-xl font-semibold">
             Treening lõpetatud!
           </DialogTitle>
-          <DialogDescription className="text-gray-600 text-base">
+          <DialogDescription className="text-base">
             Hästi tehtud!
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 pb-6">
+        <div className="space-y-3 pb-4">
           <Button 
             onClick={handleViewStats}
-            className="w-full h-16 bg-black hover:bg-gray-800 text-white text-lg font-medium rounded-xl border-0"
+            className="w-full h-12 text-base"
             variant="default"
+            size="lg"
           >
-            <BarChart3 className="mr-3 h-6 w-6" />
+            <BarChart3 className="mr-2 h-5 w-5" />
             Statistika
           </Button>
 
           <Button 
             onClick={handleAddNote}
-            className="w-full h-16 bg-white hover:bg-gray-50 text-black text-lg font-medium rounded-xl border-2 border-black"
+            className="w-full h-12 text-base"
             variant="outline"
+            size="lg"
           >
-            <BookOpen className="mr-3 h-6 w-6" />
+            <BookOpen className="mr-2 h-5 w-5" />
             Märkmik
           </Button>
 
           <Button 
             onClick={handleGoHome}
-            className="w-full h-16 bg-white hover:bg-gray-50 text-black text-lg font-medium rounded-xl border-2 border-black"
+            className="w-full h-12 text-base"
             variant="outline"
+            size="lg"
           >
-            <Home className="mr-3 h-6 w-6" />
+            <Home className="mr-2 h-5 w-5" />
             Avaleht
           </Button>
         </div>

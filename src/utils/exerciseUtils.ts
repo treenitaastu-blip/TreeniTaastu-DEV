@@ -128,6 +128,56 @@ export function validateExercise(input: {
  * Check if exercise is valid (no errors)
  */
 export function isExerciseValid(input: Parameters<typeof validateExercise>[0]): boolean {
-  const errors = validateExercise(input);
+  return Object.keys(validateExercise(input)).length === 0;
+}
+
+/**
+ * Determine if an exercise is time-based
+ * Checks seconds field first, then falls back to checking if weight_kg is null and exercise name suggests time-based
+ */
+export function isTimeBasedExercise(exercise: {
+  seconds?: number | null;
+  weight_kg?: number | null;
+  exercise_name?: string;
+}): boolean {
+  // Primary check: seconds field is set and > 0
+  if (exercise.seconds !== null && exercise.seconds !== undefined && exercise.seconds > 0) {
+    return true;
+  }
+  
+  // Fallback: If weight_kg is null/0 and exercise name suggests it's a time-based exercise
+  // This helps detect exercises that should be time-based but haven't been marked properly yet
+  const hasNoWeight = exercise.weight_kg === null || exercise.weight_kg === undefined || exercise.weight_kg === 0;
+  const name = exercise.exercise_name?.toLowerCase() || '';
+  
+  if (hasNoWeight && name) {
+    // Common time-based exercise keywords in Estonian
+    const timeBasedKeywords = [
+      'plank',
+      'seinal istumine',
+      'seinast pükst',
+      'seinapükst',
+      'seinapükse',
+      'istumine',
+      'kummardus',
+      'hoidmine',
+      'põlved',
+      'tõus',
+      'jalg',
+      'jalgade',
+      'kõhulihased',
+      'kõht',
+      'kardio',
+      'jooks',
+      'rattasõit',
+      'jooksu',
+      'jooksmine'
+    ];
+    
+    return timeBasedKeywords.some(keyword => name.includes(keyword));
+  }
+  
+  return false;
+}const errors = validateExercise(input);
   return Object.keys(errors).length === 0;
 }

@@ -9,6 +9,7 @@ import { VideoModal } from "./VideoModal";
 import ExerciseFeedback from "./ExerciseFeedback";
 import { cn } from "@/lib/utils";
 import { determineExerciseType, ExerciseType } from "./ExerciseFeedback";
+import { isTimeBasedExercise } from "@/utils/exerciseUtils";
 
 // Helper to parse reps string to number (e.g., "12x" -> 12, "8-10" -> 8)
 const parseRepsToNumber = (reps: string): number | null => {
@@ -304,7 +305,7 @@ export default function SmartExerciseCard({
                 )}
               </div>
             </div>
-          ) : (exercise.seconds && exercise.seconds > 0) ? (
+          ) : isTimeBasedExercise(exercise) ? (
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-1">
                 <Clock className="h-3 w-3" />
@@ -313,12 +314,12 @@ export default function SmartExerciseCard({
               {timerActive[currentSet] ? (
                 // Timer is running - show countdown
                 <div className="text-center text-4xl font-bold text-primary h-16 flex items-center justify-center border-2 border-primary rounded-lg bg-primary/5">
-                  {timerSeconds[currentSet] ?? (exercise.seconds || 0)}
+                  {timerSeconds[currentSet] ?? (exercise.seconds && exercise.seconds > 0 ? exercise.seconds : 60)}
                 </div>
               ) : (
                 // Timer not started - show assigned time
                 <div className="text-center text-lg h-12 border rounded-md bg-muted/20 flex items-center justify-center text-muted-foreground">
-                  {exercise.seconds}s
+                  {exercise.seconds && exercise.seconds > 0 ? `${exercise.seconds}s` : '60s'}
                 </div>
               )}
             </div>
@@ -336,7 +337,7 @@ export default function SmartExerciseCard({
         </div>
 
         {/* For time-based exercises, show "Alusta" button that starts countdown timer */}
-        {exercise.seconds && exercise.seconds > 0 ? (
+        {isTimeBasedExercise(exercise) ? (
           timerActive[currentSet] ? (
             // Timer is running - show pause/cancel option
             <Button
@@ -360,7 +361,8 @@ export default function SmartExerciseCard({
             // Timer not started - show "Alusta" button
             <Button
               onClick={() => {
-                const targetSeconds = exercise.seconds || 0;
+                // Use seconds from exercise if available, otherwise default to 60 seconds for time-based exercises
+                const targetSeconds = exercise.seconds && exercise.seconds > 0 ? exercise.seconds : 60;
                 setTimerSeconds(prev => ({ ...prev, [currentSet]: targetSeconds }));
                 setTimerActive(prev => ({ ...prev, [currentSet]: true }));
                 
@@ -720,15 +722,15 @@ export default function SmartExerciseCard({
                             )}
                           </div>
                         </div>
-                      ) : exercise.seconds && exercise.seconds > 0 ? (
+                      ) : isTimeBasedExercise(exercise) ? (
                         <div>
                           <label className="text-sm font-medium text-muted-foreground mb-1 block">
                             Aeg (sek)
                           </label>
                           <Input
                             type="number"
-                            placeholder={exercise.seconds.toString()}
-                            value={inputs.seconds !== undefined ? inputs.seconds : exercise.seconds || ""}
+                            placeholder={(exercise.seconds && exercise.seconds > 0 ? exercise.seconds : 60).toString()}
+                            value={inputs.seconds !== undefined ? inputs.seconds : (exercise.seconds && exercise.seconds > 0 ? exercise.seconds : "")}
                             onChange={(e) => onSetInputChange(setNumber, "seconds", Number(e.target.value))}
                             className="text-center text-lg h-12"
                             disabled={isCompleted}
