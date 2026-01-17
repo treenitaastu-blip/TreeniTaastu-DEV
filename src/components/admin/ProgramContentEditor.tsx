@@ -70,6 +70,7 @@ export default function ProgramContentEditor({
   const [saving, setSaving] = useState(false);
   const [days, setDays] = useState<ClientDay[]>([]);
   const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [editingExercise, setEditingExercise] = useState<Partial<ClientItem> | null>(null);
   const [newExercise, setNewExercise] = useState({
     exercise_name: "",
     sets: 3,
@@ -277,17 +278,32 @@ export default function ProgramContentEditor({
   const handleUpdateExercise = async (itemId: string, updates: Partial<ClientItem>) => {
     setSaving(true);
     try {
-      const { error } = await supabase.rpc("update_client_program_content", {
-        p_program_id: programId,
-        p_day_id: "", // Not needed for updates
-        p_exercise_name: updates.exercise_name || "",
-        p_sets: updates.sets || 0,
-        p_reps: updates.reps || "",
-        p_weight_kg: updates.weight_kg,
-        p_rest_seconds: updates.rest_seconds,
-        p_coach_notes: updates.coach_notes,
-        p_video_url: updates.video_url
-      });
+      // Process unilateral exercise input if needed
+      const processedUpdates = (updates.reps !== undefined || updates.is_unilateral !== undefined) 
+        ? processExerciseInputUtil({
+            reps: updates.reps || "",
+            is_unilateral: updates.is_unilateral || false,
+            weight_kg: updates.weight_kg
+          })
+        : {};
+      
+      const updateData: any = {};
+      if (updates.exercise_name !== undefined) updateData.exercise_name = updates.exercise_name;
+      if (updates.sets !== undefined) updateData.sets = updates.sets;
+      if (updates.reps !== undefined) updateData.reps = processedUpdates.reps || updates.reps;
+      if (updates.weight_kg !== undefined) updateData.weight_kg = updates.weight_kg;
+      if (updates.seconds !== undefined) updateData.seconds = updates.seconds;
+      if (updates.rest_seconds !== undefined) updateData.rest_seconds = updates.rest_seconds;
+      if (updates.coach_notes !== undefined) updateData.coach_notes = updates.coach_notes || null;
+      if (updates.video_url !== undefined) updateData.video_url = updates.video_url || null;
+      if (updates.is_unilateral !== undefined) updateData.is_unilateral = updates.is_unilateral;
+      if (processedUpdates.reps_per_side !== undefined) updateData.reps_per_side = processedUpdates.reps_per_side;
+      if (processedUpdates.total_reps !== undefined) updateData.total_reps = processedUpdates.total_reps;
+
+      const { error } = await supabase
+        .from("client_items")
+        .update(updateData)
+        .eq("id", itemId);
 
       if (error) throw error;
 
@@ -297,6 +313,7 @@ export default function ProgramContentEditor({
       });
 
       setEditingItem(null);
+      setEditingExercise(null);
       await loadProgramContent();
     } catch (error: any) {
       console.error("Error updating exercise:", error);
@@ -346,75 +363,226 @@ export default function ProgramContentEditor({
               {/* Existing exercises */}
               {day.items.map((item) => (
                 <div key={item.id} className="border rounded-lg p-4 bg-muted/50">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium flex items-center gap-2">
-                        <Dumbbell className="h-4 w-4" />
-                        {item.exercise_name}
-                        {item.is_unilateral && (
-                          <Badge variant="secondary" className="text-xs">Ühepoolne</Badge>
-                        )}
-                        {(item.weight_kg === 0 || item.weight_kg === null) && (
-                          <Badge variant="outline" className="text-xs">Ilma lisaraskuseta</Badge>
-                        )}
-                      </h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm">
-                        <div className="flex items-center gap-1">
-                          <Weight className="h-3 w-3" />
-                          {item.sets} x {item.reps}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Weight className="h-3 w-3" />
-                          {item.weight_kg === 0 || item.weight_kg === null ? "ilma lisaraskuseta" : `${item.weight_kg}kg`}
-                        </div>
-                        {item.rest_seconds && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {item.rest_seconds}s
+                  {editingItem === item.id ? (
+                    // Edit form
+                    <Card className="border-dashed border-primary">
+                      <CardContent className="pt-4">
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor={`edit_exercise_name_${item.id}`}>Harjutuse nimi</Label>
+                              <Input
+                                id={`edit_exercise_name_${item.id}`}
+                                value={editingExercise?.exercise_name || item.exercise_name}
+                                onChange={(e) => setEditingExercise(prev => ({ ...prev, exercise_name: e.target.value }))}
+                                placeholder="Näiteks: Kükid"
+                              />
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`edit_is_unilateral_${item.id}`}
+                                checked={editingExercise?.is_unilateral ?? item.is_unilateral ?? false}
+                                onCheckedChange={(checked) => 
+                                  setEditingExercise(prev => ({ ...prev, is_unilateral: checked as boolean }))
+                                }
+                              />
+                              <Label htmlFor={`edit_is_unilateral_${item.id}`}>Ühepoolne harjutus</Label>
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor={`edit_sets_${item.id}`}>Seeriat</Label>
+                              <Input
+                                id={`edit_sets_${item.id}`}
+                                type="number"
+                                value={editingExercise?.sets !== undefined ? editingExercise.sets : item.sets}
+                                onChange={(e) => setEditingExercise(prev => ({ ...prev, sets: parseInt(e.target.value) || 0 }))}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit_reps_${item.id}`}>
+                                Kordusi {(editingExercise?.is_unilateral ?? item.is_unilateral) ? "(per side)" : ""}
+                              </Label>
+                              <Input
+                                id={`edit_reps_${item.id}`}
+                                value={editingExercise?.reps !== undefined ? editingExercise.reps : item.reps}
+                                onChange={(e) => setEditingExercise(prev => ({ ...prev, reps: e.target.value }))}
+                                placeholder={(editingExercise?.is_unilateral ?? item.is_unilateral) ? "8" : "10 või 8-12"}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit_weight_kg_${item.id}`}>Kaal (kg) / Aeg (sek)</Label>
+                              <Input
+                                id={`edit_weight_kg_${item.id}`}
+                                type="number"
+                                value={editingExercise?.weight_kg !== undefined ? editingExercise.weight_kg ?? "" : (item.weight_kg ?? "")}
+                                onChange={(e) => setEditingExercise(prev => ({ ...prev, weight_kg: e.target.value ? parseFloat(e.target.value) : null }))}
+                                placeholder="Kaal või jäta tühjaks (keharaskus)"
+                              />
+                            </div>
+                            {(editingExercise?.seconds !== undefined || item.seconds) && (
+                              <div>
+                                <Label htmlFor={`edit_seconds_${item.id}`}>Aeg (sek)</Label>
+                                <Input
+                                  id={`edit_seconds_${item.id}`}
+                                  type="number"
+                                  value={editingExercise?.seconds !== undefined ? editingExercise.seconds ?? "" : (item.seconds ?? "")}
+                                  onChange={(e) => setEditingExercise(prev => ({ ...prev, seconds: e.target.value ? parseInt(e.target.value) : null }))}
+                                  placeholder="Ajaharjutuseks"
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <Label htmlFor={`edit_rest_seconds_${item.id}`}>Puhkeaeg (sek)</Label>
+                              <Input
+                                id={`edit_rest_seconds_${item.id}`}
+                                type="number"
+                                value={editingExercise?.rest_seconds !== undefined ? editingExercise.rest_seconds ?? 60 : (item.rest_seconds ?? 60)}
+                                onChange={(e) => setEditingExercise(prev => ({ ...prev, rest_seconds: parseInt(e.target.value) || 0 }))}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`edit_video_url_${item.id}`}>Video URL</Label>
+                              <Input
+                                id={`edit_video_url_${item.id}`}
+                                value={editingExercise?.video_url !== undefined ? editingExercise.video_url || "" : (item.video_url || "")}
+                                onChange={(e) => setEditingExercise(prev => ({ ...prev, video_url: e.target.value }))}
+                                placeholder="Valikuline"
+                              />
+                            </div>
                           </div>
-                        )}
-                        {item.video_url && (
                           <div>
-                            <a 
-                              href={item.video_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline"
-                            >
-                              Video
-                            </a>
+                            <Label htmlFor={`edit_coach_notes_${item.id}`}>Treeneri märkused</Label>
+                            <Textarea
+                              id={`edit_coach_notes_${item.id}`}
+                              value={editingExercise?.coach_notes !== undefined ? editingExercise.coach_notes || "" : (item.coach_notes || "")}
+                              onChange={(e) => setEditingExercise(prev => ({ ...prev, coach_notes: e.target.value }))}
+                              placeholder="Valikuline"
+                              rows={2}
+                            />
                           </div>
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={async () => {
+                                if (editingExercise) {
+                                  await handleUpdateExercise(item.id, editingExercise);
+                                }
+                              }}
+                              disabled={saving}
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Salvesta muudatused
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setEditingItem(null);
+                                setEditingExercise(null);
+                              }}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Tühista
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    // Display view
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium flex items-center gap-2">
+                          <Dumbbell className="h-4 w-4" />
+                          {item.exercise_name}
+                          {item.is_unilateral && (
+                            <Badge variant="secondary" className="text-xs">Ühepoolne</Badge>
+                          )}
+                          {(item.weight_kg === 0 || item.weight_kg === null) && !item.seconds && (
+                            <Badge variant="outline" className="text-xs">Ilma lisaraskuseta</Badge>
+                          )}
+                          {item.seconds && (
+                            <Badge variant="secondary" className="text-xs">Ajaharjutus ({item.seconds}s)</Badge>
+                          )}
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-sm">
+                          <div className="flex items-center gap-1">
+                            <Weight className="h-3 w-3" />
+                            {item.sets} x {item.reps}
+                          </div>
+                          {item.seconds ? (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {item.seconds}s
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <Weight className="h-3 w-3" />
+                              {item.weight_kg === 0 || item.weight_kg === null ? "ilma lisaraskuseta" : `${item.weight_kg}kg`}
+                            </div>
+                          )}
+                          {item.rest_seconds && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {item.rest_seconds}s
+                            </div>
+                          )}
+                          {item.video_url && (
+                            <div>
+                              <a 
+                                href={item.video_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                Video
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                        {item.is_unilateral && item.total_reps && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Kokku: {item.total_reps} kordusi
+                          </div>
+                        )}
+                        {item.coach_notes && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {item.coach_notes}
+                          </p>
                         )}
                       </div>
-                      {item.is_unilateral && item.total_reps && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Kokku: {item.total_reps} kordusi
-                        </div>
-                      )}
-                      {item.coach_notes && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {item.coach_notes}
-                        </p>
-                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingItem(item.id);
+                            setEditingExercise({
+                              exercise_name: item.exercise_name,
+                              sets: item.sets,
+                              reps: item.reps,
+                              weight_kg: item.weight_kg,
+                              seconds: item.seconds,
+                              rest_seconds: item.rest_seconds,
+                              coach_notes: item.coach_notes || "",
+                              video_url: item.video_url || "",
+                              is_unilateral: item.is_unilateral || false
+                            });
+                          }}
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleRemoveExercise(item.id)}
+                          disabled={saving}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditingItem(item.id)}
-                      >
-                        <Edit3 className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleRemoveExercise(item.id)}
-                        disabled={saving}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
+                  )}
                 </div>
               ))}
 
