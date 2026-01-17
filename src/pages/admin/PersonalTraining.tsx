@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { handleProgramAccessError, handleTemplateAccessError, isPermissionError } from "@/utils/errorHandling";
@@ -87,6 +87,7 @@ type Template = {
 };
 
 export default function PersonalTraining() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { trackPageView, trackFeatureUsage, trackButtonClick } = useTrackEvent();
   const { showDeleteConfirmation, showDialog, dialog, hideDialog } = useConfirmationDialog();
@@ -924,7 +925,7 @@ export default function PersonalTraining() {
                                       <Button
                                         onClick={() => {
                                           trackButtonClick('view_program', `/admin/programs/${program.id}/edit`, 'admin_dashboard');
-                                          window.location.href = `/admin/programs/${program.id}/edit`;
+                                          navigate(`/admin/programs/${program.id}/edit`);
                                         }}
                                         size="sm"
                                         variant="outline"
