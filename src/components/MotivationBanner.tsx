@@ -4,21 +4,21 @@ import { Sparkles } from "lucide-react";
 
 // First-person affirmations inspired by great books (correct Estonian grammar)
 const MOTIVATIONAL_QUOTES = [
-  "Täna on hea päev. Iga treening viib mind lähemale eesmärgile.",
+  "Täna on hea päev. Iga treening viib mind eesmärgile lähemale.",
   "Ma olen see, mida ma korduvalt teen. Järjepidevus on minu võti.",
   "Ma valin raskema tee. See muudab mind tugevamaks.",
-  "Ma kontrollin ainult oma reaktsioone. Raskused on võimalused.",
+  "Ma kontrollin ainult oma reaktsioone. Raskustes peituvad võimalused.",
   "Ma investeerin oma aega olulistesse asjadesse, mis loovad tulevikku.",
   "Ma aktsepteerin ebamugavust. Seal, kus teised loobuvad, ma alustan.",
-  "Ma elan täielikult praeguses hetkes. Siin ja praegu on kõik võimalus.",
-  "Ma valin oma suhtumise. See on minu vabadus ja jõud.",
+  "Ma elan täielikult praeguses hetkes. Siin ja praegu on kõike võimalik muuta.",
+  "Ma valin oma suhtumise. See on mu vabadus ja jõud.",
   "Iga väike samm, mida ma võtan, viib mind lähemale inimesele, kelleks ma tahan saada.",
   "Ma olen proaktiivne. Ma vastutan oma valikute ja elu eest.",
-  "Ma peenen end pidevalt. Iga päev on võimalus kasvada.",
+  "Ma parandan end pidevalt. Iga päev on võimalus kasvada.",
   "Ma usun oma võimetesse ja jätkan sihikindlalt, kuni saavutan eesmärgi.",
-  "Ma leian tähenduse oma elust, isegi kõige raskemates hetkedes.",
-  "Ma teen väikeseid samme iga päev. Need viivad mind suurtele tulemustele.",
-  "Ma olen piisavalt hea. Ma olen väärt oma unistuste taotlemist."
+  "Ma leian tähenduse oma elust, isegi kõige raskematel hetkedel.",
+  "Ma teen väikeseid samme iga päev. Need viivad mind suurte tulemusteni.",
+  "Ma olen piisavalt hea. Ma olen väärt oma unistusi saavutama."
 ];
 
 type MotivationBannerProps = {

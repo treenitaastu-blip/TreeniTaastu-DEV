@@ -100,7 +100,7 @@ export default function Home() {
     } else if (progressPct >= 50) {
       return "Ma investeerin oma aega olulistesse asjadesse, mis loovad tulevikku.";
     } else {
-      return "Täna on hea päev. Iga treening viib mind lähemale eesmärgile.";
+      return "Täna on hea päev. Iga treening viib mind eesmärgile lähemale.";
     }
   };
 
