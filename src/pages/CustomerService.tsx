@@ -8,10 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useSupportChat, SupportConversation, SupportMessage } from '@/hooks/useSupportChat';
 import { useAuth } from '@/hooks/useAuth';
-import { RequireAuth } from '@/guards/RequireAuth';
 
 export default function CustomerService() {
-  const { user } = useAuth();
+  const { user, status } = useAuth();
   const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState('');
   const { 
@@ -110,8 +109,20 @@ export default function CustomerService() {
       : lastMessage.message;
   };
 
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Laen...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
-    return <RequireAuth />;
+    navigate('/login', { state: { from: '/kasutajatugi' } });
+    return null;
   }
 
   return (
