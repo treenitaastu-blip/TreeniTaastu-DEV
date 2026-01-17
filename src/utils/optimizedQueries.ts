@@ -7,7 +7,7 @@ import { getAdminClient } from '@/utils/adminClient';
  */
 
 // Cache for frequently accessed data
-const queryCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+const queryCache = new Map<string, { data: unknown; timestamp: number; ttl: number }>();
 
 // Cache TTL in milliseconds
 const CACHE_TTL = {
@@ -22,7 +22,7 @@ const CACHE_TTL = {
 function getCachedData<T>(key: string, ttl: number = CACHE_TTL.MEDIUM): T | null {
   const cached = queryCache.get(key);
   if (cached && Date.now() - cached.timestamp < ttl) {
-    return cached.data;
+    return cached.data as T;
   }
   return null;
 }

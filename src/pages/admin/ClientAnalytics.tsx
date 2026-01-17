@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, User, Calendar, TrendingUp, Activity, Target, Clock } from "lucide-react";
@@ -41,147 +41,76 @@ export default function ClientAnalytics() {
   const [stats, setStats] = useState<ClientStats | null>(null);
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
 
-  useEffect(() => {
-    const loadClientStats = async () => {
-      if (!userId) return;
-      
-      setLoading(true);
-      setError(null);
+  const loadClientStats = useCallback(async () => {
+    if (!userId) return;
+    
+    setLoading(true);
+    setError(null);
 
-      try {
-        // Get user profile
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, email")
-          .eq("id", userId)
-          .single();
+    try {
+      // Use optimized RPC function for stats (single query, database aggregations)
+      const { data: statsData, error: statsError } = await supabase
+        .rpc('get_client_analytics', { p_user_id: userId });
 
-        if (profileError) throw profileError;
+      if (statsError) throw statsError;
 
-        // Get workout sessions stats
-        const { data: sessions, error: sessionsError } = await supabase
-          .from("workout_sessions")
-          .select(`
-            id,
-            started_at,
-            ended_at,
-            client_program_id,
-            set_logs (
-              id,
-              reps_done,
-              weight_kg_done
-            )
-          `)
-          .eq("user_id", userId)
-          .order("started_at", { ascending: false });
-
-        if (sessionsError) throw sessionsError;
-
-
-        // Get active programs count
-        const { data: programs, error: programsError } = await supabase
-          .from("client_programs")
-          .select("id")
-          .eq("assigned_to", userId)
-          .eq("is_active", true);
-
-        if (programsError) throw programsError;
-
-        // Calculate stats
-        const totalSessions = sessions?.length || 0;
-        const completedSessions = sessions?.filter(s => s.ended_at)?.length || 0;
-        const completionRate = totalSessions > 0 ? completedSessions / totalSessions : 0;
-
-        let totalVolumeKg = 0;
-        let totalReps = 0;
-        let totalSets = 0;
-        
-
-        sessions?.forEach(session => {
-          session.set_logs?.forEach(setLog => {
-            if (setLog.weight_kg_done && setLog.reps_done) {
-              totalVolumeKg += setLog.weight_kg_done * setLog.reps_done;
-              totalReps += setLog.reps_done;
-              totalSets += 1;
-            }
-          });
-        });
-
-        // Get RPE data
-        const { data: rpeData } = await supabase
-          .from("rpe_history")
-          .select("rpe")
-          .eq("user_id", userId);
-
-        const avgRpe = rpeData?.length 
-          ? rpeData.reduce((acc, r) => acc + Number(r.rpe), 0) / rpeData.length 
-          : 0;
-
-        const clientStats: ClientStats = {
-          user_id: userId,
-          email: profile.email,
-          total_sessions: totalSessions,
-          completed_sessions: completedSessions,
-          completion_rate: completionRate,
-          total_volume_kg: totalVolumeKg,
-          total_reps: totalReps,
-          total_sets: totalSets,
-          avg_rpe: avgRpe,
-          current_streak: 0,
-          best_streak: 0,
-          last_workout_date: null,
-          first_workout_date: sessions?.[sessions.length - 1]?.started_at || null,
-          active_programs: programs?.length || 0,
-        };
-
-        setStats(clientStats);
-
-        // Get weekly data for chart - build it from session data
-        const weeklyStats: Record<string, { sessions: number; volume: number; rpe_sum: number; rpe_count: number }> = {};
-        
-        sessions?.forEach(session => {
-          if (!session.started_at) return;
-          
-          const weekStart = getWeekStart(new Date(session.started_at));
-          const weekKey = weekStart.toISOString().slice(0, 10);
-          
-          if (!weeklyStats[weekKey]) {
-            weeklyStats[weekKey] = { sessions: 0, volume: 0, rpe_sum: 0, rpe_count: 0 };
-          }
-          
-          if (session.ended_at) {
-            weeklyStats[weekKey].sessions += 1;
-          }
-          
-          session.set_logs?.forEach(setLog => {
-            if (setLog.weight_kg_done && setLog.reps_done) {
-              weeklyStats[weekKey].volume += setLog.weight_kg_done * setLog.reps_done;
-            }
-          });
-        });
-
-        const weeklyFormatted: WeeklyData[] = Object.entries(weeklyStats)
-          .sort(([a], [b]) => b.localeCompare(a))
-          .slice(0, 12)
-          .map(([weekStart, stats]) => ({
-            week_start: new Date(weekStart).toLocaleDateString("et-EE"),
-            sessions: stats.sessions,
-            volume_kg: stats.volume,
-            avg_rpe: stats.rpe_count > 0 ? stats.rpe_sum / stats.rpe_count : 0,
-          }));
-          
-        setWeeklyData(weeklyFormatted);
-
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Viga kliendi andmete laadimisel";
-        setError(message);
-      } finally {
-        setLoading(false);
+      if (!statsData || statsData.length === 0) {
+        throw new Error('Kliendi andmeid ei leitud');
       }
-    };
 
-    loadClientStats();
+      const statsResult = statsData[0];
+      const clientStats: ClientStats = {
+        user_id: statsResult.user_id,
+        email: statsResult.email,
+        total_sessions: Number(statsResult.total_sessions) || 0,
+        completed_sessions: Number(statsResult.completed_sessions) || 0,
+        completion_rate: Number(statsResult.completion_rate) || 0,
+        total_volume_kg: Number(statsResult.total_volume_kg) || 0,
+        total_reps: Number(statsResult.total_reps) || 0,
+        total_sets: Number(statsResult.total_sets) || 0,
+        avg_rpe: Number(statsResult.avg_rpe) || 0,
+        current_streak: Number(statsResult.current_streak) || 0,
+        best_streak: Number(statsResult.best_streak) || 0,
+        last_workout_date: statsResult.last_workout_date || null,
+        first_workout_date: statsResult.first_workout_date || null,
+        active_programs: Number(statsResult.active_programs) || 0,
+      };
+
+      setStats(clientStats);
+
+      // Use optimized RPC function for weekly data (database aggregations)
+      const { data: weeklyDataResult, error: weeklyError } = await supabase
+        .rpc('get_client_weekly_analytics', { 
+          p_user_id: userId,
+          p_weeks: 12 
+        });
+
+      if (weeklyError) {
+        console.warn('Error loading weekly data:', weeklyError);
+        // Fallback to empty array if weekly data fails
+        setWeeklyData([]);
+      } else {
+        const weeklyFormatted: WeeklyData[] = (weeklyDataResult || []).map((week: any) => ({
+          week_start: new Date(week.week_start).toLocaleDateString("et-EE"),
+          sessions: Number(week.sessions) || 0,
+          volume_kg: Number(week.volume_kg) || 0,
+          avg_rpe: Number(week.avg_rpe) || 0,
+        }));
+        setWeeklyData(weeklyFormatted);
+      }
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Viga kliendi andmete laadimisel";
+      setError(message);
+      console.error('Error loading client stats:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
+
+  useEffect(() => {
+    loadClientStats();
+  }, [loadClientStats]);
 
   if (loading) {
     return (
@@ -191,7 +120,7 @@ export default function ClientAnalytics() {
             <div className="h-8 w-48 rounded-lg bg-muted"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="rounded-2xl border bg-card p-6 shadow-soft space-y-4">
+                <div key={i} className="rounded-2xl border bg-card p-6 shadow-sm space-y-4">
                   <div className="h-6 w-32 rounded bg-muted"></div>
                   <div className="h-8 w-24 rounded bg-muted"></div>
                 </div>
@@ -211,9 +140,12 @@ export default function ClientAnalytics() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Tagasi programmide juurde
           </Button>
-          <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center shadow-soft">
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center shadow-sm">
             <div className="text-xl font-semibold text-destructive mb-2">Viga andmete laadimisel</div>
-            <p className="text-muted-foreground">{error}</p>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={loadClientStats} variant="outline">
+              Proovi uuesti
+            </Button>
           </div>
         </div>
       </div>
@@ -222,23 +154,15 @@ export default function ClientAnalytics() {
 
   const formatNumber = (num: number) => num.toLocaleString("et-EE", { maximumFractionDigits: 1 });
   const formatPercent = (num: number) => `${(num * 100).toFixed(1)}%`;
-  
-  // Helper function to get week start (Monday)
-  const getWeekStart = (date: Date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
-    return new Date(d.setDate(diff));
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
       <div className="mx-auto max-w-6xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Button onClick={() => navigate("/admin/programs")} variant="ghost" className="mb-4">
+          <Button onClick={() => navigate("/admin/client-analytics")} variant="ghost" className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Tagasi programmide juurde
+            Tagasi kliendi analüütika juurde
           </Button>
           <div className="flex items-center gap-4 mb-4">
             <div className="rounded-full bg-primary/10 p-3">
@@ -255,7 +179,7 @@ export default function ClientAnalytics() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="rounded-2xl border bg-card p-6 shadow-soft">
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <Activity className="h-5 w-5 text-primary" />
               <h3 className="font-semibold">Sessioonid kokku</h3>
@@ -266,7 +190,7 @@ export default function ClientAnalytics() {
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-card p-6 shadow-soft">
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <Target className="h-5 w-5 text-success" />
               <h3 className="font-semibold">Lõpetamise määr</h3>
@@ -279,7 +203,7 @@ export default function ClientAnalytics() {
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-card p-6 shadow-soft">
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <TrendingUp className="h-5 w-5 text-accent" />
               <h3 className="font-semibold">Maht kokku</h3>
@@ -290,7 +214,7 @@ export default function ClientAnalytics() {
             <p className="text-sm text-muted-foreground">kg × kordused</p>
           </div>
 
-          <div className="rounded-2xl border bg-card p-6 shadow-soft">
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <Calendar className="h-5 w-5 text-orange-500" />
               <h3 className="font-semibold">Aktiivne sari</h3>
@@ -303,7 +227,7 @@ export default function ClientAnalytics() {
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-card p-6 shadow-soft">
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <Clock className="h-5 w-5 text-blue-500" />
               <h3 className="font-semibold">Kordused kokku</h3>
@@ -316,7 +240,7 @@ export default function ClientAnalytics() {
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-card p-6 shadow-soft">
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <Activity className="h-5 w-5 text-purple-500" />
               <h3 className="font-semibold">Keskmine RPE</h3>
@@ -329,7 +253,7 @@ export default function ClientAnalytics() {
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-card p-6 shadow-soft">
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <Target className="h-5 w-5 text-green-500" />
               <h3 className="font-semibold">Aktiivsed programmid</h3>
@@ -342,7 +266,7 @@ export default function ClientAnalytics() {
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-card p-6 shadow-soft">
+          <div className="rounded-2xl border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <Calendar className="h-5 w-5 text-gray-500" />
               <h3 className="font-semibold">Viimane treening</h3>
@@ -360,14 +284,14 @@ export default function ClientAnalytics() {
         </div>
 
         {/* Enhanced Progress Analytics */}
-        <Card className="border-0 shadow-soft bg-gradient-to-br from-primary/5 to-accent/5 mb-6">
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-primary/5 to-accent/5 mb-6">
           <CardHeader>
             <CardTitle className="text-xl flex items-center gap-2">
               <TrendingUp className="h-6 w-6 text-primary" />
               Progressi Analüütika
               <div className="ml-auto">
                 <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                  Täiustatud
+                  Optimeeritud
                 </span>
               </div>
             </CardTitle>

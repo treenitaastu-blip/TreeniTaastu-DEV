@@ -1,7 +1,7 @@
 // Helper utilities for authentication
 export const isDevMode = () => import.meta.env.DEV;
 
-export const debugAuth = (message: string, data?: any) => {
+export const debugAuth = (message: string, data?: unknown) => {
   if (isDevMode()) {
     console.log(`[Auth Debug] ${message}`, data);
   }

@@ -6,8 +6,7 @@ import {
   Target, 
   Lock, 
   CheckCircle, 
-  Heart,
-  Brain
+  Heart
 } from 'lucide-react';
 
 export interface CalendarDay {
@@ -114,15 +113,6 @@ export default function DayTile({ day, onClick, className = "", isStarted }: Day
         <div className={`text-sm font-medium ${getStatusColor()}`}>
           {getStatusText()}
         </div>
-        
-
-        {/* Weekend Badge */}
-        {day.isWeekend && (
-          <Badge variant="secondary" className="mt-2 text-xs">
-            <Brain className="h-3 w-3 mr-1" />
-            Puhkepäev
-          </Badge>
-        )}
 
         {/* Completion Badge */}
         {day.isCompleted && (

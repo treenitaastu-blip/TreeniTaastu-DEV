@@ -1,10 +1,13 @@
 // src/pages/ProgramsList.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { RefreshCw, ArrowRight, BarChart3, BookOpen, Target } from "lucide-react";
+import { RefreshCw, ArrowRight, BarChart3, BookOpen, Target, Edit, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import useAccess from "@/hooks/useAccess";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
 type UUID = string;
@@ -35,11 +38,14 @@ function fmtDate(d: string | null): string {
 export default function ProgramsList() {
   const { user } = useAuth();
   const { canStatic, canPT, loading: accessLoading } = useAccess();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<ProgramRow[]>([]);
   const firstLoadRef = useRef(true);
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -76,6 +82,40 @@ export default function ProgramsList() {
   useEffect(() => {
     if (user) void load();
   }, [user, load]);
+
+  const handleSaveTitle = async (programId: string, newTitle: string, originalTitle: string) => {
+    try {
+      const { error } = await supabase
+        .from('client_programs')
+        .update({ title_override: newTitle.trim() || null })
+        .eq('id', programId)
+        .eq('assigned_to', user!.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRows(prev => prev.map(r => 
+        r.id === programId 
+          ? { ...r, title_override: newTitle.trim() || null }
+          : r
+      ));
+
+      toast({
+        title: "Nimetus muudetud",
+        description: "Programmi nimetus on edukalt muudetud",
+      });
+
+      setEditingTitleId(null);
+      setEditingTitle("");
+    } catch (error) {
+      console.error("Error updating title:", error);
+      toast({
+        title: "Viga",
+        description: "Nimetuse muutmine ebaõnnestus",
+        variant: "destructive",
+      });
+    }
+  };
 
   const shaped: ShapedProgram[] = useMemo(() => {
     return rows.map((r) => {
@@ -254,9 +294,72 @@ export default function ProgramsList() {
             >
               <div className="flex flex-col h-full">
                 <div className="flex-1 space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                    {p.title}
-                  </h3>
+                  {editingTitleId === p.id ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const row = rows.find(r => r.id === p.id);
+                            handleSaveTitle(p.id, editingTitle, row?.title_override || row?.templates?.title || "");
+                          } else if (e.key === 'Escape') {
+                            setEditingTitleId(null);
+                            setEditingTitle("");
+                          }
+                        }}
+                        autoFocus
+                        className="h-9"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const row = rows.find(r => r.id === p.id);
+                          handleSaveTitle(p.id, editingTitle, row?.title_override || row?.templates?.title || "");
+                        }}
+                        className="h-9 w-9 p-0"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingTitleId(null);
+                          setEditingTitle("");
+                        }}
+                        className="h-9 w-9 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 group/title">
+                      <h3 
+                        className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer"
+                        onClick={() => {
+                          const row = rows.find(r => r.id === p.id);
+                          setEditingTitleId(p.id);
+                          setEditingTitle(row?.title_override || "");
+                        }}
+                      >
+                        {p.title}
+                      </h3>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const row = rows.find(r => r.id === p.id);
+                          setEditingTitleId(p.id);
+                          setEditingTitle(row?.title_override || "");
+                        }}
+                        className="h-6 w-6 p-0 opacity-0 group-hover/title:opacity-100 transition-opacity"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                   <div className="space-y-1.5 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">Algus:</span>

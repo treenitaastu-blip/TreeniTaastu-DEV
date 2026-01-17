@@ -36,7 +36,7 @@ interface WorkoutFailureEntry {
   stack_trace?: string;
   retry_attempts: number;
   resolved: boolean;
-  context: any;
+  context: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

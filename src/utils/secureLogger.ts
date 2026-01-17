@@ -6,7 +6,7 @@ type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 interface LogEntry {
   level: LogLevel;
   message: string;
-  data?: any;
+  data?: unknown;
   timestamp: string;
 }
 
@@ -26,7 +26,7 @@ class SecureLogger {
     }
   }
 
-  private formatMessage(level: LogLevel, message: string, data?: any): LogEntry {
+  private formatMessage(level: LogLevel, message: string, data?: unknown): LogEntry {
     return {
       level,
       message,
@@ -35,7 +35,7 @@ class SecureLogger {
     };
   }
 
-  private sanitizeData(data: any): any {
+  private sanitizeData(data: unknown): unknown {
     if (typeof data === 'string') {
       // Remove potential sensitive information
       return data
@@ -46,7 +46,7 @@ class SecureLogger {
     }
     
     if (typeof data === 'object' && data !== null) {
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(data)) {
         if (key.toLowerCase().includes('password') || 
             key.toLowerCase().includes('token') || 
@@ -63,25 +63,25 @@ class SecureLogger {
     return data;
   }
 
-  info(message: string, data?: any): void {
+  info(message: string, data?: unknown): void {
     if (this.isDevelopment) {
       console.info(`[INFO] ${message}`, data);
     }
   }
 
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: unknown): void {
     if (this.isDevelopment) {
       console.warn(`[WARN] ${message}`, data);
     }
   }
 
-  error(message: string, data?: any): void {
+  error(message: string, data?: unknown): void {
     // Always log errors, but sanitize data
     const entry = this.formatMessage('error', message, data);
     console.error(`[ERROR] ${entry.message}`, entry.data);
   }
 
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: unknown): void {
     try {
       if (this.isDevelopment) {
         console.debug(`[DEBUG] ${message}`, data);
@@ -95,7 +95,7 @@ class SecureLogger {
   }
 
   // Production-safe logging for critical events
-  logCriticalEvent(event: string, details?: any): void {
+  logCriticalEvent(event: string, details?: unknown): void {
     if (this.isProduction) {
       // In production, only log to external service or remove entirely
       // For now, we'll just not log to console

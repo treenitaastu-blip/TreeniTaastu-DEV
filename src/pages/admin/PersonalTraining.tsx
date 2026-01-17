@@ -26,9 +26,12 @@ import {
   Send,
   Eye,
   UserPlus,
-  Target
+  Target,
+  Check,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -107,6 +110,10 @@ export default function PersonalTraining() {
 
   // Enhanced program creator
   const [showEnhancedCreator, setShowEnhancedCreator] = useState(false);
+
+  // Inline title editing
+  const [editingTitleId, setEditingTitleId] = useState<UUID | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
 
   // Track page view
   useEffect(() => {
@@ -247,6 +254,39 @@ export default function PersonalTraining() {
       onConfirm: () => performDeleteProgram(programId, programName),
       additionalWarning: 'See kustutab ka kõik seotud andmed (päevad, harjutused, sessioonid).'
     });
+  };
+
+  const handleSaveTitle = async (programId: string, newTitle: string) => {
+    try {
+      const { error } = await supabase
+        .from('client_programs')
+        .update({ title_override: newTitle.trim() || null })
+        .eq('id', programId);
+
+      if (error) throw error;
+
+      // Update local state
+      setPrograms(prev => prev.map(p => 
+        p.id === programId 
+          ? { ...p, title_override: newTitle.trim() || null }
+          : p
+      ));
+
+      toast({
+        title: "Nimetus muudetud",
+        description: "Programmi nimetus on edukalt muudetud",
+      });
+
+      setEditingTitleId(null);
+      setEditingTitle("");
+    } catch (error) {
+      console.error("Error updating title:", error);
+      toast({
+        title: "Viga",
+        description: "Nimetuse muutmine ebaõnnestus",
+        variant: "destructive",
+      });
+    }
   };
 
   const performDeleteProgram = async (programId: string, programName: string) => {
@@ -740,9 +780,67 @@ export default function PersonalTraining() {
                             {/* Program Info - Cleaner display */}
                             <div className="flex-1 min-w-0 space-y-2">
                               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                                <h3 className="font-medium text-sm lg:text-base truncate">
-                                  {program.title_override || program.template_title || "Nimetu programm"}
-                                </h3>
+                                {editingTitleId === program.id ? (
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <Input
+                                      value={editingTitle}
+                                      onChange={(e) => setEditingTitle(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleSaveTitle(program.id!, editingTitle);
+                                        } else if (e.key === 'Escape') {
+                                          setEditingTitleId(null);
+                                          setEditingTitle("");
+                                        }
+                                      }}
+                                      autoFocus
+                                      className="h-8 text-sm"
+                                      placeholder={program.template_title || "Nimetu programm"}
+                                    />
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleSaveTitle(program.id!, editingTitle)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setEditingTitleId(null);
+                                        setEditingTitle("");
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 group">
+                                    <h3 
+                                      className="font-medium text-sm lg:text-base truncate cursor-pointer hover:text-primary transition-colors"
+                                      onClick={() => {
+                                        setEditingTitleId(program.id);
+                                        setEditingTitle(program.title_override || "");
+                                      }}
+                                    >
+                                      {program.title_override || program.template_title || "Nimetu programm"}
+                                    </h3>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setEditingTitleId(program.id);
+                                        setEditingTitle(program.title_override || "");
+                                      }}
+                                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
                                     program.is_active !== false

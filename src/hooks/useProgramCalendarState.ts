@@ -91,17 +91,25 @@ export const useProgramCalendarState = () => {
   }, [user]);
 
   // Generate calendar days based on program
-  const generateCalendarDays = useCallback((program: ProgramInfo): CalendarDay[] => {
+  const generateCalendarDays = useCallback((program: ProgramInfo, userStartDate?: Date): CalendarDay[] => {
     const days: CalendarDay[] = [];
     const today = getTallinnDate();
     
-    for (let dayNumber = 1; dayNumber <= program.duration_days; dayNumber++) {
-      // Calculate the date for this day (assuming program starts on a Monday)
-      const programStartDate = new Date(today);
+    // Use user's actual start date if provided, otherwise use current week's Monday
+    let programStartDate: Date;
+    if (userStartDate) {
+      programStartDate = new Date(userStartDate);
+      programStartDate.setHours(0, 0, 0, 0);
+    } else {
+      // Fallback to current week's Monday
+      programStartDate = new Date(today);
       const dayOfWeek = programStartDate.getDay();
       const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Days back to Monday
       programStartDate.setDate(programStartDate.getDate() - daysToMonday);
-      
+      programStartDate.setHours(0, 0, 0, 0);
+    }
+    
+    for (let dayNumber = 1; dayNumber <= program.duration_days; dayNumber++) {
       // Add days to get to this day number (only weekdays)
       let currentDate = new Date(programStartDate);
       let weekdaysAdded = 0;
@@ -117,7 +125,7 @@ export const useProgramCalendarState = () => {
       
       const isWeekendDay = isWeekend(currentDate);
       const isCompleted = false; // Will be loaded from database
-      const isUnlocked = shouldUnlockDay(dayNumber, undefined, isCompleted);
+      const isUnlocked = shouldUnlockDay(dayNumber, programStartDate, isCompleted);
       
       days.push({
         dayNumber,
@@ -155,13 +163,51 @@ export const useProgramCalendarState = () => {
         return;
       }
 
-      // Generate calendar days
-      const days = generateCalendarDays(activeProgram);
+      // Fetch user's actual start date from static_starts table
+      // Auto-create if missing for Kontorikeha Reset program
+      let userStartDate: Date | undefined = undefined;
+      if (activeProgram.title === 'Kontorikeha Reset') {
+        const { data: staticStart, error: staticStartError } = await supabase
+          .from('static_starts')
+          .select('start_monday')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (staticStartError) {
+          console.error('Error checking static_starts:', staticStartError);
+        }
+
+        // If no static_starts entry exists, auto-create it
+        if (!staticStart?.start_monday) {
+          try {
+            const { data: startDate, error: startError } = await supabase
+              .rpc('start_static_program', { p_force: false });
+
+            if (startError) {
+              console.warn('Could not auto-create static_starts (will use fallback):', startError);
+              // Continue without userStartDate - will use fallback logic
+            } else if (startDate) {
+              // Convert the returned date string to Date object
+              userStartDate = new Date(startDate + 'T00:00:00');
+              console.log('Auto-created static_starts with start date:', startDate);
+            }
+          } catch (err) {
+            console.warn('Exception creating static_starts (will use fallback):', err);
+            // Continue without userStartDate - will use fallback logic
+          }
+        } else if (staticStart?.start_monday) {
+          // Convert the date string to a Date object (start_monday is a date, so it comes as a string)
+          userStartDate = new Date(staticStart.start_monday + 'T00:00:00');
+        }
+      }
+
+      // Generate calendar days with user's actual start date
+      const days = generateCalendarDays(activeProgram, userStartDate);
       const today = getTallinnDate();
       
       // Load completion data for Kontorikeha Reset program
       let completedProgramDayIds: string[] = [];
-      let completedDays = 0;
+      let uniqueCompletedDayNumbers = new Set<number>();
       
       if (activeProgram.title === 'Kontorikeha Reset') {
         const { data: progress, error: progressError } = await supabase
@@ -174,7 +220,6 @@ export const useProgramCalendarState = () => {
           console.error('Error loading progress:', progressError);
         } else {
           completedProgramDayIds = progress?.map(p => p.programday_id) || [];
-          completedDays = progress?.length || 0;
         }
       }
 
@@ -203,13 +248,17 @@ export const useProgramCalendarState = () => {
           // Check if this specific day is completed by mapping programday_id to day number
           isCompleted = completedProgramDayIds.some(programDayId => {
             const mappedDayNumber = programDayToDayNumber[programDayId];
-            return mappedDayNumber === day.dayNumber;
+            if (mappedDayNumber === day.dayNumber) {
+              uniqueCompletedDayNumbers.add(day.dayNumber);
+              return true;
+            }
+            return false;
           });
         }
         
         // Recalculate unlock status with completion info
-        // Use undefined for userStartDate to let shouldUnlockDay use getCurrentWeekStart()
-        const isUnlocked = shouldUnlockDay(day.dayNumber, undefined, isCompleted);
+        // Use user's actual start date for accurate unlock calculation
+        const isUnlocked = shouldUnlockDay(day.dayNumber, userStartDate, isCompleted);
         
         return {
           ...day,
@@ -217,6 +266,9 @@ export const useProgramCalendarState = () => {
           isUnlocked
         };
       });
+
+      // Count unique completed days, not total completions
+      const completedDays = uniqueCompletedDayNumbers.size;
 
       setState(prev => ({
         ...prev,

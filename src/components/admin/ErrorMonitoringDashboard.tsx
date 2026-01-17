@@ -32,7 +32,7 @@ interface ErrorLogEntry {
   category: ErrorCategory;
   message: string;
   stack?: string;
-  context: any;
+  context: Record<string, unknown>;
   resolved: boolean;
   created_at: string;
   updated_at: string;

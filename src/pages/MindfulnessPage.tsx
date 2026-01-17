@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -120,8 +120,8 @@ export default function MindfulnessPage() {
   const dayNumber = location.state?.dayNumber;
   const returnPath = location.state?.returnPath || '/programm';
 
-  // Calculate cycles based on selected exercise
-  const getTotalCycles = () => {
+  // Calculate cycles based on selected exercise - Bug #2 fix: useMemo to recalculate when selectedExercise changes
+  const totalCycles = useMemo(() => {
     if (!selectedExercise) return 10;
     
     switch (selectedExercise.id) {
@@ -136,13 +136,12 @@ export default function MindfulnessPage() {
       default:
         return 10;
     }
-  };
-
-  const totalCycles = getTotalCycles();
+  }, [selectedExercise]);
+  
   const prepPhases = 3; // 3 preparation breaths
   
-  // Get current phase duration based on selected exercise
-  const getCurrentPhaseDuration = () => {
+  // Get current phase duration based on selected exercise - Bug #1 fix: calculate dynamically
+  const getCurrentPhaseDuration = useCallback(() => {
     if (!selectedExercise) return 5000; // Default 5 seconds
     
     if (phase === 'prep') {
@@ -152,9 +151,7 @@ export default function MindfulnessPage() {
     // For main exercise, use the current phase
     const phaseIndex = currentPhase % selectedExercise.phases.length;
     return selectedExercise.phases[phaseIndex].duration * 1000;
-  };
-  
-  const cycleDuration = getCurrentPhaseDuration();
+  }, [selectedExercise, phase, currentPhase]);
 
   const getExerciseSpecificMessage = () => {
     if (!selectedExercise) return "Suurepärane! Sa andsid endale kingi - hetke täielikku rahu.";
@@ -177,6 +174,37 @@ export default function MindfulnessPage() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const [audioSupported, setAudioSupported] = useState(true);
   const [iosAudioUnlocked, setIosAudioUnlocked] = useState(false);
+  
+  // Track active audio sources to prevent overlapping sounds
+  const activeAudioSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  
+  // Stop all active sounds - useCallback to ensure stable reference
+  const stopAllSounds = useCallback(() => {
+    activeAudioSourcesRef.current.forEach(source => {
+      try {
+        if (source.buffer) {
+          source.stop();
+        }
+      } catch (error) {
+        // Source might already be stopped, ignore
+        console.log('[Mindfulness] Sound already stopped');
+      }
+    });
+    activeAudioSourcesRef.current.clear();
+  }, []);
+  
+  // Bug #5 fix: Cleanup audio context on unmount
+  useEffect(() => {
+    return () => {
+      stopAllSounds();
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(err => {
+          console.warn('[Mindfulness] Error closing audio context:', err);
+        });
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
 
   const isIOS = () => {
     return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
@@ -256,6 +284,9 @@ export default function MindfulnessPage() {
         return;
       }
 
+      // Stop all previous sounds before creating a new one to prevent overlapping
+      stopAllSounds();
+
       const initialized = await initializeAudioContext();
       if (!initialized || !audioContextRef.current || audioContextRef.current.state !== 'running') {
         console.warn('[Mindfulness] Audio context not available, state:', audioContextRef.current?.state);
@@ -266,6 +297,9 @@ export default function MindfulnessPage() {
       
       const audioContext = audioContextRef.current;
       const soundDuration = duration || (type === 'inhale' ? 4.5 : 5.5);
+      
+      // Use current time immediately to ensure proper timing
+      const now = audioContext.currentTime;
       
       // Create noise source with iOS-optimized settings
       const bufferSize = Math.floor(audioContext.sampleRate * soundDuration);
@@ -309,41 +343,46 @@ export default function MindfulnessPage() {
       gainNode.connect(audioContext.destination);
       
       // Set gain envelope to simulate breathing with iOS-optimized values
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0, now);
       
       const maxGain = isIOS() ? 0.25 : 0.15; // Higher volume on iOS
       
       if (type === 'inhale') {
         // Gradual increase for inhale (wind coming in)
-        gainNode.gain.linearRampToValueAtTime(maxGain, audioContext.currentTime + 0.5);
-        gainNode.gain.setValueAtTime(maxGain, audioContext.currentTime + soundDuration - 0.8);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + soundDuration);
+        gainNode.gain.linearRampToValueAtTime(maxGain, now + 0.5);
+        gainNode.gain.setValueAtTime(maxGain, now + soundDuration - 0.8);
+        gainNode.gain.linearRampToValueAtTime(0, now + soundDuration);
         
         // Frequency modulation for inhale
-        filter.frequency.linearRampToValueAtTime(baseFreq + 100, audioContext.currentTime + soundDuration * 0.3);
-        filter.frequency.linearRampToValueAtTime(baseFreq + 50, audioContext.currentTime + soundDuration);
+        filter.frequency.setValueAtTime(baseFreq, now);
+        filter.frequency.linearRampToValueAtTime(baseFreq + 100, now + soundDuration * 0.3);
+        filter.frequency.linearRampToValueAtTime(baseFreq + 50, now + soundDuration);
       } else {
         // Gradual decrease for exhale (wind going out)
-        gainNode.gain.linearRampToValueAtTime(maxGain * 0.8, audioContext.currentTime + 0.3);
-        gainNode.gain.setValueAtTime(maxGain * 0.8, audioContext.currentTime + soundDuration - 1.2);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + soundDuration);
+        gainNode.gain.linearRampToValueAtTime(maxGain * 0.8, now + 0.3);
+        gainNode.gain.setValueAtTime(maxGain * 0.8, now + soundDuration - 1.2);
+        gainNode.gain.linearRampToValueAtTime(0, now + soundDuration);
         
         // Frequency modulation for exhale
-        filter.frequency.linearRampToValueAtTime(baseFreq - 50, audioContext.currentTime + soundDuration * 0.7);
-        filter.frequency.linearRampToValueAtTime(baseFreq - 100, audioContext.currentTime + soundDuration);
+        filter.frequency.setValueAtTime(baseFreq, now);
+        filter.frequency.linearRampToValueAtTime(baseFreq - 50, now + soundDuration * 0.7);
+        filter.frequency.linearRampToValueAtTime(baseFreq - 100, now + soundDuration);
       }
       
-      // Add error handling for audio playback
+      // Add error handling for audio playback and cleanup
       noiseSource.onended = () => {
         console.log(`[Mindfulness] ${type} sound ended`);
+        activeAudioSourcesRef.current.delete(noiseSource);
       };
       
-      // Start the sound with iOS-specific timing
-      const startTime = audioContext.currentTime + (isIOS() ? 0.1 : 0);
-      noiseSource.start(startTime);
-      noiseSource.stop(startTime + soundDuration);
+      // Track this source
+      activeAudioSourcesRef.current.add(noiseSource);
       
-      console.log(`[Mindfulness] ${type} sound started at ${startTime}, duration: ${soundDuration}s`);
+      // Start the sound immediately (no delay to prevent timing issues)
+      noiseSource.start(now);
+      noiseSource.stop(now + soundDuration);
+      
+      console.log(`[Mindfulness] ${type} sound started at ${now}, duration: ${soundDuration}s`);
     } catch (error) {
       console.error(`[Mindfulness] Error creating ${type} sound:`, error);
       console.error('[Mindfulness] Audio context state:', audioContextRef.current?.state);
@@ -380,24 +419,27 @@ export default function MindfulnessPage() {
               });
             } else {
               // Handle main exercise phase with selected exercise phases
+              // Bug #3 fix: Calculate next phase duration BEFORE updating state
               const nextPhaseIndex = (currentPhase + 1) % selectedExercise.phases.length;
-              setCurrentPhase(nextPhaseIndex);
+              const nextPhaseDuration = selectedExercise.phases[nextPhaseIndex].duration * 1000;
               
               // Get the next phase name for audio
               const nextPhaseName = selectedExercise.phases[nextPhaseIndex].name.toLowerCase();
-              const nextPhaseDuration = selectedExercise.phases[nextPhaseIndex].duration;
               
               if (nextPhaseName.includes('sisse') || nextPhaseName.includes('inhale')) {
-                createBreathSound('inhale', nextPhaseDuration);
+                createBreathSound('inhale', selectedExercise.phases[nextPhaseIndex].duration);
               } else if (nextPhaseName.includes('välja') || nextPhaseName.includes('exhale')) {
-                createBreathSound('exhale', nextPhaseDuration);
+                createBreathSound('exhale', selectedExercise.phases[nextPhaseIndex].duration);
               } else if (nextPhaseName.includes('hoia') || nextPhaseName.includes('hold')) {
                 // Hold phases are silent - no audio
                 console.log('[Mindfulness] Hold phase - no audio');
               } else {
                 // Default to inhale sound for unknown phases
-                createBreathSound('inhale', nextPhaseDuration);
+                createBreathSound('inhale', selectedExercise.phases[nextPhaseIndex].duration);
               }
+              
+              // Update phase state
+              setCurrentPhase(nextPhaseIndex);
               
               // Check if we completed a full cycle
               if (nextPhaseIndex === 0) {
@@ -415,20 +457,40 @@ export default function MindfulnessPage() {
                   return nextCycle;
                 });
               }
+              
+              // Return the duration for the NEXT phase (which we just calculated)
+              return nextPhaseDuration;
             }
             
-            return getCurrentPhaseDuration();
+            // For prep phase, return prep duration
+            return 5000;
           }
           return prev - 100;
         });
       }, 100);
     }
 
-    return () => clearInterval(interval);
-  }, [isActive, isCompleted, phase, prepPhases, selectedExercise, currentPhase, totalCycles]);
+    // Stop all sounds when exercise stops or completes
+    if (!isActive || isCompleted) {
+      stopAllSounds();
+    }
 
+    return () => {
+      clearInterval(interval);
+      stopAllSounds();
+    };
+  }, [isActive, isCompleted, phase, prepPhases, selectedExercise, currentPhase, totalCycles, fromCalendar, dayNumber, user, markWeekendCompleted, getCurrentPhaseDuration, stopAllSounds]);
+
+  // Bug #4 fix: Store countdown interval ref for cleanup
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
   const handleStart = async () => {
     console.log('[Mindfulness] Starting exercise...');
+    
+    // Bug #4 fix: Clear any existing countdown
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+    }
     
     // Initialize audio context with user interaction - critical for iOS
     const audioInitialized = await initializeAudioContext();
@@ -443,39 +505,64 @@ export default function MindfulnessPage() {
     setShowCountdown(true);
     setCountdownNumber(3);
     
-    // Start countdown
-    const countdownInterval = setInterval(() => {
+    // Start countdown - Bug #4 fix: Store interval in ref for cleanup
+    countdownIntervalRef.current = setInterval(() => {
       setCountdownNumber(prev => {
         if (prev <= 1) {
-          clearInterval(countdownInterval);
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
           setShowCountdown(false);
           setIsActive(true);
           setIsCompleted(false);
           setCurrentCycle(0);
           setPhase('prep');
           setPrepBreaths(0);
-          setTimeLeft(cycleDuration);
+          // Bug #1 fix: Use getCurrentPhaseDuration() instead of stale cycleDuration
+          setTimeLeft(getCurrentPhaseDuration());
           return 3;
         }
         return prev - 1;
       });
     }, 1000);
   };
+  
+  // Bug #4 fix: Cleanup countdown on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleReset = () => {
+    // Bug #4 fix: Clear countdown if active
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    
+    // Stop all active sounds when resetting
+    stopAllSounds();
+    
     setIsActive(false);
     setIsCompleted(false);
     setCurrentCycle(0);
     setPhase('prep');
     setPrepBreaths(0);
-    setTimeLeft(cycleDuration);
+    // Bug #1 fix: Use getCurrentPhaseDuration() instead of stale cycleDuration
+    setTimeLeft(getCurrentPhaseDuration());
     setShowInstructions(true);
     setShowCountdown(false);
     setCountdownNumber(3);
   };
 
   const getCircleScale = () => {
-    const progress = (cycleDuration - timeLeft) / cycleDuration;
+    // Bug #1 fix: Use getCurrentPhaseDuration() instead of stale cycleDuration
+    const currentDuration = getCurrentPhaseDuration();
+    const progress = (currentDuration - timeLeft) / currentDuration;
     if (phase === 'prep') {
       // Gentle pulsing for prep phase
       const isPrepInhale = prepBreaths % 2 === 0;

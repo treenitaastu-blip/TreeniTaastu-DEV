@@ -38,10 +38,10 @@ interface ProgressionAnalysisEntry {
   failure_type: ProgressionFailureType;
   error_message: string;
   stack_trace?: string;
-  analysis_data: any;
+  analysis_data: Record<string, unknown>;
   retry_attempts: number;
   resolved: boolean;
-  context: any;
+  context: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

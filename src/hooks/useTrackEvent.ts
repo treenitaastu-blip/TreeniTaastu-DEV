@@ -9,7 +9,7 @@ export type EventData = {
   destination?: string;
   source?: string;
   user_action?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export function useTrackEvent() {

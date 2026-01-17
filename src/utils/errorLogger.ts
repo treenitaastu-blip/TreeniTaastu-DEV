@@ -37,7 +37,7 @@ export interface ErrorContext {
   route?: string;
   userAgent?: string;
   timestamp?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 // Error log entry interface

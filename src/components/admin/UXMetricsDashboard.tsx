@@ -43,7 +43,7 @@ interface UXMetricEntry {
   metric_type: UXMetricType;
   metric_value: number;
   metric_unit?: string;
-  context: any;
+  context: Record<string, unknown>;
   created_at: string;
 }
 

@@ -86,10 +86,6 @@ export default function CalendarGrid({
               <div className="w-4 h-4 rounded bg-success border-2 border-success"></div>
               <span>Tehtud</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-accent border-2 border-accent"></div>
-              <span>Nädalavahetus</span>
-            </div>
           </div>
         </CardContent>
       </Card>

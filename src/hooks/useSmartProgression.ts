@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   trackAnalysisFunctionError, 
   trackDataValidationError, 
@@ -67,6 +68,7 @@ export const useSmartProgression = (programId?: string, userId?: string) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Fetch program progress
   const fetchProgramProgress = async () => {
@@ -105,7 +107,7 @@ export const useSmartProgression = (programId?: string, userId?: string) => {
   // Analyze exercise progression with simple algorithm
   const analyzeExerciseProgression = async (clientItemId: string, weeksBack: number = 3): Promise<ExerciseProgression | null> => {
     const sessionId = `analysis_${Date.now()}`;
-    const userId = user?.id;
+    const currentUserId = userId || user?.id;
     
     try {
       // Use simple algorithm (most reliable)
@@ -121,8 +123,9 @@ export const useSmartProgression = (programId?: string, userId?: string) => {
       return (simpleData as unknown) as ExerciseProgression;
     } catch (err) {
       // Track general analysis failure
-      if (userId) {
-        trackAnalysisFunctionError(userId, sessionId, err, {
+      if (currentUserId) {
+        const errorForTracking = err instanceof Error ? err : (typeof err === 'string' ? err : new Error(String(err)));
+        trackAnalysisFunctionError(currentUserId, sessionId, errorForTracking, {
           programId,
           exerciseId: clientItemId,
           analysisData: { weeksBack, algorithm: 'simple_failed' }
@@ -183,8 +186,10 @@ export const useSmartProgression = (programId?: string, userId?: string) => {
       setError(errorMessage);
       
       // Track progression analysis failure
-      if (userId) {
-        trackAnalysisFunctionError(userId, sessionId, err, {
+      const currentUserId = userId || user?.id;
+      if (currentUserId) {
+        const errorForTracking = err instanceof Error ? err : (typeof err === 'string' ? err : new Error(String(err)));
+        trackAnalysisFunctionError(currentUserId, sessionId, errorForTracking, {
           programId,
           analysisData: { algorithm: 'auto_progress_program' }
         });

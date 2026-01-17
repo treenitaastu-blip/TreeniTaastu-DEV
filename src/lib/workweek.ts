@@ -129,31 +129,66 @@ export function isAfterUnlockTime(): boolean {
 /**
  * Check if a specific day should be unlocked based on 07:00 Estonia time rule
  * New weekdays unlock after 07:00 Estonia time
+ * Previously unlocked days remain accessible on weekends and weekdays
  */
 export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompleted?: boolean): boolean {
   const tallinnDate = getTallinnDate();
-  const today = tallinnDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  
-  // Weekends never unlock new training days
-  if (isWeekend(tallinnDate)) {
-    return false;
-  }
   
   // Calculate how many weekdays have passed since program start
   const startDate = userStartDate || getCurrentWeekStart();
-  const daysSinceStart = Math.floor((tallinnDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-  const weekdaysSinceStart = Math.floor(daysSinceStart / 7) * 5 + Math.min(daysSinceStart % 7, 5);
   
-  // Completed days should always be unlocked
+  // Properly count weekdays by iterating through each day and counting only Mon-Fri
+  let weekdaysSinceStart = 0;
+  let currentDate = new Date(startDate);
+  const todayDate = new Date(tallinnDate);
+  
+  // Set both dates to midnight for accurate day comparison
+  currentDate.setHours(0, 0, 0, 0);
+  todayDate.setHours(0, 0, 0, 0);
+  
+  // Count weekdays from start date up to (but not including) today
+  while (currentDate < todayDate) {
+    if (!isWeekend(currentDate)) {
+      weekdaysSinceStart++;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  // Completed days should always be unlocked (even on weekends)
   if (isCompleted) {
     return true;
   }
   
-  // For new days: check if enough weekdays have passed AND it's after 07:00
-  const enoughWeekdaysPassed = dayNumber <= weekdaysSinceStart + 1; // +1 because day 1 unlocks on first weekday
+  // On weekends: allow access to previously unlocked days, but don't unlock new days
+  // Previously unlocked days are accessible (no +1, no 07:00 check)
+  // A day is "previously unlocked" if it was unlocked by the end of Friday
+  if (isWeekend(tallinnDate)) {
+    // On weekends, we check if the day was unlocked by the end of the previous week
+    // If we're on Saturday/Sunday, we've had 5 weekdays this week (Mon-Fri)
+    // So dayNumber should be <= weekdaysSinceStart (which includes all weekdays up to Friday)
+    return dayNumber <= weekdaysSinceStart;
+  }
+  
+  // On weekdays: check unlock logic
+  // Today is a weekday, so we need to consider if today counts toward unlocking
+  
+  // Calculate how many weekdays we've had including today (if today is a weekday)
+  // This represents which program day should be available today
+  const weekdaysIncludingToday = weekdaysSinceStart + 1; // +1 for today (weekday)
+  
+  // Previously unlocked days (from earlier days): stay unlocked (no 07:00 check needed)
+  // A day is "previously unlocked" if we've already had enough weekdays to unlock it
+  const isPreviouslyUnlocked = dayNumber < weekdaysIncludingToday;
+  if (isPreviouslyUnlocked) {
+    return true;
+  }
+  
+  // New days: check if today is the right weekday AND it's after 07:00
+  // dayNumber should unlock when we're on the Nth weekday, so dayNumber === weekdaysIncludingToday
+  const isTodayTheRightDay = dayNumber === weekdaysIncludingToday;
   const isAfterUnlock = isAfterUnlockTime();
   
-  return enoughWeekdaysPassed && isAfterUnlock;
+  return isTodayTheRightDay && isAfterUnlock;
 }
 
 /**

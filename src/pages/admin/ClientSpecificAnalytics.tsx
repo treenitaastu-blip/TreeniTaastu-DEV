@@ -105,48 +105,63 @@ export default function ClientSpecificAnalytics() {
   const loadClientData = async (clientId: string) => {
     setStatsLoading(true);
     try {
-      // Get workout sessions stats
-      const { data: sessions, error: sessionsError } = await supabase
-        .from("workout_sessions")
-        .select(`
-          id,
-          started_at,
-          ended_at,
-          set_logs (
-            id,
-            reps_done,
-            weight_kg_done
-          )
-        `)
-        .eq("user_id", clientId)
-        .order("started_at", { ascending: false });
+      // Use optimized RPC function for stats (single query, database aggregations)
+      const { data: statsData, error: statsError } = await supabase
+        .rpc('get_client_analytics', { p_user_id: clientId });
 
-      if (sessionsError) throw sessionsError;
+      if (statsError) throw statsError;
 
+      if (!statsData || statsData.length === 0) {
+        throw new Error('Kliendi andmeid ei leitud');
+      }
 
-      // Get active programs
-      const { data: programs, error: programsError } = await supabase
-        .from("client_programs")
-        .select("id")
-        .eq("assigned_to", clientId)
-        .eq("is_active", true);
+      const statsResult = statsData[0];
+      const clientStats: ClientStats = {
+        total_sessions: Number(statsResult.total_sessions) || 0,
+        completed_sessions: Number(statsResult.completed_sessions) || 0,
+        completion_rate: Number(statsResult.completion_rate) || 0,
+        total_volume_kg: Number(statsResult.total_volume_kg) || 0,
+        total_reps: Number(statsResult.total_reps) || 0,
+        total_sets: Number(statsResult.total_sets) || 0,
+        avg_rpe: Number(statsResult.avg_rpe) || 0,
+        current_streak: Number(statsResult.current_streak) || 0,
+        best_streak: Number(statsResult.best_streak) || 0,
+        active_programs: Number(statsResult.active_programs) || 0,
+      };
 
-      if (programsError) throw programsError;
+      setStats(clientStats);
 
-      // Get RPE data
-      const { data: rpeData } = await supabase
-        .from("rpe_history")
-        .select("rpe")
-        .eq("user_id", clientId);
+      // Use optimized RPC function for weekly data (database aggregations)
+      const { data: weeklyDataResult, error: weeklyError } = await supabase
+        .rpc('get_client_weekly_analytics', { 
+          p_user_id: clientId,
+          p_weeks: 12 
+        });
 
-      // Get static program completion data
+      if (weeklyError) {
+        console.warn('Error loading weekly data:', weeklyError);
+        setWeeklyData([]);
+      } else {
+        const weeklyFormatted: WeeklyData[] = (weeklyDataResult || []).map((week: any) => ({
+          week_start: new Date(week.week_start).toLocaleDateString("et-EE"),
+          sessions: Number(week.sessions) || 0,
+          volume_kg: Number(week.volume_kg) || 0,
+          avg_rpe: Number(week.avg_rpe) || 0,
+        }));
+        setWeeklyData(weeklyFormatted);
+      }
+
+      // Get static program completion data (lightweight query)
       const { data: staticProgress, error: staticError } = await supabase
         .from("userprogress")
-        .select("id, completed_at")
-        .eq("user_id", clientId);
+        .select("id")
+        .eq("user_id", clientId)
+        .limit(1000); // Limit to prevent huge queries
 
       if (staticError) {
         console.warn("Error loading static program data:", staticError);
+      } else {
+        setStaticProgramCompletion(staticProgress?.length || 0);
       }
 
       // Get last login information from profiles
@@ -158,85 +173,9 @@ export default function ClientSpecificAnalytics() {
 
       if (profileError) {
         console.warn("Error loading profile data:", profileError);
+      } else {
+        setLastLogin(profileData?.updated_at || null);
       }
-
-      // Calculate stats
-      const totalSessions = sessions?.length || 0;
-      const completedSessions = sessions?.filter(s => s.ended_at)?.length || 0;
-      const completionRate = totalSessions > 0 ? completedSessions / totalSessions : 0;
-
-      let totalVolumeKg = 0;
-      let totalReps = 0;
-      let totalSets = 0;
-
-      sessions?.forEach(session => {
-        session.set_logs?.forEach(setLog => {
-          if (setLog.weight_kg_done && setLog.reps_done) {
-            totalVolumeKg += setLog.weight_kg_done * setLog.reps_done;
-            totalReps += setLog.reps_done;
-            totalSets += 1;
-          }
-        });
-      });
-
-      const avgRpe = rpeData?.length 
-        ? rpeData.reduce((acc, r) => acc + Number(r.rpe), 0) / rpeData.length 
-        : 0;
-
-      const clientStats: ClientStats = {
-        total_sessions: totalSessions,
-        completed_sessions: completedSessions,
-        completion_rate: completionRate,
-        total_volume_kg: totalVolumeKg,
-        total_reps: totalReps,
-        total_sets: totalSets,
-        avg_rpe: avgRpe,
-        current_streak: 0,
-        best_streak: 0,
-        active_programs: programs?.length || 0,
-      };
-
-      setStats(clientStats);
-
-      // Set static program completion count
-      setStaticProgramCompletion(staticProgress?.length || 0);
-
-      // Set last login information
-      setLastLogin(profileData?.updated_at || null);
-
-      // Build weekly data for charts (last 12 weeks, fill gaps)
-      const weeklyStats: Record<string, { sessions: number; volume: number; rpe_sum: number; rpe_count: number }> = {};
-
-      sessions?.forEach(session => {
-        if (!session.started_at) return;
-        const weekStart = getWeekStart(new Date(session.started_at));
-        const weekKey = weekStart.toISOString().slice(0, 10);
-        if (!weeklyStats[weekKey]) {
-          weeklyStats[weekKey] = { sessions: 0, volume: 0, rpe_sum: 0, rpe_count: 0 };
-        }
-        if (session.ended_at) {
-          weeklyStats[weekKey].sessions += 1;
-        }
-        session.set_logs?.forEach(setLog => {
-          if (setLog.weight_kg_done && setLog.reps_done) {
-            weeklyStats[weekKey].volume += setLog.weight_kg_done * setLog.reps_done;
-          }
-        });
-      });
-
-      const last12Weeks = getLastNWeeks(12);
-      const weeklyFormatted: WeeklyData[] = last12Weeks.map(d => {
-        const key = d.toISOString().slice(0, 10);
-        const s = weeklyStats[key] || { sessions: 0, volume: 0, rpe_sum: 0, rpe_count: 0 };
-        return {
-          week_start: d.toLocaleDateString("et-EE"),
-          sessions: s.sessions,
-          volume_kg: s.volume,
-          avg_rpe: s.rpe_count > 0 ? s.rpe_sum / s.rpe_count : 0,
-        };
-      });
-
-      setWeeklyData(weeklyFormatted);
 
       // Load journal entries
       const { data: journalData, error: journalError } = await supabase
@@ -402,10 +341,21 @@ export default function ClientSpecificAnalytics() {
             {/* Client Information */}
             <Card className="rounded-2xl shadow-soft">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Kliendi Info
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Kliendi Info
+                  </CardTitle>
+                  <Button
+                    onClick={() => navigate(`/admin/client-analytics/${selectedClientId}`)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    Vaata täpset analüütikat
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

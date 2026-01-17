@@ -87,7 +87,7 @@ export interface UXMetricContext {
   osType?: string;
   networkType?: string;
   timestamp?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 // UX metric entry

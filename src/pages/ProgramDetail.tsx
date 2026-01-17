@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import PTAccessValidator from "@/components/PTAccessValidator";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Edit, Check, X } from "lucide-react";
 
 /** ---------- Types ---------- */
 type ClientProgram = {
@@ -61,10 +63,13 @@ type ProgramRow = {
 export default function ProgramDetail() {
   const { programId } = useParams<{ programId: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const [program, setProgram] = useState<ClientProgram | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState("");
 
   // "Continue" helpers
   const [openSessionDayId, setOpenSessionDayId] = useState<string | null>(null);
@@ -291,6 +296,7 @@ export default function ProgramDetail() {
           days,
         };
         setProgram(composed);
+        setEditTitleValue(programData.title_override || "");
 
         // 5) Continue helpers
         const { data: openSessions } = await supabase
@@ -388,15 +394,103 @@ export default function ProgramDetail() {
     );
   }
 
+  const handleSaveTitle = async () => {
+    if (!programId || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('client_programs')
+        .update({ title_override: editTitleValue.trim() || null })
+        .eq('id', programId)
+        .eq('assigned_to', user.id);
+
+      if (error) throw error;
+
+      setProgram(prev => prev ? { ...prev, title_override: editTitleValue.trim() || null } : prev);
+
+      toast({
+        title: "Nimetus muudetud",
+        description: "Programmi nimetus on edukalt muudetud",
+      });
+
+      setEditingTitle(false);
+    } catch (error) {
+      console.error("Error updating title:", error);
+      toast({
+        title: "Viga",
+        description: "Nimetuse muutmine ebaõnnestus",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <PTAccessValidator>
       <div className="min-h-screen bg-gradient-to-br from-brand-light via-background to-secondary">
         <div className="mx-auto max-w-4xl px-4 py-8">
           <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                {program.title_override || "Treeningkava"}
-              </h1>
+            <div className="flex-1">
+              {editingTitle ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editTitleValue}
+                    onChange={(e) => setEditTitleValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveTitle();
+                      } else if (e.key === 'Escape') {
+                        setEditingTitle(false);
+                        setEditTitleValue(program.title_override || "");
+                      }
+                    }}
+                    autoFocus
+                    className="text-3xl font-bold h-12"
+                    placeholder="Treeningkava"
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleSaveTitle}
+                    className="h-9 w-9 p-0"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingTitle(false);
+                      setEditTitleValue(program.title_override || "");
+                    }}
+                    className="h-9 w-9 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <h1 
+                    className="text-3xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors"
+                    onClick={() => {
+                      setEditingTitle(true);
+                      setEditTitleValue(program.title_override || "");
+                    }}
+                  >
+                    {program.title_override || "Treeningkava"}
+                  </h1>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingTitle(true);
+                      setEditTitleValue(program.title_override || "");
+                    }}
+                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
               <div className="text-sm text-muted-foreground">
                 {program.days.length} päeva • Alustatud:{" "}
                 {program.start_date

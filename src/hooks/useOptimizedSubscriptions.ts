@@ -5,13 +5,13 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 interface SubscriptionConfig {
   table: string;
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
   filter?: string;
-  callback: (payload: any) => void;
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void;
   debounceMs?: number;
 }
 
@@ -48,7 +48,7 @@ export function useOptimizedSubscriptions(): SubscriptionManager {
     
     // Create debounced callback if specified
     const debouncedCallback = config.debounceMs 
-      ? (payload: any) => {
+      ? (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
           // Clear existing timeout
           const existingTimeout = timeoutsRef.current.get(subscriptionId);
           if (existingTimeout) {
@@ -65,7 +65,7 @@ export function useOptimizedSubscriptions(): SubscriptionManager {
 
           timeoutsRef.current.set(subscriptionId, timeout);
         }
-      : (payload: any) => {
+      : (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
           if (mountedRef.current) {
             config.callback(payload);
           }
@@ -76,7 +76,12 @@ export function useOptimizedSubscriptions(): SubscriptionManager {
     const channel = supabase.channel(channelName);
 
     // Configure postgres changes listener
-    const pgConfig: any = {
+    const pgConfig: {
+      event: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+      schema: string;
+      table: string;
+      filter?: string;
+    } = {
       event: config.event,
       schema: 'public',
       table: config.table,
@@ -150,8 +155,8 @@ export function useOptimizedSupportChat(userId: string | undefined) {
   const subscriptionIdsRef = useRef<string[]>([]);
 
   const setupSubscriptions = useCallback((
-    onConversationChange: (payload: any) => void,
-    onMessageChange: (payload: any) => void
+    onConversationChange: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void,
+    onMessageChange: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
   ) => {
     if (!userId) return;
 
@@ -189,7 +194,7 @@ export function useOptimizedWorkoutProgress(sessionId: string | undefined) {
   const subscriptionIdRef = useRef<string | null>(null);
 
   const setupSubscription = useCallback((
-    onSetLogChange: (payload: any) => void
+    onSetLogChange: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
   ) => {
     if (!sessionId) return;
 

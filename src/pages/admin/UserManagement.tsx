@@ -1,5 +1,6 @@
 // src/pages/admin/UserManagement.tsx
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getAdminClient } from "@/utils/adminClient";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
-import { Users, Plus, Pause, Play, Trash2, Search, Mail } from "lucide-react";
+import { Users, Plus, Pause, Play, Trash2, Search, Mail, BarChart3 } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAdminData, UserProfile } from "@/hooks/useAdminData";
 
@@ -37,6 +38,7 @@ type AccessMatrix = {
 };
 
 export default function UserManagement() {
+  const navigate = useNavigate();
   const { users, loading, error, refetch } = useAdminData();
   const [entitlements, setEntitlements] = useState<UserEntitlement[]>([]);
   const [accessMatrix, setAccessMatrix] = useState<AccessMatrix[]>([]);
@@ -284,17 +286,29 @@ export default function UserManagement() {
                       Registreeritud: {new Date(user.created_at).toLocaleDateString("et-EE")}
                     </CardDescription>
                   </div>
-                  <Dialog open={grantModalOpen} onOpenChange={setGrantModalOpen}>
-                    <DialogTrigger asChild>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {user.role !== "admin" && (
                       <Button
                         size="sm"
-                        onClick={() => setSelectedUser(user)}
+                        variant="outline"
+                        onClick={() => navigate(`/admin/client-analytics/${user.id}`)}
                         className="w-full sm:w-auto"
                       >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Lisa ligipääs
+                        <BarChart3 className="h-4 w-4 mr-1" />
+                        Analüütika
                       </Button>
-                    </DialogTrigger>
+                    )}
+                    <Dialog open={grantModalOpen} onOpenChange={setGrantModalOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          onClick={() => setSelectedUser(user)}
+                          className="w-full sm:w-auto"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Lisa ligipääs
+                        </Button>
+                      </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Lisa ligipääs</DialogTitle>

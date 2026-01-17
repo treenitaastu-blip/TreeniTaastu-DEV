@@ -74,7 +74,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibild mb-3">5. Andmete säilitamine</h2>
+              <h2 className="text-xl font-semibold mb-3">5. Andmete säilitamine</h2>
               <p>
                 Säilitame teie andmeid nii kaua, kui see on vajalik teenuse osutamiseks või 
                 seadusega nõutud. Konto kustutamisel kustutatakse kõik isikuandmed.

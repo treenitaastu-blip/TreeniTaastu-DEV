@@ -30,7 +30,7 @@ export interface WorkoutFailureContext {
   errorMessage: string;
   stackTrace?: string;
   retryAttempts?: number;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 // Workout failure entry
@@ -45,7 +45,7 @@ export interface WorkoutFailureEntry {
   stack_trace?: string;
   retry_attempts: number;
   resolved: boolean;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
   created_at?: string;
   updated_at?: string;
 }

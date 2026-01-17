@@ -70,7 +70,7 @@ class CacheManager {
   /**
    * Generate cache key
    */
-  private generateKey(baseKey: string, params?: Record<string, any>): string {
+  private generateKey(baseKey: string, params?: Record<string, unknown>): string {
     if (!params) return baseKey;
     const paramString = Object.entries(params)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -91,7 +91,7 @@ class CacheManager {
   /**
    * Get item from cache
    */
-  get<T>(key: string, params?: Record<string, any>): T | null {
+  get<T>(key: string, params?: Record<string, unknown>): T | null {
     const fullKey = this.generateKey(key, params);
     
     // Check memory cache first
@@ -124,7 +124,7 @@ class CacheManager {
   /**
    * Set item in cache
    */
-  set<T>(key: string, data: T, ttl: number = CACHE_CONFIG.TTL.MEDIUM, params?: Record<string, any>): void {
+  set<T>(key: string, data: T, ttl: number = CACHE_CONFIG.TTL.MEDIUM, params?: Record<string, unknown>): void {
     const fullKey = this.generateKey(key, params);
     const item: CacheItem<T> = {
       data,
@@ -151,7 +151,7 @@ class CacheManager {
   /**
    * Remove item from cache
    */
-  remove(key: string, params?: Record<string, any>): void {
+  remove(key: string, params?: Record<string, unknown>): void {
     const fullKey = this.generateKey(key, params);
     
     // Remove from memory cache

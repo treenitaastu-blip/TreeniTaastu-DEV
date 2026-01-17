@@ -31,12 +31,12 @@ export interface ProgressionAnalysisContext {
   analysisData?: {
     exerciseCount?: number;
     completedExercises?: number;
-    rpeData?: any[];
-    rirData?: any[];
-    previousProgression?: any;
+    rpeData?: unknown[];
+    rirData?: unknown[];
+    previousProgression?: unknown;
   };
   retryAttempts?: number;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 // Progression analysis entry
@@ -50,10 +50,10 @@ export interface ProgressionAnalysisEntry {
   failure_type: ProgressionFailureType;
   error_message: string;
   stack_trace?: string;
-  analysis_data: Record<string, any>;
+  analysis_data: Record<string, unknown>;
   retry_attempts: number;
   resolved: boolean;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
   created_at?: string;
   updated_at?: string;
 }

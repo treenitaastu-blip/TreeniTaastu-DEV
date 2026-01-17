@@ -212,14 +212,27 @@ export const ERROR_PATTERNS = [
 ];
 
 // Function to get user-friendly error message
-export function getErrorMessage(error: any, context?: string): ErrorMessage {
+export function getErrorMessage(error: unknown, context?: string): ErrorMessage {
+  // Type guard for error objects
+  const isErrorWithCode = (err: unknown): err is { code: string } => {
+    return typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'string';
+  };
+
+  const isErrorWithMessage = (err: unknown): err is { message: string } => {
+    return typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string';
+  };
+
   // Check for specific error codes first
-  if (error?.code && ERROR_MESSAGES[error.code]) {
+  if (isErrorWithCode(error) && ERROR_MESSAGES[error.code]) {
     return ERROR_MESSAGES[error.code];
   }
 
   // Check for error message patterns
-  const errorMessage = error?.message || error?.toString() || '';
+  const errorMessage = isErrorWithMessage(error)
+    ? error.message
+    : error instanceof Error
+      ? error.message
+      : String(error);
   
   for (const { pattern, error: errorCode } of ERROR_PATTERNS) {
     if (pattern.test(errorMessage)) {

@@ -131,14 +131,27 @@ export const ERROR_PATTERNS = [
   }
 ];
 
-export function parseError(error: any, context?: ErrorContext): PermissionError {
+export function parseError(error: unknown, context?: ErrorContext): PermissionError {
+  // Type guard for error objects
+  const isErrorWithCode = (err: unknown): err is { code: string } => {
+    return typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'string';
+  };
+
+  const isErrorWithMessage = (err: unknown): err is { message: string } => {
+    return typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string';
+  };
+
   // Check for specific error codes first
-  if (error?.code && PERMISSION_ERRORS[error.code]) {
+  if (isErrorWithCode(error) && PERMISSION_ERRORS[error.code]) {
     return PERMISSION_ERRORS[error.code];
   }
 
   // Check for error message patterns
-  const errorMessage = error?.message || error?.toString() || '';
+  const errorMessage = isErrorWithMessage(error) 
+    ? error.message 
+    : error instanceof Error 
+      ? error.message 
+      : String(error);
   
   for (const { pattern, error: errorInfo } of ERROR_PATTERNS) {
     if (pattern.test(errorMessage)) {
@@ -156,7 +169,7 @@ export function parseError(error: any, context?: ErrorContext): PermissionError 
 }
 
 export function handlePermissionError(
-  error: any, 
+  error: unknown, 
   context: ErrorContext,
   showToast: boolean = true
 ): PermissionError {
@@ -231,7 +244,7 @@ function handleErrorAction(action: string, context: ErrorContext): void {
 }
 
 // Specific error handlers for common operations
-export function handleProgramAccessError(error: any, programId?: string): PermissionError {
+export function handleProgramAccessError(error: unknown, programId?: string): PermissionError {
   return handlePermissionError(error, {
     operation: 'access_program',
     resource: 'client_program',
@@ -239,7 +252,7 @@ export function handleProgramAccessError(error: any, programId?: string): Permis
   });
 }
 
-export function handleTemplateAccessError(error: any, templateId?: string): PermissionError {
+export function handleTemplateAccessError(error: unknown, templateId?: string): PermissionError {
   return handlePermissionError(error, {
     operation: 'access_template',
     resource: 'workout_template',
@@ -247,7 +260,7 @@ export function handleTemplateAccessError(error: any, templateId?: string): Perm
   });
 }
 
-export function handleWorkoutSessionError(error: any, sessionId?: string): PermissionError {
+export function handleWorkoutSessionError(error: unknown, sessionId?: string): PermissionError {
   return handlePermissionError(error, {
     operation: 'access_workout_session',
     resource: 'workout_session',
@@ -255,7 +268,7 @@ export function handleWorkoutSessionError(error: any, sessionId?: string): Permi
   });
 }
 
-export function handleExerciseAccessError(error: any, exerciseId?: string): PermissionError {
+export function handleExerciseAccessError(error: unknown, exerciseId?: string): PermissionError {
   return handlePermissionError(error, {
     operation: 'access_exercise',
     resource: 'client_item',
@@ -264,13 +277,13 @@ export function handleExerciseAccessError(error: any, exerciseId?: string): Perm
 }
 
 // Utility function to check if an error is a permission error
-export function isPermissionError(error: any): boolean {
+export function isPermissionError(error: unknown): boolean {
   const parsedError = parseError(error);
   return parsedError.code !== 'UNKNOWN_ERROR';
 }
 
 // Utility function to get user-friendly error message
-export function getUserFriendlyErrorMessage(error: any, context?: ErrorContext): string {
+export function getUserFriendlyErrorMessage(error: unknown, context?: ErrorContext): string {
   const parsedError = parseError(error, context);
   return `${parsedError.message}. ${parsedError.suggestion}`;
 }

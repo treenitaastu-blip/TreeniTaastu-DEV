@@ -1,12 +1,13 @@
 // Optimized auth hook with memoization and performance improvements
 import { useMemo } from "react";
+import type { User, Session } from "@supabase/supabase-js";
 import { useAuth } from "@/hooks/useAuth";
 import useAccess from "@/hooks/useAccess";
 
 export interface OptimizedAuthState {
   // Auth state
-  user: any;
-  session: any;
+  user: User | null;
+  session: Session | null;
   loading: boolean;
   
   // Access state  

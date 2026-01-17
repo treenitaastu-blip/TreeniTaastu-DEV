@@ -10,10 +10,26 @@ import {
 } from '@/types/subscription';
 import { useToast } from '@/hooks/use-toast';
 
+// Type for user entitlement from database
+type UserEntitlement = {
+  id: string;
+  user_id: string;
+  product: 'static' | 'pt';
+  status: 'active' | 'trialing' | 'expired' | 'cancelled';
+  started_at: string;
+  trial_ends_at: string | null;
+  expires_at: string | null;
+  paused: boolean;
+  source: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 // Map entitlements to subscription-like object for backward compatibility
 function mapEntitlementsToSubscription(
   userId: string, 
-  entitlements: any[]
+  entitlements: UserEntitlement[]
 ): UserSubscription | null {
   if (!entitlements || entitlements.length === 0) return null;
 

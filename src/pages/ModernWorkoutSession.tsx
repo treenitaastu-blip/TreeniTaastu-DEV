@@ -1,5 +1,5 @@
 // src/pages/ModernWorkoutSession.tsx
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -83,7 +83,7 @@ export default function ModernWorkoutSession() {
   
   // Progress tracking
   const [setLogs, setSetLogs] = useState<Record<string, SetLog>>({});
-  const [setInputs, setSetInputs] = useState<Record<string, any>>({});
+  const [setInputs, setSetInputs] = useState<Record<string, { reps?: number; seconds?: number; kg?: number }>>({});
   const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
   const [exerciseRPE, setExerciseRPE] = useState<Record<string, number>>({});
   
@@ -122,6 +122,9 @@ export default function ModernWorkoutSession() {
     change: number;
     reason: string;
   }>>({});
+  
+  // Ref for notes debounce timeout cleanup (Bug #4 fix)
+  const notesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const totalSets = useMemo(() => {
     return exercises.reduce((total, ex) => total + ex.sets, 0);
@@ -303,7 +306,7 @@ export default function ModernWorkoutSession() {
           const logsMap: Record<string, SetLog> = {};
           const inputsMap: Record<string, Record<string, unknown>> = {};
           
-          logsData.forEach((log: any) => {
+          logsData.forEach((log) => {
             const key = `${log.client_item_id}:${log.set_number}`;
             logsMap[key] = log;
             inputsMap[key] = {
@@ -331,14 +334,20 @@ export default function ModernWorkoutSession() {
             const rpeMap: Record<string, number> = {};
             
             // Group by client_item_id and take the latest note for each exercise
-            const latestNotes = notesData.reduce((acc: Record<string, any>, note: any) => {
+            type ExerciseNote = {
+              client_item_id: string;
+              notes?: string | null;
+              rpe?: number | null;
+              updated_at: string;
+            };
+            const latestNotes = notesData.reduce((acc: Record<string, ExerciseNote>, note: ExerciseNote) => {
               if (!acc[note.client_item_id] || new Date(note.updated_at) > new Date(acc[note.client_item_id].updated_at)) {
                 acc[note.client_item_id] = note;
               }
               return acc;
             }, {});
             
-            Object.values(latestNotes).forEach((note: any) => {
+            Object.values(latestNotes).forEach((note: ExerciseNote) => {
               if (note.notes) notesMap[note.client_item_id] = note.notes;
               if (note.rpe) rpeMap[note.client_item_id] = note.rpe;
             });
@@ -373,6 +382,13 @@ export default function ModernWorkoutSession() {
     if (!session || !user) return;
 
     const key = `${exerciseId}:${setNumber}`;
+    
+    // Bug #2 fix: Check for duplicate before insert (race condition prevention)
+    if (setLogs[key]) {
+      console.log(`Set ${setNumber} for exercise ${exerciseId} already logged, skipping duplicate`);
+      return;
+    }
+    
     const inputs = setInputs[key] || {};
     const exercise = exercises.find(ex => ex.id === exerciseId);
 
@@ -383,7 +399,7 @@ export default function ModernWorkoutSession() {
       // Parse target reps for fallback
       const targetReps = exercise?.reps ? parseInt(exercise.reps.replace(/[^\d]/g, '')) || null : null;
       
-      const { error } = await supabase.from("set_logs").insert({
+      const setLogData = {
         session_id: session.id,
         client_item_id: exerciseId,
         client_day_id: dayId!,
@@ -394,9 +410,50 @@ export default function ModernWorkoutSession() {
         seconds_done: inputs.seconds || exercise?.seconds,
         weight_kg_done: inputs.kg || exercise?.weight_kg,
         marked_done_at: new Date().toISOString()
-      });
+      };
+      
+      // Bug #1 fix: Use upsert instead of insert to handle duplicates
+      const { error: upsertError } = await supabase
+        .from("set_logs")
+        .upsert([setLogData], {
+          onConflict: "session_id,client_item_id,set_number"
+        });
 
-      if (error) throw error;
+      // Bug #7 fix: Fallback conflict handling if upsert fails
+      if (upsertError) {
+        console.warn('Upsert failed, attempting fallback:', upsertError);
+        
+        // Check if set already exists
+        const { data: existing, error: selectError } = await supabase
+          .from("set_logs")
+          .select("id")
+          .eq("session_id", session.id)
+          .eq("client_item_id", exerciseId)
+          .eq("set_number", setNumber)
+          .limit(1);
+          
+        if (selectError) throw selectError;
+        
+        if (!existing || existing.length === 0) {
+          // Set doesn't exist, try insert
+          const { error: insertError } = await supabase
+            .from("set_logs")
+            .insert([setLogData]);
+          if (insertError) throw insertError;
+        } else {
+          // Set exists, update it
+          const { error: updateError } = await supabase
+            .from("set_logs")
+            .update({
+              reps_done: setLogData.reps_done,
+              seconds_done: setLogData.seconds_done,
+              weight_kg_done: setLogData.weight_kg_done,
+              marked_done_at: setLogData.marked_done_at
+            })
+            .eq("id", existing[0].id);
+          if (updateError) throw updateError;
+        }
+      }
 
       // Update local state with actual saved values
       const actualReps = inputs.reps || targetReps;
@@ -471,7 +528,7 @@ export default function ModernWorkoutSession() {
       setSaving(false);
       setLoadingState(LOADING_KEYS.SET_COMPLETE, false);
     }
-  }, [session, user, dayId, programId, setInputs, exercises, getCompletedSetsForExercise, completedExerciseIds, trackFeatureUsage]);
+  }, [session, user, dayId, programId, setInputs, exercises, getCompletedSetsForExercise, completedExerciseIds, trackFeatureUsage, setLogs]);
 
   const handleStartRest = useCallback((exercise: ClientItem) => {
     setRestTimer({
@@ -609,8 +666,22 @@ export default function ModernWorkoutSession() {
     }
   }, [user, exercises, setInputs]);
 
+  // Bug #4 fix: Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notesTimeoutRef.current) {
+        clearTimeout(notesTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleNotesChange = useCallback(async (exerciseId: string, notes: string) => {
     if (!session || !user) return;
+    
+    // Bug #4 fix: Clear existing timeout to prevent memory leak
+    if (notesTimeoutRef.current) {
+      clearTimeout(notesTimeoutRef.current);
+    }
     
     // Update local state immediately for responsive UI
     setExerciseNotes(prev => ({ ...prev, [exerciseId]: notes }));
@@ -619,7 +690,7 @@ export default function ModernWorkoutSession() {
     const saveNotes = async () => {
       try {
         if (notes.trim()) {
-          await supabase.from("exercise_notes").upsert({
+          const { error } = await supabase.from("exercise_notes").upsert({
             session_id: session.id,
             client_day_id: dayId!,
             client_item_id: exerciseId,
@@ -629,21 +700,36 @@ export default function ModernWorkoutSession() {
           }, {
             onConflict: 'session_id,client_item_id'
           });
+          
+          if (error) throw error;
         } else {
           // If notes are empty, delete the record for this session
-          await supabase
+          const { error } = await supabase
             .from("exercise_notes")
             .delete()
             .eq("session_id", session.id)
             .eq("client_item_id", exerciseId);
+            
+          if (error) throw error;
         }
       } catch (error) {
-        // Silently handle note saving error
+        // Bug #5 fix: Proper error handling instead of silent failure
+        console.error('Failed to save exercise notes:', error);
+        logDatabaseError(error as Error, ErrorCategory.EXERCISE_NOTES_SAVE, {
+          exerciseId,
+          sessionId: session.id,
+          dayId: dayId,
+          programId: programId
+        });
+        // Show user-friendly error message
+        toast.error("Märkuste salvestamine ebaõnnestus", {
+          description: "Palun proovi uuesti või kontrolli internetiühendust"
+        });
       }
     };
 
-    // Debounce the save operation
-    setTimeout(saveNotes, 500);
+    // Bug #4 fix: Store timeout ID in ref for cleanup
+    notesTimeoutRef.current = setTimeout(saveNotes, 500);
   }, [session, user, dayId, programId]);
 
   const handleRPEChange = useCallback(async (exerciseId: string, rpe: number) => {
@@ -654,7 +740,7 @@ export default function ModernWorkoutSession() {
     
     // Save to database in real-time
     try {
-      await supabase.from("exercise_notes").upsert({
+      const { error } = await supabase.from("exercise_notes").upsert({
         session_id: session.id,
         client_day_id: dayId!,
         client_item_id: exerciseId,
@@ -664,8 +750,22 @@ export default function ModernWorkoutSession() {
       }, {
         onConflict: "session_id,client_item_id"
       });
+      
+      if (error) throw error;
     } catch (error) {
-      // Silently handle RPE saving error
+      // Bug #5 fix: Proper error handling instead of silent failure
+      console.error('Failed to save RPE:', error);
+      logDatabaseError(error as Error, ErrorCategory.EXERCISE_RPE_SAVE, {
+        exerciseId,
+        sessionId: session.id,
+        dayId: dayId,
+        programId: programId,
+        rpe
+      });
+      // Show user-friendly error message
+      toast.error("RPE salvestamine ebaõnnestus", {
+        description: "Palun proovi uuesti või kontrolli internetiühendust"
+      });
     }
   }, [session, user, dayId, programId]);
 
@@ -885,7 +985,14 @@ export default function ModernWorkoutSession() {
       if (progressionError) {
         console.error('Volume progression error:', progressionError);
       } else if (progressionResults && progressionResults.length > 0) {
-        const summary = progressionResults.map((r: any) => `${r.exercise_name}: ${r.old_reps}→${r.new_reps} reps, ${r.old_sets}→${r.new_sets} sets`).join(', ');
+        type ProgressionResult = {
+          exercise_name: string;
+          old_reps: string | number | null;
+          new_reps: string | number | null;
+          old_sets: number | null;
+          new_sets: number | null;
+        };
+        const summary = (progressionResults as ProgressionResult[]).map((r) => `${r.exercise_name}: ${r.old_reps}→${r.new_reps} reps, ${r.old_sets}→${r.new_sets} sets`).join(', ');
         toast.success('Rakendasime muudatused treeningmahule', { description: summary });
         // Telemetry: confirmed apply
         trackFeatureUsage?.('progression', 'applied', {
@@ -998,7 +1105,7 @@ export default function ModernWorkoutSession() {
           const repsChanged = newReps !== currentReps && newReps && currentReps;
           
           if (weightChanged || repsChanged) {
-            const updateData: any = {};
+            const updateData: { weight_kg?: number; reps?: string } = {};
             if (weightChanged) updateData.weight_kg = newWeight;
             if (repsChanged) updateData.reps = newReps;
             
