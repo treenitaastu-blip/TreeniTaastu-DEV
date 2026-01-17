@@ -267,6 +267,8 @@ export default function PersonalTraining() {
 
   const performUnassignProgram = async (programId: string, programName: string) => {
     try {
+      hideDialog(); // Close dialog first
+      
       const { error } = await supabase
         .from('client_programs')
         .update({ is_active: false })
