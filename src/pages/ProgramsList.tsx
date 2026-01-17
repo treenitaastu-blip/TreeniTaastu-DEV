@@ -68,7 +68,21 @@ export default function ProgramsList() {
       
       // Filter out inactive programs client-side (is_active = false)
       // Keep programs where is_active is true or null (null is treated as active)
-      const activePrograms = (data ?? []).filter(p => p.is_active !== false);
+      const allPrograms = data ?? [];
+      const activePrograms = allPrograms.filter(p => {
+        // Explicitly filter out false values
+        return p.is_active !== false;
+      });
+      
+      // Debug logging (remove after verification)
+      if (allPrograms.length !== activePrograms.length) {
+        console.log('Filtered out inactive programs:', {
+          total: allPrograms.length,
+          active: activePrograms.length,
+          filtered: allPrograms.length - activePrograms.length
+        });
+      }
+      
       setRows(activePrograms);
     } catch (e) {
       const msg =
