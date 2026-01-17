@@ -383,6 +383,7 @@ export default function UserManagement() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
