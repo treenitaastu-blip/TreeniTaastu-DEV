@@ -133,9 +133,6 @@ export function VideoPlayer({
     );
   }
 
-  // Detect if this is a YouTube Short
-  const isShort = src.includes('youtube.com/shorts/') || src.includes('/shorts/');
-  
   // Load iframe when user clicks thumbnail or if no thumbnail available
   return (
     <div className={`relative rounded-lg overflow-hidden bg-black ${className}`}>
