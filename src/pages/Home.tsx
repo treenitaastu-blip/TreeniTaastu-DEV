@@ -363,37 +363,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Quick Actions - Apple Liquid Glass */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button asChild className="h-16 flex-col space-y-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
-            <Link 
-              to="/programs/journal"
-              onClick={() => trackButtonClick('journal', '/programs/journal', 'home_quick_actions')}
-            >
-              <BookOpen className="h-5 w-5" />
-              <span className="text-sm font-bold">Märkmik</span>
-            </Link>
-          </Button>
-          <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700">
-            <Link 
-              to="/programs/stats"
-              onClick={() => trackButtonClick('analytics', '/programs/stats', 'home_quick_actions')}
-            >
-              <BarChart3 className="h-5 w-5" />
-              <span className="text-sm font-bold">Analüütika</span>
-            </Link>
-          </Button>
-          <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700">
-            <Link 
-              to="/teenused"
-              onClick={() => trackButtonClick('teenused', '/teenused', 'home_quick_actions')}
-            >
-              <Target className="h-5 w-5" />
-              <span className="text-sm font-bold">Teenused</span>
-            </Link>
-          </Button>
-        </div>
-
         {/* Training Focus - Clean Apple-style */}
         <div className="space-y-6">
           
@@ -476,6 +445,37 @@ export default function Home() {
             </CardContent>
           </Card>
 
+        </div>
+
+        {/* Quick Actions - Märkmik, Analüütika, Teenused */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Button asChild className="h-16 flex-col space-y-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
+            <Link 
+              to="/programs/journal"
+              onClick={() => trackButtonClick('journal', '/programs/journal', 'home_quick_actions')}
+            >
+              <BookOpen className="h-5 w-5" />
+              <span className="text-sm font-bold">Märkmik</span>
+            </Link>
+          </Button>
+          <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700">
+            <Link 
+              to="/programs/stats"
+              onClick={() => trackButtonClick('analytics', '/programs/stats', 'home_quick_actions')}
+            >
+              <BarChart3 className="h-5 w-5" />
+              <span className="text-sm font-bold">Analüütika</span>
+            </Link>
+          </Button>
+          <Button asChild className="h-16 flex-col space-y-2 bg-white/60 backdrop-blur-sm border border-gray-200/30 hover:bg-white/80 hover:shadow-md transition-all duration-200 text-gray-700">
+            <Link 
+              to="/teenused"
+              onClick={() => trackButtonClick('teenused', '/teenused', 'home_quick_actions')}
+            >
+              <Target className="h-5 w-5" />
+              <span className="text-sm font-bold">Teenused</span>
+            </Link>
+          </Button>
         </div>
 
       </div>
