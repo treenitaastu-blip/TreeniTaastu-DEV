@@ -60,13 +60,16 @@ export default function ProgramsList() {
         .select("id, assigned_to, start_date, is_active, title_override, inserted_at, template_id, templates:template_id(title)")
         .eq("assigned_to", user.id)
         .not("assigned_to", "is", null) // Ensure assigned_to is not null
-        .or("is_active.is.null,is_active.eq.true") // Only show active programs (true or null, exclude false)
         .order("inserted_at", { ascending: false })
         .limit(100)
         .returns<ProgramRow[]>();
 
       if (err) throw err;
-      setRows(data ?? []);
+      
+      // Filter out inactive programs client-side (is_active = false)
+      // Keep programs where is_active is true or null (null is treated as active)
+      const activePrograms = (data ?? []).filter(p => p.is_active !== false);
+      setRows(activePrograms);
     } catch (e) {
       const msg =
         e && typeof e === "object" && "message" in e
