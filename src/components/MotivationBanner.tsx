@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
 
-// First-person affirmations inspired by great books
+// First-person affirmations inspired by great books (correct Estonian grammar)
 const MOTIVATIONAL_QUOTES = [
   "Täna on hea päev. Iga treening viib mind lähemale eesmärgile.",
-  "Ma olen selle, mida ma korduvalt teen. Järjepidevus on minu võti.",
+  "Ma olen see, mida ma korduvalt teen. Järjepidevus on minu võti.",
   "Ma valin raskema tee. See muudab mind tugevamaks.",
   "Ma kontrollin ainult oma reaktsioone. Raskused on võimalused.",
   "Ma investeerin oma aega olulistesse asjadesse, mis loovad tulevikku.",
@@ -14,7 +14,7 @@ const MOTIVATIONAL_QUOTES = [
   "Ma valin oma suhtumise. See on minu vabadus ja jõud.",
   "Iga väike samm, mida ma võtan, viib mind lähemale inimesele, kelleks ma tahan saada.",
   "Ma olen proaktiivne. Ma vastutan oma valikute ja elu eest.",
-  "Ma peenendan ennast pidevalt. Iga päev on võimalus kasvada.",
+  "Ma peenen end pidevalt. Iga päev on võimalus kasvada.",
   "Ma usun oma võimetesse ja jätkan sihikindlalt, kuni saavutan eesmärgi.",
   "Ma leian tähenduse oma elust, isegi kõige raskemates hetkedes.",
   "Ma teen väikeseid samme iga päev. Need viivad mind suurtele tulemustele.",

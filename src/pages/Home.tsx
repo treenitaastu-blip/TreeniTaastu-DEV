@@ -94,7 +94,7 @@ export default function Home() {
     const currentStreak = streaks?.current_streak ?? stats.streak;
     
     if (currentStreak >= 7) {
-      return "Ma olen selle, mida ma korduvalt teen. Järjepidevus on minu võti.";
+      return "Ma olen see, mida ma korduvalt teen. Järjepidevus on minu võti.";
     } else if (currentStreak >= 3) {
       return "Ma valin raskema tee. See muudab mind tugevamaks.";
     } else if (progressPct >= 50) {

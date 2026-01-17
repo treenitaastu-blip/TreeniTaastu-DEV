@@ -157,7 +157,7 @@ export default function IndexPublic() {
         {/* Hero Section - Matching marketing site style */}
         <div className="text-center mb-20">
           <h1 className="text-[60px] md:text-[85px] font-black tracking-[-3px] leading-[102px] mb-8">
-            <span className="accent-handwriting text-[#00B6E5] lowercase">muuda oma elu</span>
+            <span className="text-[#212121] lowercase">muuda oma elu</span>
             <br />
             <span className="accent-handwriting text-[#00B6E5] lowercase text-[48px] md:text-[85px]">28 päevaga</span>
           </h1>
