@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProgressChart from "@/components/analytics/ProgressChart";
-import { ArrowLeft, Users, TrendingUp, Activity, BookOpen, BarChart3 } from "lucide-react";
+import { ArrowLeft, Users, TrendingUp, Activity, BookOpen, BarChart3, Target, Calendar, Clock, User, Zap, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Client = {
@@ -15,6 +15,8 @@ type Client = {
 };
 
 type ClientStats = {
+  user_id?: string;
+  email?: string | null;
   total_sessions: number;
   completed_sessions: number;
   completion_rate: number;
@@ -25,6 +27,8 @@ type ClientStats = {
   current_streak: number;
   best_streak: number;
   active_programs: number;
+  last_workout_date?: string | null;
+  first_workout_date?: string | null;
 };
 
 type WeeklyData = {
@@ -47,22 +51,24 @@ type JournalEntry = {
 type WorkoutFeedback = {
   id: string;
   session_id: string;
+  energy: 'low' | 'normal' | 'high';
   joint_pain: boolean;
   joint_pain_location: string | null;
-  fatigue_level: number;
-  energy_level: string;
   notes: string | null;
   created_at: string;
+  session_started_at: string | null;
+  session_ended_at: string | null;
   avg_rpe: number | null;
 };
 
 export default function ClientSpecificAnalytics() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { userId } = useParams<{ userId?: string }>();
   const { toast } = useToast();
   
   const [clients, setClients] = useState<Client[]>([]);
-  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [selectedClientId, setSelectedClientId] = useState<string>(userId || "");
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
   const [stats, setStats] = useState<ClientStats | null>(null);
@@ -71,10 +77,19 @@ export default function ClientSpecificAnalytics() {
   const [workoutFeedback, setWorkoutFeedback] = useState<WorkoutFeedback[]>([]);
   const [staticProgramCompletion, setStaticProgramCompletion] = useState<number>(0);
   const [lastLogin, setLastLogin] = useState<string | null>(null);
+  const [lastActivityOnApp, setLastActivityOnApp] = useState<string | null>(null);
+  const [selectedClientEmail, setSelectedClientEmail] = useState<string | null>(null);
 
   useEffect(() => {
     loadClients();
   }, []);
+
+  // Auto-select client from URL param if provided
+  useEffect(() => {
+    if (userId && userId !== selectedClientId) {
+      setSelectedClientId(userId);
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (selectedClientId) {
@@ -119,6 +134,8 @@ export default function ClientSpecificAnalytics() {
 
       const statsResult = statsData[0];
       const clientStats: ClientStats = {
+        user_id: statsResult.user_id,
+        email: statsResult.email,
         total_sessions: Number(statsResult.total_sessions) || 0,
         completed_sessions: Number(statsResult.completed_sessions) || 0,
         completion_rate: Number(statsResult.completion_rate) || 0,
@@ -129,7 +146,12 @@ export default function ClientSpecificAnalytics() {
         current_streak: Number(statsResult.current_streak) || 0,
         best_streak: Number(statsResult.best_streak) || 0,
         active_programs: Number(statsResult.active_programs) || 0,
+        last_workout_date: statsResult.last_workout_date || null,
+        first_workout_date: statsResult.first_workout_date || null,
       };
+      
+      // Store client email for display
+      setSelectedClientEmail(statsResult.email || null);
 
       setStats(clientStats);
 
@@ -179,6 +201,22 @@ export default function ClientSpecificAnalytics() {
         setLastLogin(profileData?.updated_at || null);
       }
 
+      // Get last activity on app (MAX(last_activity_at) from workout_sessions)
+      const { data: lastActivityData, error: lastActivityError } = await supabase
+        .from("workout_sessions")
+        .select("last_activity_at")
+        .eq("user_id", clientId)
+        .not("last_activity_at", "is", null)
+        .order("last_activity_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastActivityError && lastActivityError.code !== 'PGRST116') {
+        console.warn("Error loading last activity:", lastActivityError);
+      } else {
+        setLastActivityOnApp(lastActivityData?.last_activity_at || null);
+      }
+
       // Load journal entries
       const { data: journalData, error: journalError } = await supabase
         .from("training_journal")
@@ -190,10 +228,22 @@ export default function ClientSpecificAnalytics() {
       if (journalError) throw journalError;
       setJournalEntries(journalData || []);
 
-      // Load workout feedback
+      // Load workout feedback with session info
       const { data: feedbackData, error: feedbackError } = await supabase
         .from("workout_feedback")
-        .select("id, session_id, joint_pain, joint_pain_location, fatigue_level, energy_level, notes, created_at")
+        .select(`
+          id,
+          session_id,
+          energy,
+          joint_pain,
+          joint_pain_location,
+          notes,
+          created_at,
+          workout_sessions:session_id(
+            started_at,
+            ended_at
+          )
+        `)
         .eq("user_id", clientId)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -232,9 +282,17 @@ export default function ClientSpecificAnalytics() {
         }
       }
 
-      // Combine feedback with RPE data
+      // Combine feedback with RPE data and session info
       const feedbackWithRPE: WorkoutFeedback[] = (feedbackData || []).map(f => ({
-        ...f,
+        id: f.id,
+        session_id: f.session_id,
+        energy: f.energy,
+        joint_pain: f.joint_pain,
+        joint_pain_location: f.joint_pain_location,
+        notes: f.notes,
+        created_at: f.created_at,
+        session_started_at: f.workout_sessions?.started_at || null,
+        session_ended_at: f.workout_sessions?.ended_at || null,
         avg_rpe: rpeData[f.session_id] || null,
       }));
 
@@ -379,51 +437,144 @@ export default function ClientSpecificAnalytics() {
               </Card>
             )}
 
-            {/* Client Information */}
-            <Card className="rounded-2xl shadow-soft">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Kliendi Info
-                  </CardTitle>
-                  <Button
-                    onClick={() => navigate(`/admin/client-analytics/${selectedClientId}`)}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Vaata täpset analüütikat
-                  </Button>
+            {/* Client Header */}
+            {selectedClientEmail && (
+              <div className="flex items-center gap-4 mb-6">
+                <div className="rounded-full bg-primary/10 p-3">
+                  <User className="h-6 w-6 text-primary" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Viimane sisselogimine</p>
-                    <p className="text-lg font-semibold">
-                      {lastLogin 
-                        ? new Date(lastLogin).toLocaleDateString("et-EE", {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })
-                        : "Tundmatu"
-                      }
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Staatilised programmid</p>
-                    <p className="text-lg font-semibold">
-                      {staticProgramCompletion} lõpetatud päeva
-                    </p>
-                  </div>
+                <div>
+                  <h2 className="text-2xl font-bold">{selectedClientEmail}</h2>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            )}
+
+            {/* Detailed Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <Activity className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold">Sessioonid kokku</h3>
+                </div>
+                <div className="text-3xl font-bold text-primary">{stats.total_sessions}</div>
+                <p className="text-sm text-muted-foreground">
+                  {stats.completed_sessions} lõpetatud
+                </p>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <Target className="h-5 w-5 text-success" />
+                  <h3 className="font-semibold">Lõpetamise määr</h3>
+                </div>
+                <div className="text-3xl font-bold text-success">
+                  {((stats.completion_rate * 100).toFixed(1))}%
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Lõpetatud / alustatud
+                </p>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <TrendingUp className="h-5 w-5 text-accent" />
+                  <h3 className="font-semibold">Maht kokku</h3>
+                </div>
+                <div className="text-3xl font-bold text-accent">
+                  {stats.total_volume_kg.toLocaleString("et-EE", { maximumFractionDigits: 0 })}
+                </div>
+                <p className="text-sm text-muted-foreground">kg × kordused</p>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <Calendar className="h-5 w-5 text-orange-500" />
+                  <h3 className="font-semibold">Aktiivne sari</h3>
+                </div>
+                <div className="text-3xl font-bold text-orange-500">
+                  {stats.current_streak}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Parim: {stats.best_streak} päeva
+                </p>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <Clock className="h-5 w-5 text-blue-500" />
+                  <h3 className="font-semibold">Kordused kokku</h3>
+                </div>
+                <div className="text-3xl font-bold text-blue-500">
+                  {stats.total_reps.toLocaleString("et-EE")}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {stats.total_sets.toLocaleString("et-EE")} setti
+                </p>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <Activity className="h-5 w-5 text-purple-500" />
+                  <h3 className="font-semibold">Keskmine RPE</h3>
+                </div>
+                <div className="text-3xl font-bold text-purple-500">
+                  {stats.avg_rpe > 0 ? stats.avg_rpe.toFixed(1) : "—"}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Tajutud koormus (1-10)
+                </p>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <Target className="h-5 w-5 text-green-500" />
+                  <h3 className="font-semibold">Aktiivsed programmid</h3>
+                </div>
+                <div className="text-3xl font-bold text-green-500">
+                  {stats.active_programs}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Käimasolevaid programme
+                </p>
+              </div>
+
+              <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <Calendar className="h-5 w-5 text-gray-500" />
+                  <h3 className="font-semibold">Viimane treening</h3>
+                </div>
+                <div className="text-lg font-bold text-gray-500">
+                  {stats.last_workout_date 
+                    ? new Date(stats.last_workout_date).toLocaleDateString("et-EE")
+                    : "—"
+                  }
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Viimane aktiivne päev
+                </p>
+              </div>
+
+              {lastActivityOnApp && (
+                <div className="rounded-2xl border bg-card p-6 shadow-sm">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Clock className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold">Viimane aktiivsus äppis</h3>
+                  </div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {new Date(lastActivityOnApp).toLocaleDateString("et-EE", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Viimati kasutatud äppi
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Journal Entries */}
             {journalEntries.length > 0 && (
@@ -461,112 +612,76 @@ export default function ClientSpecificAnalytics() {
               </Card>
             )}
 
-            {/* Joint Pain Reports */}
-            {workoutFeedback.filter(f => f.joint_pain).length > 0 && (
-              <Card className="rounded-2xl shadow-soft">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5" />
-                    Liigesevalu raportid ({workoutFeedback.filter(f => f.joint_pain).length} märget)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {workoutFeedback
-                      .filter(f => f.joint_pain)
-                      .map((feedback) => (
-                        <div key={feedback.id} className="rounded-xl border bg-card/50 p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h4 className="font-medium text-destructive">⚠️ Liigesevalu</h4>
-                              <p className="text-xs text-muted-foreground">{formatDate(feedback.created_at)}</p>
-                            </div>
-                          <div className="flex items-center gap-3 text-sm flex-wrap">
-                            {feedback.avg_rpe !== null && (
-                              <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-1 rounded-full text-xs font-medium">
-                                Keskmine RPE: {feedback.avg_rpe.toFixed(1)}
-                              </span>
-                            )}
-                            <span className="text-orange-600">😰 {feedback.fatigue_level}/10</span>
-                            <span className={`${
-                              feedback.energy_level === 'high' ? 'text-green-600' : 
-                              feedback.energy_level === 'normal' ? 'text-blue-600' : 'text-red-600'
-                            }`}>
-                              ⚡ {feedback.energy_level === 'high' ? 'Kõrge' : 
-                                  feedback.energy_level === 'normal' ? 'Normaalne' : 'Madal'}
-                            </span>
-                          </div>
-                          </div>
-                          {feedback.joint_pain_location && (
-                            <div className="mb-2">
-                              <p className="text-sm font-medium text-destructive">📍 Valu asukoht:</p>
-                              <p className="text-sm text-muted-foreground">{feedback.joint_pain_location}</p>
-                            </div>
-                          )}
-                          {feedback.notes && (
-                            <p className="text-sm text-muted-foreground">
-                              <strong>Märkused:</strong> {feedback.notes}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Client Feedback Summary */}
+            {/* Client Feedback */}
             {workoutFeedback.length > 0 && (
-              <Card className="rounded-2xl shadow-soft">
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-accent/5 to-primary/5 mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Kliendi tagasiside ({workoutFeedback.length} märget)
+                    <Zap className="h-5 w-5" />
+                    Kliendi tagasiside treeningsessioonide kohta ({workoutFeedback.length} tagasisidet)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {workoutFeedback.map((feedback) => (
                       <div key={feedback.id} className="rounded-xl border bg-card/50 p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-medium">
-                              {feedback.joint_pain ? "⚠️ Liigesevalu" : "✅ Probleemideta"}
-                            </h4>
-                            <p className="text-xs text-muted-foreground">{formatDate(feedback.created_at)}</p>
-                          </div>
-                          <div className="flex items-center gap-3 text-sm flex-wrap">
-                            {feedback.avg_rpe !== null && (
-                              <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-1 rounded-full text-xs font-medium">
-                                Keskmine RPE: {feedback.avg_rpe.toFixed(1)}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-sm font-medium">
+                                {feedback.session_ended_at 
+                                  ? new Date(feedback.session_ended_at).toLocaleDateString("et-EE", {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit"
+                                    })
+                                  : new Date(feedback.created_at).toLocaleDateString("et-EE")
+                                }
                               </span>
+                              {feedback.avg_rpe !== null && (
+                                <span className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-1 rounded-full">
+                                  Keskmine RPE: {feedback.avg_rpe.toFixed(1)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 flex-wrap text-sm">
+                              <div className="flex items-center gap-2">
+                                <Zap className={`h-4 w-4 ${
+                                  feedback.energy === 'high' ? 'text-green-500' : 
+                                  feedback.energy === 'normal' ? 'text-yellow-500' : 'text-gray-500'
+                                }`} />
+                                <span className="text-muted-foreground">
+                                  Energia: {
+                                    feedback.energy === 'high' ? 'Kõrge' : 
+                                    feedback.energy === 'normal' ? 'Normaalne' : 'Madal'
+                                  }
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {feedback.joint_pain ? (
+                                  <>
+                                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                                    <span className="text-red-600">
+                                      Liigesevalu{feedback.joint_pain_location ? ` (${feedback.joint_pain_location})` : ''}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Activity className="h-4 w-4 text-green-500" />
+                                    <span className="text-green-600">Pole liigesevalu</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            {feedback.notes && (
+                              <p className="text-sm text-muted-foreground mt-2 italic">
+                                "{feedback.notes}"
+                              </p>
                             )}
-                            <span className={`${
-                              feedback.fatigue_level >= 8 ? 'text-red-600' : 
-                              feedback.fatigue_level >= 5 ? 'text-orange-600' : 'text-green-600'
-                            }`}>
-                              😰 {feedback.fatigue_level}/10
-                            </span>
-                            <span className={`${
-                              feedback.energy_level === 'high' ? 'text-green-600' : 
-                              feedback.energy_level === 'normal' ? 'text-blue-600' : 'text-red-600'
-                            }`}>
-                              ⚡ {feedback.energy_level === 'high' ? 'Kõrge' : 
-                                  feedback.energy_level === 'normal' ? 'Normaalne' : 'Madal'}
-                            </span>
                           </div>
                         </div>
-                        {feedback.joint_pain_location && (
-                          <div className="mb-2">
-                            <p className="text-sm font-medium text-destructive">📍 Valu asukoht:</p>
-                            <p className="text-sm text-muted-foreground">{feedback.joint_pain_location}</p>
-                          </div>
-                        )}
-                        {feedback.notes && (
-                          <p className="text-sm text-muted-foreground">
-                            <strong>Märkused:</strong> {feedback.notes}
-                          </p>
-                        )}
                       </div>
                     ))}
                   </div>

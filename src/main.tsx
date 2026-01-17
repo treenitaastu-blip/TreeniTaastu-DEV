@@ -210,14 +210,9 @@ if (container) {
                         <ProgramAnalytics />
                       </Suspense>
                     } />
-                    <Route path="/admin/client-analytics" element={
+                    <Route path="/admin/client-analytics/:userId?" element={
                       <Suspense fallback={<div className="p-6">Laen…</div>}>
                         <ClientSpecificAnalytics />
-                      </Suspense>
-                    } />
-                    <Route path="/admin/client-analytics/:userId" element={
-                      <Suspense fallback={<div className="p-6">Laen…</div>}>
-                        <ClientAnalytics />
                       </Suspense>
                     } />
                     <Route path="/admin/templates/:id" element={
