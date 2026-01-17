@@ -32,6 +32,12 @@ import {
   X,
   AlertTriangle
 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -495,6 +501,18 @@ export default function PersonalTraining() {
     return matchesSearch && matchesFilter;
   });
 
+  // Group programs by client email
+  const programsByClient = filteredPrograms.reduce((acc, program) => {
+    const email = program.user_email || 'Tundmatu klient';
+    if (!acc[email]) {
+      acc[email] = [];
+    }
+    acc[email].push(program);
+    return acc;
+  }, {} as Record<string, ClientProgram[]>);
+
+  const clientEmails = Object.keys(programsByClient).sort();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
@@ -789,7 +807,7 @@ export default function PersonalTraining() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <div className="min-w-full">
-                {filteredPrograms.length === 0 ? (
+                {clientEmails.length === 0 ? (
                   <div className="text-center py-12">
                     <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">
@@ -797,141 +815,155 @@ export default function PersonalTraining() {
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-border">
-                    {filteredPrograms.map((program) => (
-                      <div key={program.id} className="p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                            {/* Program Info - Cleaner display */}
-                            <div className="flex-1 min-w-0 space-y-2">
-                              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                                {editingTitleId === program.id ? (
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <Input
-                                      value={editingTitle}
-                                      onChange={(e) => setEditingTitle(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleSaveTitle(program.id!, editingTitle);
-                                        } else if (e.key === 'Escape') {
-                                          setEditingTitleId(null);
-                                          setEditingTitle("");
-                                        }
-                                      }}
-                                      autoFocus
-                                      className="h-8 text-sm"
-                                      placeholder={program.template_title || "Nimetu programm"}
-                                    />
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => handleSaveTitle(program.id!, editingTitle)}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setEditingTitleId(null);
-                                        setEditingTitle("");
-                                      }}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2 group">
-                                    <h3 
-                                      className="font-medium text-sm lg:text-base truncate cursor-pointer hover:text-primary transition-colors"
-                                      onClick={() => {
-                                        setEditingTitleId(program.id);
-                                        setEditingTitle(program.title_override || "");
-                                      }}
-                                    >
-                                      {program.title_override || program.template_title || "Nimetu programm"}
-                                    </h3>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setEditingTitleId(program.id);
-                                        setEditingTitle(program.title_override || "");
-                                      }}
-                                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                      <Edit className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                                    program.is_active !== false
-                                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                                  }`}>
-                                    {program.is_active !== false ? 'Aktiivne' : 'Mitteaktiivne'}
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs lg:text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <UserCheck className="h-3 w-3 flex-shrink-0" />
-                                  <span className="truncate">{program.user_email}</span>
-                                </div>
-                                {program.start_date && (
-                                  <div className="flex items-center gap-1">
-                                    <Send className="h-3 w-3 flex-shrink-0" />
-                                    <span>Algas: {new Date(program.start_date).toLocaleDateString('et-EE')}</span>
-                                  </div>
-                                )}
-                              </div>
+                  <Accordion type="single" collapsible className="w-full">
+                    {clientEmails.map((email) => {
+                      const clientPrograms = programsByClient[email];
+                      return (
+                        <AccordionItem key={email} value={email} className="border-b px-4">
+                          <AccordionTrigger className="hover:no-underline py-4">
+                            <div className="flex items-center gap-3 flex-1 text-left">
+                              <UserCheck className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span className="font-medium text-base">{email}</span>
+                              <span className="text-sm text-muted-foreground">
+                                ({clientPrograms.length} {clientPrograms.length === 1 ? 'programm' : 'programmi'})
+                              </span>
                             </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="pt-2 pb-4 space-y-3">
+                              {clientPrograms.map((program) => (
+                                <div key={program.id} className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                    {/* Program Info */}
+                                    <div className="flex-1 min-w-0 space-y-2">
+                                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                                        {editingTitleId === program.id ? (
+                                          <div className="flex items-center gap-2 flex-1">
+                                            <Input
+                                              value={editingTitle}
+                                              onChange={(e) => setEditingTitle(e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                  handleSaveTitle(program.id!, editingTitle);
+                                                } else if (e.key === 'Escape') {
+                                                  setEditingTitleId(null);
+                                                  setEditingTitle("");
+                                                }
+                                              }}
+                                              autoFocus
+                                              className="h-8 text-sm"
+                                              placeholder={program.template_title || "Nimetu programm"}
+                                            />
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => handleSaveTitle(program.id!, editingTitle)}
+                                              className="h-8 w-8 p-0"
+                                            >
+                                              <Check className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => {
+                                                setEditingTitleId(null);
+                                                setEditingTitle("");
+                                              }}
+                                              className="h-8 w-8 p-0"
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center gap-2 group">
+                                            <h3 
+                                              className="font-medium text-sm lg:text-base truncate cursor-pointer hover:text-primary transition-colors"
+                                              onClick={() => {
+                                                setEditingTitleId(program.id);
+                                                setEditingTitle(program.title_override || "");
+                                              }}
+                                            >
+                                              {program.title_override || program.template_title || "Nimetu programm"}
+                                            </h3>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => {
+                                                setEditingTitleId(program.id);
+                                                setEditingTitle(program.title_override || "");
+                                              }}
+                                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                              <Edit className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        )}
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                                            program.is_active !== false
+                                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                          }`}>
+                                            {program.is_active !== false ? 'Aktiivne' : 'Mitteaktiivne'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      {program.start_date && (
+                                        <div className="flex items-center gap-1 text-xs lg:text-sm text-muted-foreground">
+                                          <Send className="h-3 w-3 flex-shrink-0" />
+                                          <span>Algas: {new Date(program.start_date).toLocaleDateString('et-EE')}</span>
+                                        </div>
+                                      )}
+                                    </div>
 
-                          {/* Actions - Mobile Friendly */}
-                          <div className="flex items-center justify-end gap-2 flex-shrink-0">
-                            <Button
-                              onClick={() => {
-                                trackButtonClick('view_program', `/admin/programs/${program.id}/edit`, 'admin_dashboard');
-                                window.location.href = `/admin/programs/${program.id}/edit`;
-                              }}
-                              size="sm"
-                              variant="outline"
-                              className="h-8 text-xs"
-                            >
-                              <Edit className="h-3 w-3 mr-1" />
-                              <span className="hidden sm:inline">Muuda</span>
-                            </Button>
-                            
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    trackButtonClick('unassign_program_from_menu', 'program_unassignment', 'admin_dashboard');
-                                    handleUnassignProgram(
-                                      program.id!,
-                                      program.title_override || program.template_title || "Programm"
-                                    );
-                                  }}
-                                  className="text-orange-600 focus:text-orange-600"
-                                >
-                                  <UserMinus className="mr-2 h-4 w-4" />
-                                  Eemalda kliendilt
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                                    {/* Actions */}
+                                    <div className="flex items-center justify-end gap-2 flex-shrink-0">
+                                      <Button
+                                        onClick={() => {
+                                          trackButtonClick('view_program', `/admin/programs/${program.id}/edit`, 'admin_dashboard');
+                                          window.location.href = `/admin/programs/${program.id}/edit`;
+                                        }}
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 text-xs"
+                                      >
+                                        <Edit className="h-3 w-3 mr-1" />
+                                        <span className="hidden sm:inline">Muuda</span>
+                                      </Button>
+                                      
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-48">
+                                          <DropdownMenuItem
+                                            onClick={() => {
+                                              trackButtonClick('unassign_program_from_menu', 'program_unassignment', 'admin_dashboard');
+                                              handleUnassignProgram(
+                                                program.id!,
+                                                program.title_override || program.template_title || "Programm"
+                                              );
+                                            }}
+                                            className="text-orange-600 focus:text-orange-600"
+                                          >
+                                            <UserMinus className="mr-2 h-4 w-4" />
+                                            Eemalda kliendilt
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
                 )}
               </div>
             </div>
