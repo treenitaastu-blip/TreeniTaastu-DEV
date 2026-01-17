@@ -89,18 +89,18 @@ export default function Home() {
     );
   }, [stats.completedDays, stats.totalDays]);
 
-  // Get motivational message based on streak and progress
+  // Get motivational message based on streak and progress (first-person affirmations)
   const getMotivationalMessage = () => {
     const currentStreak = streaks?.current_streak ?? stats.streak;
     
     if (currentStreak >= 7) {
-      return `${currentStreak} päeva järjest! Sa oled tõeline kangelane!`;
+      return "Ma olen selle, mida ma korduvalt teen. Järjepidevus on minu võti.";
     } else if (currentStreak >= 3) {
-      return `${currentStreak} päeva järjest - jätka samas vaimus!`;
+      return "Ma valin raskema tee. See muudab mind tugevamaks.";
     } else if (progressPct >= 50) {
-      return `${progressPct}% programmist tehtud - tubli töö!`;
+      return "Ma investeerin oma aega olulistesse asjadesse, mis loovad tulevikku.";
     } else {
-      return "Iga treening viib sind eesmärgile lähemale";
+      return "Täna on hea päev. Iga treening viib mind lähemale eesmärgile.";
     }
   };
 

@@ -2,17 +2,23 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
 
+// First-person affirmations inspired by great books
 const MOTIVATIONAL_QUOTES = [
-  "Suurepärane töö! Iga päev viib sind lähemale eesmärgile.",
-  "Järjepidevus on võti edu saavutamisel. Jätka samas vaimus!",
-  "Sa oled tugevam kui arvad. Tänane treening tõestab seda!",
-  "Iga treening on investeering oma tervisse ja heaolusse.",
-  "Võta uhkusega vastu oma edusamme - sa vääritud seda!",
-  "Väikesed sammud viivad suurtele tulemustele. Hästi tehtud!",
-  "Sinu pühendumus on inspireeriv. Lähme edasi!",
-  "Täna võitsid jälle enda üle. See on tõeline jõud!",
-  "Iga lõpetatud treening teeb sind paremaks versiooniks iseendast.",
-  "Sa näitad, et tervislik elustiil on võimalik. Suurepärane!"
+  "Täna on hea päev. Iga treening viib mind lähemale eesmärgile.",
+  "Ma olen selle, mida ma korduvalt teen. Järjepidevus on minu võti.",
+  "Ma valin raskema tee. See muudab mind tugevamaks.",
+  "Ma kontrollin ainult oma reaktsioone. Raskused on võimalused.",
+  "Ma investeerin oma aega olulistesse asjadesse, mis loovad tulevikku.",
+  "Ma aktsepteerin ebamugavust. Seal, kus teised loobuvad, ma alustan.",
+  "Ma elan täielikult praeguses hetkes. Siin ja praegu on kõik võimalus.",
+  "Ma valin oma suhtumise. See on minu vabadus ja jõud.",
+  "Iga väike samm, mida ma võtan, viib mind lähemale inimesele, kelleks ma tahan saada.",
+  "Ma olen proaktiivne. Ma vastutan oma valikute ja elu eest.",
+  "Ma peenendan ennast pidevalt. Iga päev on võimalus kasvada.",
+  "Ma usun oma võimetesse ja jätkan sihikindlalt, kuni saavutan eesmärgi.",
+  "Ma leian tähenduse oma elust, isegi kõige raskemates hetkedes.",
+  "Ma teen väikeseid samme iga päev. Need viivad mind suurtele tulemustele.",
+  "Ma olen piisavalt hea. Ma olen väärt oma unistuste taotlemist."
 ];
 
 type MotivationBannerProps = {
