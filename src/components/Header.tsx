@@ -440,17 +440,14 @@ export default function Header() {
                 {/* Kasutajatugi button - only for logged in users */}
                 {user && (
                   <div className="mt-2 pt-2 border-t">
-                    <button
-                      onClick={() => {
-                        localStorage.setItem('supportChatOpen', 'true');
-                        window.dispatchEvent(new Event('openSupportChat'));
-                        setOpen(false);
-                      }}
+                    <Link
+                      to="/kasutajatugi"
+                      onClick={() => setOpen(false)}
                       className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-colors shadow-sm"
                     >
                       <MessageCircle className="h-4 w-4" />
                       Kasutajatugi
-                    </button>
+                    </Link>
                   </div>
                 )}
 

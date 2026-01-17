@@ -43,8 +43,40 @@ export const useSupportChat = () => {
     messagesRef.current = messages;
   }, [messages]);
 
+  // Create new conversation
+  const createNewConversation = useCallback(async () => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('support_conversations')
+        .insert([{
+          user_id: user.id,
+          status: 'active'
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setConversations(prev => [data as SupportConversation, ...prev]);
+      setCurrentConversationId(data.id);
+      setMessages([]);
+      
+      return data.id;
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast({
+        title: "Viga",
+        description: "Vestluse alustamine ebaõnnestus",
+        variant: "destructive"
+      });
+      return null;
+    }
+  }, [user, toast]);
+
   // Load conversations
-  const loadConversations = useCallback(async () => {
+  const loadConversations = useCallback(async (autoSelectFirst = true) => {
     if (!user) return;
     
     setLoading(true);
@@ -58,10 +90,8 @@ export const useSupportChat = () => {
       if (error) throw error;
       setConversations((data || []) as SupportConversation[]);
       
-      // If no active conversation exists, create one
-      if (!data || data.length === 0) {
-        await createNewConversation();
-      } else {
+      // Auto-select first conversation if enabled and conversations exist
+      if (autoSelectFirst && data && data.length > 0) {
         setCurrentConversationId(data[0].id);
         await loadMessages(data[0].id);
       }
@@ -75,7 +105,7 @@ export const useSupportChat = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, loadMessages]);
 
   // Load messages for a conversation
   const loadMessages = useCallback(async (conversationId: string) => {
@@ -98,37 +128,6 @@ export const useSupportChat = () => {
     }
   }, [toast]);
 
-  // Create new conversation
-  const createNewConversation = useCallback(async () => {
-    if (!user) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('support_conversations')
-        .insert([{
-          user_id: user.id,
-          status: 'active'
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      setConversations([data as SupportConversation]);
-      setCurrentConversationId(data.id);
-      setMessages([]);
-      
-      return data.id;
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      toast({
-        title: "Viga",
-        description: "Vestluse alustamine ebaõnnestus",
-        variant: "destructive"
-      });
-      return null;
-    }
-  }, [user, toast]);
 
   // Send message
   const sendMessage = useCallback(async (message: string) => {
@@ -264,6 +263,12 @@ export const useSupportChat = () => {
     }
   }, [user, loadConversations]);
 
+  // Select a conversation and load its messages
+  const selectConversation = useCallback(async (conversationId: string) => {
+    setCurrentConversationId(conversationId);
+    await loadMessages(conversationId);
+  }, [loadMessages]);
+
   return {
     conversations,
     messages,
@@ -271,6 +276,9 @@ export const useSupportChat = () => {
     loading,
     sending,
     sendMessage,
-    createNewConversation
+    createNewConversation,
+    selectConversation,
+    loadConversations,
+    loadMessages
   };
 };

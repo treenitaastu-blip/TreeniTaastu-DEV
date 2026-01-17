@@ -78,6 +78,7 @@ const ProgramInfoPage = lazy(() => import("@/pages/ProgramInfoPage"));
 
 // Logged-in home (lazy loaded)
 const Home = lazy(() => import("@/pages/Home"));
+const CustomerService = lazy(() => import("@/pages/CustomerService"));
 
 // Admin pages (lazy)
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
@@ -233,6 +234,11 @@ if (container) {
                   <Route path="/home" element={
                     <Suspense fallback={<div className="p-6">Laen…</div>}>
                       <Home />
+                    </Suspense>
+                  } />
+                  <Route path="/kasutajatugi" element={
+                    <Suspense fallback={<div className="p-6">Laen…</div>}>
+                      <CustomerService />
                     </Suspense>
                   } />
                 {/* Static program day route (prevents 404 on day open) */}
