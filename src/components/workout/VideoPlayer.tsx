@@ -80,6 +80,9 @@ export function VideoPlayer({
   };
   
   const thumbnailUrl = youtubeId ? getThumbnailUrl(youtubeId) : null;
+  
+  // Detect if this is a YouTube Short
+  const isShort = src.includes('youtube.com/shorts/') || src.includes('/shorts/');
 
   // Show thumbnail first, load iframe on click
   if (!isLoaded && thumbnailUrl) {
@@ -87,7 +90,8 @@ export function VideoPlayer({
       <div className={`relative rounded-lg overflow-hidden bg-black cursor-pointer group ${className}`}>
         {/* YouTube Thumbnail */}
         <div 
-          className="relative w-full min-h-[240px] lg:min-h-[320px] bg-black flex items-center justify-center"
+          className={`relative w-full bg-black flex items-center justify-center ${isShort ? '' : 'min-h-[240px] lg:min-h-[320px]'}`}
+          style={isShort ? { aspectRatio: '9/16' } : {}}
           onClick={() => setIsLoaded(true)}
           role="button"
           tabIndex={0}
@@ -129,31 +133,37 @@ export function VideoPlayer({
     );
   }
 
+  // Detect if this is a YouTube Short
+  const isShort = src.includes('youtube.com/shorts/') || src.includes('/shorts/');
+  
   // Load iframe when user clicks thumbnail or if no thumbnail available
   return (
     <div className={`relative rounded-lg overflow-hidden bg-black ${className}`}>
       <iframe
         src={`${embedUrl}${embedUrl.includes("?") ? "&" : "?"}autoplay=${isLoaded ? '1' : '0'}&mute=0&controls=1&rel=0&modestbranding=1&iv_load_policy=3&fs=1&cc_load_policy=0`}
         title={title}
-        className="w-full h-full min-h-[240px] lg:min-h-[320px]"
+        className={`w-full h-full ${isShort ? '' : 'min-h-[240px] lg:min-h-[320px]'}`}
+        style={isShort ? { aspectRatio: '9/16' } : {}}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
       />
-      <div className="bg-black/70 text-xs text-muted-foreground px-3 py-2">
-        Kui video ei kuva, 
-        <a
-          href={src}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline ml-1"
-          title="Ava video uues vahelehes"
-        >
-          ava YouTube'is
-        </a>
-        .
-      </div>
+      {!isShort && (
+        <div className="bg-black/70 text-xs text-muted-foreground px-3 py-2">
+          Kui video ei kuva, 
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline ml-1"
+            title="Ava video uues vahelehes"
+          >
+            ava YouTube'is
+          </a>
+          .
+        </div>
+      )}
     </div>
   );
 }

@@ -17,6 +17,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Plus, 
   Trash2, 
@@ -76,6 +83,7 @@ export default function ProgramContentEditor({
     sets: 3,
     reps: "10",
     weight_kg: null as number | null,
+    seconds: null as number | null,
     rest_seconds: 60,
     coach_notes: "",
     video_url: "",
@@ -83,6 +91,17 @@ export default function ProgramContentEditor({
     reps_per_side: null as number | null,
     total_reps: null as number | null
   });
+  
+  // Helper to determine exercise type from current values
+  const getExerciseType = (item: { weight_kg?: number | null; seconds?: number | null }) => {
+    if (item.seconds !== null && item.seconds !== undefined && item.seconds > 0) {
+      return 'time';
+    }
+    if (item.weight_kg !== null && item.weight_kg !== undefined && item.weight_kg > 0) {
+      return 'weight';
+    }
+    return 'bodyweight';
+  };
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
 
   // Use shared exercise processing utility
@@ -173,7 +192,7 @@ export default function ProgramContentEditor({
       sets: newExercise.sets,
       reps: newExercise.reps,
       weight_kg: newExercise.weight_kg,
-      seconds: null // ProgramContentEditor doesn't have seconds in state yet
+      seconds: newExercise.seconds
     });
     
     if (Object.keys(errors).length > 0) {
@@ -410,28 +429,95 @@ export default function ProgramContentEditor({
                                 placeholder={(editingExercise?.is_unilateral ?? item.is_unilateral) ? "8" : "10 või 8-12"}
                               />
                             </div>
+                            {/* Exercise Type Selector */}
                             <div>
-                              <Label htmlFor={`edit_weight_kg_${item.id}`}>Kaal (kg) / Aeg (sek)</Label>
-                              <Input
-                                id={`edit_weight_kg_${item.id}`}
-                                type="number"
-                                value={editingExercise?.weight_kg !== undefined ? editingExercise.weight_kg ?? "" : (item.weight_kg ?? "")}
-                                onChange={(e) => setEditingExercise(prev => ({ ...prev, weight_kg: e.target.value ? parseFloat(e.target.value) : null }))}
-                                placeholder="Kaal või jäta tühjaks (keharaskus)"
-                              />
+                              <Label htmlFor={`edit_exercise_type_${item.id}`}>Harjutuse tüüp</Label>
+                              <Select
+                                value={editingExercise ? (getExerciseType(editingExercise) || getExerciseType(item)) : getExerciseType(item)}
+                                onValueChange={(value) => {
+                                  if (value === 'time') {
+                                    setEditingExercise(prev => ({
+                                      ...prev,
+                                      seconds: prev?.seconds ?? item.seconds ?? 60,
+                                      weight_kg: null
+                                    }));
+                                  } else if (value === 'weight') {
+                                    setEditingExercise(prev => ({
+                                      ...prev,
+                                      weight_kg: prev?.weight_kg ?? item.weight_kg ?? 0,
+                                      seconds: null
+                                    }));
+                                  } else { // bodyweight
+                                    setEditingExercise(prev => ({
+                                      ...prev,
+                                      weight_kg: null,
+                                      seconds: null
+                                    }));
+                                  }
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="weight">
+                                    <div className="flex items-center gap-2">
+                                      <Weight className="h-4 w-4" />
+                                      <span>Kaaluga</span>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="bodyweight">
+                                    <div className="flex items-center gap-2">
+                                      <Dumbbell className="h-4 w-4" />
+                                      <span>Kehakaal</span>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="time">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>Aja järgi</span>
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                            {(editingExercise?.seconds !== undefined || item.seconds) && (
-                              <div>
-                                <Label htmlFor={`edit_seconds_${item.id}`}>Aeg (sek)</Label>
-                                <Input
-                                  id={`edit_seconds_${item.id}`}
-                                  type="number"
-                                  value={editingExercise?.seconds !== undefined ? editingExercise.seconds ?? "" : (item.seconds ?? "")}
-                                  onChange={(e) => setEditingExercise(prev => ({ ...prev, seconds: e.target.value ? parseInt(e.target.value) : null }))}
-                                  placeholder="Ajaharjutuseks"
-                                />
-                              </div>
-                            )}
+                            
+                            {/* Conditional fields based on exercise type */}
+                            {(() => {
+                              const currentType = editingExercise ? (getExerciseType(editingExercise) || getExerciseType(item)) : getExerciseType(item);
+                              if (currentType === 'time') {
+                                return (
+                                  <div>
+                                    <Label htmlFor={`edit_seconds_${item.id}`}>Aeg (sek)</Label>
+                                    <Input
+                                      id={`edit_seconds_${item.id}`}
+                                      type="number"
+                                      min="1"
+                                      value={editingExercise?.seconds !== undefined ? editingExercise.seconds ?? "" : (item.seconds ?? 60)}
+                                      onChange={(e) => setEditingExercise(prev => ({ ...prev, seconds: e.target.value ? parseInt(e.target.value) : null }))}
+                                      placeholder="Näiteks: 60"
+                                    />
+                                  </div>
+                                );
+                              } else if (currentType === 'weight') {
+                                return (
+                                  <div>
+                                    <Label htmlFor={`edit_weight_kg_${item.id}`}>Kaal (kg)</Label>
+                                    <Input
+                                      id={`edit_weight_kg_${item.id}`}
+                                      type="number"
+                                      min="0"
+                                      step="0.5"
+                                      value={editingExercise?.weight_kg !== undefined ? (editingExercise.weight_kg ?? "") : (item.weight_kg ?? "")}
+                                      onChange={(e) => setEditingExercise(prev => ({ ...prev, weight_kg: e.target.value ? parseFloat(e.target.value) : null }))}
+                                      placeholder="Näiteks: 20"
+                                    />
+                                  </div>
+                                );
+                              }
+                              // bodyweight - no additional field needed (weight_kg will be null)
+                              return null;
+                            })()}
                             <div>
                               <Label htmlFor={`edit_rest_seconds_${item.id}`}>Puhkeaeg (sek)</Label>
                               <Input
@@ -562,7 +648,7 @@ export default function ProgramContentEditor({
                               sets: item.sets,
                               reps: item.reps,
                               weight_kg: item.weight_kg,
-                              seconds: item.seconds,
+                              seconds: item.seconds ?? null,
                               rest_seconds: item.rest_seconds,
                               coach_notes: item.coach_notes || "",
                               video_url: item.video_url || "",
@@ -639,16 +725,86 @@ export default function ProgramContentEditor({
                             </p>
                           )}
                         </div>
+                        {/* Exercise Type Selector */}
                         <div>
-                          <Label htmlFor="weight_kg">Kaal (kg)</Label>
-                          <Input
-                            id="weight_kg"
-                            type="number"
-                            value={newExercise.weight_kg || ""}
-                            onChange={(e) => setNewExercise(prev => ({ ...prev, weight_kg: e.target.value ? parseFloat(e.target.value) : null }))}
-                            placeholder="Valikuline"
-                          />
+                          <Label htmlFor="exercise_type">Harjutuse tüüp</Label>
+                          <Select
+                            value={getExerciseType(newExercise)}
+                            onValueChange={(value) => {
+                              if (value === 'time') {
+                                setNewExercise(prev => ({
+                                  ...prev,
+                                  seconds: prev.seconds ?? 60,
+                                  weight_kg: null
+                                }));
+                              } else if (value === 'weight') {
+                                setNewExercise(prev => ({
+                                  ...prev,
+                                  weight_kg: prev.weight_kg ?? 0,
+                                  seconds: null
+                                }));
+                              } else { // bodyweight
+                                setNewExercise(prev => ({
+                                  ...prev,
+                                  weight_kg: null,
+                                  seconds: null
+                                }));
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="weight">
+                                <div className="flex items-center gap-2">
+                                  <Weight className="h-4 w-4" />
+                                  <span>Kaaluga</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="bodyweight">
+                                <div className="flex items-center gap-2">
+                                  <Dumbbell className="h-4 w-4" />
+                                  <span>Kehakaal</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="time">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4" />
+                                  <span>Aja järgi</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
+                        
+                        {/* Conditional fields based on exercise type */}
+                        {getExerciseType(newExercise) === 'time' ? (
+                          <div>
+                            <Label htmlFor="seconds">Aeg (sek)</Label>
+                            <Input
+                              id="seconds"
+                              type="number"
+                              min="1"
+                              value={newExercise.seconds || ""}
+                              onChange={(e) => setNewExercise(prev => ({ ...prev, seconds: e.target.value ? parseInt(e.target.value) : null }))}
+                              placeholder="Näiteks: 60"
+                            />
+                          </div>
+                        ) : getExerciseType(newExercise) === 'weight' ? (
+                          <div>
+                            <Label htmlFor="weight_kg">Kaal (kg)</Label>
+                            <Input
+                              id="weight_kg"
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              value={newExercise.weight_kg || ""}
+                              onChange={(e) => setNewExercise(prev => ({ ...prev, weight_kg: e.target.value ? parseFloat(e.target.value) : null }))}
+                              placeholder="Näiteks: 20"
+                            />
+                          </div>
+                        ) : null}
                         <div>
                           <Label htmlFor="rest_seconds">Puhkeaeg (sek)</Label>
                           <Input
