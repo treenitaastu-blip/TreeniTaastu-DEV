@@ -211,9 +211,11 @@ export default function IndexPublic() {
               <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
                 Valmis alustama oma muutust?
               </h2>
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Liitu üle 500 inimesega, kes on juba alustanud oma fitness-teekonda. 
-                <span className="accent-handwriting text-[#00B6E5] text-[28px] md:text-[36px] block mt-2">Alusta tasuta prooviga</span>
+              <p className="text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Liitu üle 500 inimesega, kes on juba alustanud oma fitness-teekonda.
+              </p>
+              <p className="accent-handwriting text-[#00B6E5] text-[28px] md:text-[36px] mb-8">
+                Alusta tasuta prooviga
               </p>
               
               {/* Urgency indicators */}

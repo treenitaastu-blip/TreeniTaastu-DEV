@@ -374,10 +374,10 @@ export default function Home() {
           </div>
           
           {/* Motivational Message */}
-          <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary-foreground/10 border border-primary/20 ${motivationalMsg.color} animate-scale-in`}>
+          <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary-foreground/10 border border-primary/20 animate-scale-in`}>
             <div className="text-center">
-              <p className="font-bold">{motivationalMsg.title}</p>
-              <p className="text-sm opacity-80 font-bold">{motivationalMsg.message}</p>
+              <p className="font-bold text-[#212121]">{motivationalMsg.title}</p>
+              <p className={`text-sm opacity-90 font-bold accent-handwriting text-[#00B6E5]`}>{motivationalMsg.message}</p>
             </div>
           </div>
         </div>
