@@ -1459,7 +1459,17 @@ export default function ModernWorkoutSession() {
               key={exercise.id}
               exercise={exercise}
               completedSets={getCompletedSetsForExercise(exercise.id)}
-              onSetComplete={(setNumber) => handleSetComplete(exercise.id, setNumber)}
+              onSetComplete={(setNumber, data) => {
+                // Store timer data (seconds) in setInputs if provided
+                if (data) {
+                  const key = `${exercise.id}:${setNumber}`;
+                  setSetInputs(prev => ({
+                    ...prev,
+                    [key]: { ...prev[key], ...data }
+                  }));
+                }
+                handleSetComplete(exercise.id, setNumber);
+              }}
               onStartRest={() => handleStartRest(exercise)}
               setInputs={setInputs}
               onSetInputChange={(setNumber, field, value) => 
