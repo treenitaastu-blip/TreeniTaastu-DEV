@@ -14,6 +14,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ConversationWithProfile extends SupportConversation {
   user_email?: string;
+  user_name?: string | null;
+  user_created_at?: string;
+  latest_message_preview?: string;
+  latest_message_time?: string;
+  status?: 'active' | 'closed' | 'archived' | 'new'; // Allow 'new' status
 }
 
 export function SupportChatDashboard() {
@@ -115,12 +120,38 @@ export function SupportChatDashboard() {
       if (profilesError) throw profilesError;
 
       // Get existing conversations to show which users already have active chats
+      // Order by last_message_at descending to show latest messages first
       const { data: conversationsData, error: conversationsError } = await supabase
         .from('support_conversations')
         .select('*')
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .order('last_message_at', { ascending: false });
 
       console.log('Existing conversations:', conversationsData, conversationsError);
+
+      // Get latest message for each conversation to show preview
+      const conversationIds = (conversationsData || []).map(c => c.id);
+      let latestMessagesMap = new Map<string, { message: string; created_at: string }>();
+      
+      if (conversationIds.length > 0) {
+        const { data: latestMessages } = await supabase
+          .from('support_messages')
+          .select('conversation_id, message, created_at')
+          .in('conversation_id', conversationIds)
+          .order('created_at', { ascending: false });
+        
+        // Group by conversation_id and take the first (latest) message for each
+        const messagesByConv = new Map<string, { message: string; created_at: string }>();
+        (latestMessages || []).forEach(msg => {
+          if (!messagesByConv.has(msg.conversation_id)) {
+            messagesByConv.set(msg.conversation_id, {
+              message: msg.message,
+              created_at: msg.created_at
+            });
+          }
+        });
+        latestMessagesMap = messagesByConv;
+      }
 
       // Create a map of existing conversations
       const existingConversations = new Map(
@@ -133,11 +164,14 @@ export function SupportChatDashboard() {
         
         if (existingConv) {
           // User has existing conversation
+          const latestMsg = latestMessagesMap.get(existingConv.id);
           return {
             ...existingConv as SupportConversation,
             user_email: profile.email || 'Unknown User',
             user_name: profile.full_name,
-            user_created_at: profile.created_at
+            user_created_at: profile.created_at,
+            latest_message_preview: latestMsg?.message,
+            latest_message_time: latestMsg?.created_at
           };
         } else {
           // User has no conversation - create a virtual entry for proactive messaging
@@ -155,12 +189,28 @@ export function SupportChatDashboard() {
         }
       });
       
-      console.log('All users with conversation status:', allUsersWithConversations);
-      setConversations(allUsersWithConversations);
+      // Sort conversations by last_message_at (latest first)
+      // Conversations with messages come first, then new users
+      const sortedConversations = allUsersWithConversations.sort((a, b) => {
+        // Existing conversations with messages first
+        const aHasMessages = (a.status as string) !== 'new' && a.last_message_at;
+        const bHasMessages = (b.status as string) !== 'new' && b.last_message_at;
+        
+        if (aHasMessages && !bHasMessages) return -1;
+        if (!aHasMessages && bHasMessages) return 1;
+        
+        // Both have messages or both don't - sort by time (latest first)
+        const aTime = a.last_message_at || a.created_at;
+        const bTime = b.last_message_at || b.created_at;
+        return new Date(bTime).getTime() - new Date(aTime).getTime();
+      });
+
+      console.log('All users with conversation status:', sortedConversations);
+      setConversations(sortedConversations);
       
       // Auto-select first conversation if none selected
-      if (allUsersWithConversations.length > 0 && !selectedConversationId) {
-        setSelectedConversationId(allUsersWithConversations[0].id);
+      if (sortedConversations.length > 0 && !selectedConversationId) {
+        setSelectedConversationId(sortedConversations[0].id);
       }
     } catch (error) {
       console.error('Error loading users:', error);
@@ -482,27 +532,28 @@ export function SupportChatDashboard() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-300px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-h-[600px] lg:h-[calc(100vh-300px)]">
         {/* Conversations List */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+        <Card className="lg:col-span-1 flex flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-base lg:text-lg">
               <div className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                Kõik kasutajad ({conversations.length})
+                <MessageCircle className="h-4 w-4 lg:h-5 lg:w-5" />
+                <span className="text-sm lg:text-base">Kasutajad ({conversations.length})</span>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={loadConversations}
                 disabled={loading}
+                className="h-8 w-8 lg:h-9 lg:w-9 p-0"
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[400px]">
+          <CardContent className="p-0 flex-1 flex flex-col">
+            <ScrollArea className="flex-1 min-h-[300px] lg:min-h-[400px]">
               {loading && (
                 <div className="text-center py-8 text-muted-foreground">
                   Laadin vestlusi...
@@ -517,38 +568,50 @@ export function SupportChatDashboard() {
               {conversations.map((conversation) => (
                 <div
                   key={conversation.id}
-                  className={`p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors ${
-                    selectedConversationId === conversation.id ? 'bg-muted' : ''
+                  className={`p-3 lg:p-4 border-b cursor-pointer hover:bg-muted/50 active:bg-muted transition-colors ${
+                    selectedConversationId === conversation.id ? 'bg-muted border-l-4 border-l-primary' : ''
                   }`}
                   onClick={() => setSelectedConversationId(conversation.id)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <span className="font-medium text-sm">
-                          {conversation.user_email}
-                        </span>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 min-w-0 flex-1">
+                      <User className="h-4 w-4 lg:h-5 lg:w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm truncate">
+                            {conversation.user_email}
+                          </span>
+                          <Badge 
+                            variant={(conversation.status as string) === 'new' ? 'default' : 'secondary'} 
+                            className="text-[10px] lg:text-xs flex-shrink-0"
+                          >
+                            {(conversation.status as string) === 'new' ? 'Uus' : conversation.status}
+                          </Badge>
+                        </div>
                         {conversation.user_name && (
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-xs text-muted-foreground mb-1">
                             {conversation.user_name}
                           </div>
                         )}
+                        {conversation.latest_message_preview && (
+                          <div className="text-xs text-muted-foreground truncate mb-1">
+                            {conversation.latest_message_preview.length > 50 
+                              ? conversation.latest_message_preview.substring(0, 50) + '...'
+                              : conversation.latest_message_preview
+                            }
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {(conversation.status as string) === 'new' 
+                              ? `Registreeritud: ${formatTime(conversation.user_created_at || conversation.created_at)}`
+                              : formatTime(conversation.last_message_at)
+                            }
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <Badge 
-                      variant={conversation.status === 'new' ? 'default' : 'secondary'} 
-                      className="text-xs"
-                    >
-                      {conversation.status === 'new' ? 'Uus kasutaja' : conversation.status}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {conversation.status === 'new' 
-                      ? `Registreeritud: ${formatTime(conversation.user_created_at || conversation.created_at)}`
-                      : formatTime(conversation.last_message_at)
-                    }
                   </div>
                 </div>
               ))}
@@ -557,24 +620,27 @@ export function SupportChatDashboard() {
         </Card>
 
         {/* Chat Area */}
-        <Card className="lg:col-span-2 flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+        <Card className="lg:col-span-2 flex flex-col min-h-[400px]">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
               {selectedConversation && (
                 <>
-                  <User className="h-5 w-5" />
-                  Vestlus: {selectedConversation.user_email}
+                  <User className="h-4 w-4 lg:h-5 lg:w-5" />
+                  <span className="text-sm lg:text-base truncate">
+                    {selectedConversation.user_email}
+                  </span>
                 </>
               )}
-              {!selectedConversation && "Vali vestlus"}
+              {!selectedConversation && <span className="text-sm lg:text-base">Vali vestlus</span>}
             </CardTitle>
             {selectedConversation && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => closeConversation(selectedConversation.id)}
+                className="h-8 lg:h-9 px-3 lg:px-4 text-xs lg:text-sm"
               >
-                Sulge vestlus
+                Sulge
               </Button>
             )}
           </CardHeader>
@@ -582,8 +648,8 @@ export function SupportChatDashboard() {
           {selectedConversation ? (
             <>
               {/* Messages */}
-              <CardContent className="flex-1 p-4">
-                <ScrollArea className="h-[300px]">
+              <CardContent className="flex-1 p-3 lg:p-4 min-h-[300px]">
+                <ScrollArea className="h-full min-h-[300px] lg:min-h-[400px]">
                   {messages.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                       <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -626,8 +692,8 @@ export function SupportChatDashboard() {
               </CardContent>
 
               {/* Message Input */}
-              <CardContent className="border-t">
-                <form onSubmit={sendMessage} className="flex gap-2">
+              <CardContent className="border-t p-3 lg:p-4">
+                <form onSubmit={sendMessage} className="flex gap-2 lg:gap-3">
                   <Input
                     id="support-message"
                     name="support-message"
@@ -636,15 +702,16 @@ export function SupportChatDashboard() {
                     onKeyDown={handleKeyDown}
                     placeholder="Kirjutage oma vastus..."
                     disabled={sending}
-                    className="flex-1"
+                    className="flex-1 h-10 lg:h-11 text-sm lg:text-base"
                     autoFocus
                   />
                   <Button
                     type="submit"
                     disabled={!newMessage.trim() || sending}
+                    className="h-10 lg:h-11 px-4 lg:px-6 text-sm lg:text-base min-w-[80px] lg:min-w-[100px]"
                   >
-                    <Send className="h-4 w-4 mr-2" />
-                    Saada
+                    <Send className="h-4 w-4 lg:mr-2" />
+                    <span className="hidden lg:inline">Saada</span>
                   </Button>
                 </form>
               </CardContent>
