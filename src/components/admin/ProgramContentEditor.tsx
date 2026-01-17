@@ -317,17 +317,6 @@ export default function ProgramContentEditor({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Laen programmi sisu...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -338,6 +327,14 @@ export default function ProgramContentEditor({
           </DialogDescription>
         </DialogHeader>
         
+        {loading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p>Laen programmi sisu...</p>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-6">
 
       {days.map((day) => (
@@ -583,6 +580,7 @@ export default function ProgramContentEditor({
         </div>
       )}
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );
