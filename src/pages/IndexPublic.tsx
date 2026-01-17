@@ -154,16 +154,14 @@ export default function IndexPublic() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* Hero Section - Keep original */}
+        {/* Hero Section - Matching marketing site style */}
         <div className="text-center mb-20">
-          <h1 className="text-4xl md:text-6xl font-bold mb-8 bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent leading-tight">
-            <span className="bg-gradient-to-r from-primary via-primary to-primary-foreground bg-clip-text text-transparent">
-              Muuda oma elu
-            </span>
+          <h1 className="text-[60px] md:text-[85px] font-black uppercase tracking-[-3px] leading-[102px] mb-8 text-foreground">
+            Muuda oma elu
             <br />
-            <span className="text-5xl text-foreground font-bold">28 päevaga</span>
+            <span className="text-[48px] md:text-[85px]">28 päevaga</span>
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-lg font-bold text-[#212121] mb-12 max-w-4xl mx-auto leading-6">
             Professionaalsed treeningprogrammid, mis sobivad nii algajatele kui kogenud treenijatele. 
             Alusta tasuta prooviga ja kogeda erinevust.
           </p>
