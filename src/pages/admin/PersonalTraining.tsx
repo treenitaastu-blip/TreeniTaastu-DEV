@@ -26,9 +26,11 @@ import {
   Send,
   Eye,
   UserPlus,
+  UserMinus,
   Target,
   Check,
-  X
+  X,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,7 +83,7 @@ type Template = {
 export default function PersonalTraining() {
   const { toast } = useToast();
   const { trackPageView, trackFeatureUsage, trackButtonClick } = useTrackEvent();
-  const { showDeleteConfirmation, dialog, hideDialog } = useConfirmationDialog();
+  const { showDeleteConfirmation, showDialog, dialog, hideDialog } = useConfirmationDialog();
 
   const [stats, setStats] = useState<ProgramStats>({
     totalPrograms: 0,
@@ -245,15 +247,41 @@ export default function PersonalTraining() {
     }
   };
 
-  const handleDeleteProgram = async (programId: string, programName: string) => {
-    console.log("handleDeleteProgram called", { programId, programName });
-    
-    showDeleteConfirmation({
-      itemName: programName,
-      itemType: 'Programm',
-      onConfirm: () => performDeleteProgram(programId, programName),
-      additionalWarning: 'See kustutab ka kõik seotud andmed (päevad, harjutused, sessioonid).'
+  const handleUnassignProgram = async (programId: string, programName: string) => {
+    showDialog({
+      title: 'Eemalda programm kliendilt',
+      description: `Kas oled kindel, et soovid programmi "${programName}" kliendilt eemaldada? Programm jääb andmebaasi, kuid klient ei näe seda enam.`,
+      onConfirm: () => performUnassignProgram(programId, programName),
+      variant: 'warning',
+      confirmText: 'Eemalda',
+      cancelText: 'Tühista',
+      icon: <AlertTriangle className="h-6 w-6" />
     });
+  };
+
+  const performUnassignProgram = async (programId: string, programName: string) => {
+    try {
+      const { error } = await supabase
+        .from('client_programs')
+        .update({ is_active: false })
+        .eq('id', programId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Programm eemaldatud",
+        description: `Programm "${programName}" on kliendilt eemaldatud.`,
+      });
+      
+      await loadData();
+    } catch (error: unknown) {
+      console.error("Error unassigning program:", error);
+      toast({
+        title: "Viga",
+        description: (error as Error).message || "Programmi eemaldamine ebaõnnestus",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveTitle = async (programId: string, newTitle: string) => {
@@ -289,21 +317,17 @@ export default function PersonalTraining() {
     }
   };
 
+  // Keep performDeleteProgram for potential future "permanently delete" option
   const performDeleteProgram = async (programId: string, programName: string) => {
-
     try {
       // Track deletion attempt
       trackFeatureUsage('program_deletion', 'attempted', {
         program_id: programId
       });
-
-      console.log("Calling admin_delete_client_program_cascade with:", { p_program_id: programId });
       
       const { data, error } = await supabase.rpc("admin_delete_client_program_cascade", {
         p_program_id: programId,
       });
-
-      console.log("Deletion result:", { data, error });
 
       if (error) throw error;
 
@@ -890,16 +914,16 @@ export default function PersonalTraining() {
                               <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    trackButtonClick('delete_program_from_menu', 'program_deletion', 'admin_dashboard');
-                                    handleDeleteProgram(
+                                    trackButtonClick('unassign_program_from_menu', 'program_unassignment', 'admin_dashboard');
+                                    handleUnassignProgram(
                                       program.id!,
                                       program.title_override || program.template_title || "Programm"
                                     );
                                   }}
-                                  className="text-red-600 focus:text-red-600"
+                                  className="text-orange-600 focus:text-orange-600"
                                 >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Kustuta programm
+                                  <UserMinus className="mr-2 h-4 w-4" />
+                                  Eemalda kliendilt
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
