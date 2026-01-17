@@ -91,7 +91,7 @@ export default function App({ children }: { children?: React.ReactNode }) {
           <main className="w-full">
             {children ?? <Outlet />}
           </main>
-          <SupportChatWidget />
+          {user && <SupportChatWidget hideButton />}
           {user && <PWAInstallGuide />}
           {user && (
             <UpgradePromptManager

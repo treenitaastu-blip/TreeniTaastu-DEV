@@ -549,6 +549,12 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
   const popRef = useRef<HTMLDivElement | null>(null);
   const email = user?.email ?? "Kasutaja";
 
+  const handleOpenSupportChat = () => {
+    localStorage.setItem('supportChatOpen', 'true');
+    window.dispatchEvent(new Event('openSupportChat'));
+    setOpen(false);
+  };
+
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -596,6 +602,15 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
           <LogOut className="h-4 w-4" />
           Logi välja
         </button>
+        <div className="mt-2 pt-2 border-t">
+          <button
+            onClick={handleOpenSupportChat}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-colors shadow-sm"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Kasutajatugi
+          </button>
+        </div>
       </div>
     );
   }
@@ -614,7 +629,7 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
         {open && (
           <div
             role="menu"
-            className="absolute left-0 mt-2 w-48 rounded-xl border bg-card p-1 backdrop-blur-xl shadow-medium"
+            className="absolute left-0 mt-2 w-56 rounded-xl border bg-card p-1 backdrop-blur-xl shadow-medium flex flex-col"
             style={{ 
               position: 'absolute', 
               top: '100%', 
@@ -622,14 +637,25 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
               zIndex: 1001 
             }}
           >
-            <Link to="/konto" className={itemBase} onClick={() => setOpen(false)}>
-              <UserIcon className="h-4 w-4" />
-              Konto
-            </Link>
-            <button onClick={() => { handleSignOut(); setOpen(false); }} className={itemBase}>
-              <LogOut className="h-4 w-4" />
-              Logi välja
-            </button>
+            <div className="flex flex-col gap-0.5">
+              <Link to="/konto" className={itemBase} onClick={() => setOpen(false)}>
+                <UserIcon className="h-4 w-4" />
+                Konto
+              </Link>
+              <button onClick={() => { handleSignOut(); setOpen(false); }} className={itemBase}>
+                <LogOut className="h-4 w-4" />
+                Logi välja
+              </button>
+            </div>
+            <div className="mt-2 pt-2 border-t">
+              <button
+                onClick={() => { handleOpenSupportChat(); setOpen(false); }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-colors shadow-sm"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Kasutajatugi
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -654,7 +680,7 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-48 rounded-xl border bg-card p-1 backdrop-blur-xl shadow-medium"
+          className="absolute right-0 mt-2 w-56 rounded-xl border bg-card p-1 backdrop-blur-xl shadow-medium flex flex-col"
           style={{ 
             position: 'absolute', 
             top: '100%', 
@@ -662,14 +688,25 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
             zIndex: 1001 
           }}
         >
-          <Link to="/konto" className={itemBase}>
-            <UserIcon className="h-4 w-4" />
-            Konto
-          </Link>
-          <button onClick={handleSignOut} className={itemBase}>
-            <LogOut className="h-4 w-4" />
-            Logi välja
-          </button>
+          <div className="flex flex-col gap-0.5">
+            <Link to="/konto" className={itemBase}>
+              <UserIcon className="h-4 w-4" />
+              Konto
+            </Link>
+            <button onClick={handleSignOut} className={itemBase}>
+              <LogOut className="h-4 w-4" />
+              Logi välja
+            </button>
+          </div>
+          <div className="mt-2 pt-2 border-t">
+            <button
+              onClick={handleOpenSupportChat}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-colors shadow-sm"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Kasutajatugi
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { supportMessageSchema, validateAndSanitize } from '@/lib/validations';
 
-export function SupportChatWidget() {
+export function SupportChatWidget({ hideButton = false }: { hideButton?: boolean }) {
   const { user } = useAuth();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(() => {
@@ -171,10 +171,31 @@ export function SupportChatWidget() {
     });
   };
 
+  // Listen for custom event to open chat from menu
+  useEffect(() => {
+    const handleOpenChat = () => {
+      setIsOpen(true);
+      localStorage.setItem('supportChatOpen', 'true');
+    };
+    window.addEventListener('openSupportChat', handleOpenChat);
+    return () => window.removeEventListener('openSupportChat', handleOpenChat);
+  }, []);
+
+  // Listen for localStorage changes to sync chat state
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'supportChatOpen') {
+        setIsOpen(e.newValue === 'true');
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   return (
     <>
-      {/* Chat Toggle Button */}
-      {!isOpen && (
+      {/* Chat Toggle Button - only show if hideButton is false */}
+      {!hideButton && !isOpen && (
         <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-center gap-2">
           {/* Timer icon for programm page and day pages */}
           {(location.pathname === '/programm' || location.pathname.startsWith('/programm/day/')) && (
