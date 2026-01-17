@@ -75,7 +75,28 @@ export const useSupportChat = () => {
     }
   }, [user, toast]);
 
-  // Load conversations
+  // Load messages for a conversation - defined before loadConversations to avoid circular dependency
+  const loadMessages = useCallback(async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setMessages(data || []);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      toast({
+        title: "Viga",
+        description: "Sõnumite laadimine ebaõnnestus",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
+  // Load conversations - must be defined after loadMessages since it uses it
   const loadConversations = useCallback(async (autoSelectFirst = true) => {
     if (!user) return;
     
@@ -106,28 +127,6 @@ export const useSupportChat = () => {
       setLoading(false);
     }
   }, [user, toast, loadMessages]);
-
-  // Load messages for a conversation
-  const loadMessages = useCallback(async (conversationId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('support_messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setMessages(data || []);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-      toast({
-        title: "Viga",
-        description: "Sõnumite laadimine ebaõnnestus",
-        variant: "destructive"
-      });
-    }
-  }, [toast]);
-
 
   // Send message
   const sendMessage = useCallback(async (message: string) => {
