@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useSmartProgression, type ExerciseProgression } from "@/hooks/useSmartProgression";
+import { useProgressionRecommendations } from "@/hooks/useProgressionRecommendations";
+import ProgressionRecommendationDialog from "@/components/workout/ProgressionRecommendationDialog";
 import { toast } from "sonner";
 import { getErrorMessage, getSeverityStyles, getActionButtonText } from '@/utils/errorMessages';
 import { useLoadingState, LOADING_KEYS, getLoadingMessage } from '@/hooks/useLoadingState';
@@ -848,6 +850,14 @@ export default function ModernWorkoutSession() {
     reason: string;
   } | null>(null);
 
+  // Progression recommendation system state
+  const exerciseIds = useMemo(() => exercises.map(ex => ex.id), [exercises]);
+  const { recommendations } = useProgressionRecommendations(exerciseIds, true);
+  const [recommendationDialogState, setRecommendationDialogState] = useState<{
+    isOpen: boolean;
+    exerciseId: string | null;
+  }>({ isOpen: false, exerciseId: null });
+
   const computeSuggestedWeight = (current: number, sense: 'too_easy' | 'just_right' | 'too_hard') => {
     if (!Number.isFinite(current) || current < 0) current = 0;
     const stepRaw = Math.max(0.25, Math.min(2.5, current * 0.02));
@@ -1089,20 +1099,10 @@ export default function ModernWorkoutSession() {
     if (!session || !programId || !exercises.length) return;
 
     try {
-      // Use the optimized auto-progression for the entire program
-      if (autoProgressProgram) {
-        const result = await autoProgressProgram();
-        
-        if (result?.success && result.updates_made > 0) {
-          // Show success message
-          toast.success(
-            result.deload_exercises && result.deload_exercises > 0 ? "Koormuse vähendamine rakendatud!" : "Programm optimeeritud!",
-            {
-              description: `${result.updates_made} harjutust automaatselt kohandatud sinu RPE/RIR andmete põhjal${result.deload_exercises ? ` (${result.deload_exercises} koormust vähendatud)` : ''}.`,
-            }
-          );
-        }
-      }
+      // Auto-progression disabled for weights - clients control manually via recommendation system
+      // Only volume progression (reps/sets) remains, handled via workout feedback confirmation dialog
+      // Skip database RPC auto-progression functions as they modify weights
+      // Note: autoProgressProgram RPC functions are skipped to prevent automatic weight changes
     } catch (error) {
       console.error('Smart progression failed, using fallback:', error);
       
@@ -1126,40 +1126,29 @@ export default function ModernWorkoutSession() {
           let newReps = currentReps;
           let progressionReason = '';
           
-          // More sophisticated RPE-based progression
+          // Volume-only progression (reps/sets) - weight progression disabled
+          // Clients now control weight manually via recommendation system
           if (rpe <= 5) {
-            // Very easy - increase weight by 7.5% or add reps
-            if (currentWeight && currentWeight > 0) {
-              newWeight = Math.round(currentWeight * 1.075 * 2) / 2;
-              progressionReason = 'Weight increased (RPE too low)';
-            } else if (currentReps && currentReps < 15) {
+            // Very easy - add reps (no weight change)
+            if (currentReps && currentReps < 15) {
               newReps = currentReps + 1;
               progressionReason = 'Reps increased (RPE too low)';
             }
           } else if (rpe <= 6) {
-            // Easy - increase weight by 5% or add reps
-            if (currentWeight && currentWeight > 0) {
-              newWeight = Math.round(currentWeight * 1.05 * 2) / 2;
-              progressionReason = 'Weight increased (RPE low)';
-            } else if (currentReps && currentReps < 12) {
+            // Easy - add reps (no weight change)
+            if (currentReps && currentReps < 12) {
               newReps = currentReps + 1;
               progressionReason = 'Reps increased (RPE low)';
             }
           } else if (rpe >= 9) {
-            // Hard - decrease weight by 5% or reduce reps
-            if (currentWeight && currentWeight > 0) {
-              newWeight = Math.round(currentWeight * 0.95 * 2) / 2;
-              progressionReason = 'Weight decreased (RPE too high)';
-            } else if (currentReps && currentReps > 5) {
+            // Hard - reduce reps (no weight change)
+            if (currentReps && currentReps > 5) {
               newReps = currentReps - 1;
               progressionReason = 'Reps decreased (RPE too high)';
             }
           } else if (rpe >= 10) {
-            // Very hard - decrease weight by 10% or reduce reps significantly
-            if (currentWeight && currentWeight > 0) {
-              newWeight = Math.round(currentWeight * 0.90 * 2) / 2;
-              progressionReason = 'Weight decreased significantly (RPE very high)';
-            } else if (currentReps && currentReps > 3) {
+            // Very hard - reduce reps significantly (no weight change)
+            if (currentReps && currentReps > 3) {
               newReps = Math.max(3, currentReps - 2);
               progressionReason = 'Reps decreased significantly (RPE very high)';
             }
@@ -1168,13 +1157,11 @@ export default function ModernWorkoutSession() {
             continue;
           }
 
-          // Only update if parameters actually changed
-          const weightChanged = newWeight !== currentWeight && newWeight && currentWeight;
+          // Only update reps (weight progression disabled - clients control manually)
           const repsChanged = newReps !== currentReps && newReps && currentReps;
           
-          if (weightChanged || repsChanged) {
-            const updateData: { weight_kg?: number; reps?: string } = {};
-            if (weightChanged) updateData.weight_kg = newWeight;
+          if (repsChanged) {
+            const updateData: { reps?: string } = {};
             if (repsChanged) updateData.reps = newReps;
             
             const { error: updateError } = await supabase
@@ -1187,8 +1174,6 @@ export default function ModernWorkoutSession() {
               progressionResults.push({
                 exercise_name: exercise.exercise_name,
                 reason: progressionReason,
-                old_weight: currentWeight,
-                new_weight: newWeight,
                 old_reps: currentReps,
                 new_reps: newReps
               });
@@ -1535,7 +1520,9 @@ export default function ModernWorkoutSession() {
               // New feedback system props
               onExerciseFeedback={handleExerciseFeedback}
               showExerciseFeedback={exerciseFeedbackEnabled}
-              
+              // Progression recommendation system
+              progressionRecommendation={recommendations[exercise.id]}
+              onRecommendationClick={() => setRecommendationDialogState({ isOpen: true, exerciseId: exercise.id })}
             />
           ))}
         </div>
@@ -1609,6 +1596,23 @@ export default function ModernWorkoutSession() {
             variant="info"
           />
         )}
+
+        {/* Progression Recommendation Dialog */}
+        {recommendationDialogState.isOpen && recommendationDialogState.exerciseId && recommendations[recommendationDialogState.exerciseId] && (() => {
+          const exercise = exercises.find(e => e.id === recommendationDialogState.exerciseId);
+          const recommendation = recommendations[recommendationDialogState.exerciseId];
+          if (!exercise || !recommendation) return null;
+          return (
+            <ProgressionRecommendationDialog
+              isOpen={true}
+              onClose={() => setRecommendationDialogState({ isOpen: false, exerciseId: null })}
+              exerciseName={exercise.exercise_name}
+              currentWeight={recommendation.current_weight}
+              sessionsWithoutChange={recommendation.sessions_without_change}
+              message={recommendation.message}
+            />
+          );
+        })()}
 
         {/* Loading Overlay */}
         {saving && (

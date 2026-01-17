@@ -30,34 +30,6 @@ BEGIN
     );
   END IF;
 
-  -- Get completed workout sessions for this exercise, ordered by most recent
-  -- We need to check distinct sessions where the exercise was actually performed
-  -- by looking at set_logs with weight_kg_done
-  SELECT 
-    COUNT(DISTINCT ws.id) as total_sessions,
-    COUNT(DISTINCT CASE 
-      WHEN sl.weight_kg_done IS NOT NULL AND ABS(sl.weight_kg_done - v_current_weight) < 0.01 
-      THEN ws.id 
-    END) as sessions_with_same_weight
-  INTO v_session_count, v_sessions_with_same_weight
-  FROM workout_sessions ws
-  INNER JOIN set_logs sl ON sl.session_id = ws.id
-  WHERE sl.client_item_id = p_client_item_id
-    AND ws.ended_at IS NOT NULL
-    AND sl.weight_kg_done IS NOT NULL
-  ORDER BY ws.ended_at DESC
-  LIMIT (p_min_sessions_without_change + 5); -- Check a few extra to be safe
-
-  -- If we don't have enough session data, don't recommend
-  IF v_session_count < p_min_sessions_without_change THEN
-    RETURN jsonb_build_object(
-      'needs_recommendation', false,
-      'reason', 'insufficient_data',
-      'sessions_completed', v_session_count,
-      'required_sessions', p_min_sessions_without_change
-    );
-  END IF;
-
   -- Check if the last N sessions all used the same weight (within 0.01kg tolerance)
   -- by looking at the average weight per session
   WITH recent_sessions AS (
@@ -76,10 +48,21 @@ BEGIN
     LIMIT p_min_sessions_without_change
   )
   SELECT 
-    COUNT(*) as sessions_with_same_weight
-  INTO v_sessions_with_same_weight
+    COUNT(*) as sessions_with_same_weight,
+    COUNT(*) as total_recent_sessions
+  INTO v_sessions_with_same_weight, v_session_count
   FROM recent_sessions
   WHERE ABS(avg_weight_used - v_current_weight) < 0.01;
+
+  -- If we don't have enough session data, don't recommend
+  IF v_session_count < p_min_sessions_without_change THEN
+    RETURN jsonb_build_object(
+      'needs_recommendation', false,
+      'reason', 'insufficient_data',
+      'sessions_completed', v_session_count,
+      'required_sessions', p_min_sessions_without_change
+    );
+  END IF;
 
   -- If all recent sessions used the same weight, recommend progression
   IF v_sessions_with_same_weight >= p_min_sessions_without_change THEN

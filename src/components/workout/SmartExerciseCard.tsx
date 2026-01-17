@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { Play, Check, Clock, Weight, Repeat, MessageSquare, Star, TrendingUp, Zap, Activity, Info, Target, Timer, Pause } from "lucide-react";
+import { Play, Check, Clock, Weight, Repeat, MessageSquare, Star, TrendingUp, Zap, Activity, Info, Target, Timer, Pause, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,6 +71,14 @@ interface SmartExerciseCardProps {
   // Weight update props
   onUpdateSingleSetWeight?: (exerciseId: string, setNumber: number, newWeight: number) => void;
   onUpdateAllSetsWeight?: (exerciseId: string, newWeight: number) => void;
+  // Progression recommendation system
+  progressionRecommendation?: {
+    needs_recommendation: boolean;
+    current_weight: number;
+    sessions_without_change: number;
+    message: string;
+  } | null;
+  onRecommendationClick?: () => void;
 }
 
 export default function SmartExerciseCard({
@@ -93,7 +101,9 @@ export default function SmartExerciseCard({
   onExerciseFeedback,
   showExerciseFeedback = false,
   onUpdateSingleSetWeight,
-  onUpdateAllSetsWeight
+  onUpdateAllSetsWeight,
+  progressionRecommendation,
+  onRecommendationClick
 }: SmartExerciseCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
@@ -410,14 +420,23 @@ export default function SmartExerciseCard({
             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300">
               <Check className="h-5 w-5 text-white" />
             </div>
-            <div>
+            <div className="flex items-center gap-2">
               <h3 className="text-lg font-semibold text-green-800">
                 {exercise.exercise_name}
               </h3>
-              <p className="text-sm text-green-600">
-                {exercise.sets} seeriat tehtud
-              </p>
+              {progressionRecommendation?.needs_recommendation && (
+                <button
+                  onClick={onRecommendationClick}
+                  className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors cursor-pointer"
+                  title="Progressioni soovitus - klikkige vaatamiseks"
+                >
+                  <AlertCircle className="h-3 w-3" />
+                </button>
+              )}
             </div>
+            <p className="text-sm text-green-600">
+              {exercise.sets} seeriat tehtud
+            </p>
           </div>
           <Button
             variant="ghost"
@@ -444,6 +463,15 @@ export default function SmartExerciseCard({
             <h3 className="text-base font-semibold text-foreground">
               {exercise.exercise_name}
             </h3>
+            {progressionRecommendation?.needs_recommendation && (
+              <button
+                onClick={onRecommendationClick}
+                className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors cursor-pointer"
+                title="Progressioni soovitus - klikkige vaatamiseks"
+              >
+                <AlertCircle className="h-4 w-4" />
+              </button>
+            )}
             
             {/* Exercise done button - only show if not all sets completed */}
             {!allSetsCompleted && (
