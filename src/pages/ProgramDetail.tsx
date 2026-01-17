@@ -133,9 +133,10 @@ export default function ProgramDetail() {
         // Load program with better error handling
         const { data: programData, error: programError } = await supabase
           .from("client_programs")
-          .select("id, title_override, start_date, assigned_to")
+          .select("id, title_override, start_date, assigned_to, is_active")
           .eq("id", programId)
           .eq("assigned_to", user.id)
+          .not("is_active", "eq", false) // Only allow access to active programs
           .maybeSingle<ProgramRow>();
 
         if (programError) {
@@ -144,7 +145,12 @@ export default function ProgramDetail() {
         }
 
         if (!programData) {
-          throw new Error("Programm ei leitud või sul puudub sellele ligipääs");
+          throw new Error("Programm ei leitud, on deaktiveeritud või sul puudub sellele ligipääs");
+        }
+
+        // Double-check is_active in case it wasn't filtered properly
+        if (programData.is_active === false) {
+          throw new Error("See programm on deaktiveeritud ja pole enam kättesaadav");
         }
 
         // Load program days with proper error handling

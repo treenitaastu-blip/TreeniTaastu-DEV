@@ -60,6 +60,7 @@ export default function ProgramsList() {
         .select("id, assigned_to, start_date, is_active, title_override, inserted_at, template_id, templates:template_id(title)")
         .eq("assigned_to", user.id)
         .not("assigned_to", "is", null) // Ensure assigned_to is not null
+        .not("is_active", "eq", false) // Only show active programs (filter out inactive)
         .order("inserted_at", { ascending: false })
         .limit(100)
         .returns<ProgramRow[]>();
