@@ -136,7 +136,7 @@ export default function ProgramDetail() {
           .select("id, title_override, start_date, assigned_to, is_active")
           .eq("id", programId)
           .eq("assigned_to", user.id)
-          .not("is_active", "eq", false) // Only allow access to active programs
+          .or("is_active.is.null,is_active.eq.true") // Only allow access to active programs (true or null, exclude false)
           .maybeSingle<ProgramRow>();
 
         if (programError) {
