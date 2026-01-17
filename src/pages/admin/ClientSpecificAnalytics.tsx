@@ -46,12 +46,14 @@ type JournalEntry = {
 
 type WorkoutFeedback = {
   id: string;
+  session_id: string;
   joint_pain: boolean;
   joint_pain_location: string | null;
   fatigue_level: number;
   energy_level: string;
   notes: string | null;
   created_at: string;
+  avg_rpe: number | null;
 };
 
 export default function ClientSpecificAnalytics() {
@@ -191,13 +193,52 @@ export default function ClientSpecificAnalytics() {
       // Load workout feedback
       const { data: feedbackData, error: feedbackError } = await supabase
         .from("workout_feedback")
-        .select("id, joint_pain, joint_pain_location, fatigue_level, energy_level, notes, created_at")
+        .select("id, session_id, joint_pain, joint_pain_location, fatigue_level, energy_level, notes, created_at")
         .eq("user_id", clientId)
         .order("created_at", { ascending: false })
         .limit(20);
 
       if (feedbackError) throw feedbackError;
-      setWorkoutFeedback(feedbackData || []);
+
+      // Get average RPE for each session
+      const sessionIds = (feedbackData || []).map(f => f.session_id);
+      const rpeData: Record<string, number> = {};
+      
+      if (sessionIds.length > 0) {
+        const { data: rpeResults, error: rpeError } = await supabase
+          .from("exercise_notes")
+          .select("session_id, rpe")
+          .in("session_id", sessionIds)
+          .not("rpe", "is", null);
+
+        if (!rpeError && rpeResults) {
+          // Calculate average RPE per session
+          const rpeBySession: Record<string, number[]> = {};
+          rpeResults.forEach(entry => {
+            if (!rpeBySession[entry.session_id]) {
+              rpeBySession[entry.session_id] = [];
+            }
+            if (entry.rpe !== null) {
+              rpeBySession[entry.session_id].push(Number(entry.rpe));
+            }
+          });
+
+          Object.keys(rpeBySession).forEach(sessionId => {
+            const rpes = rpeBySession[sessionId];
+            if (rpes.length > 0) {
+              rpeData[sessionId] = rpes.reduce((a, b) => a + b, 0) / rpes.length;
+            }
+          });
+        }
+      }
+
+      // Combine feedback with RPE data
+      const feedbackWithRPE: WorkoutFeedback[] = (feedbackData || []).map(f => ({
+        ...f,
+        avg_rpe: rpeData[f.session_id] || null,
+      }));
+
+      setWorkoutFeedback(feedbackWithRPE);
 
     } catch (error) {
       console.error("Error loading client data:", error);
@@ -440,16 +481,21 @@ export default function ClientSpecificAnalytics() {
                               <h4 className="font-medium text-destructive">⚠️ Liigesevalu</h4>
                               <p className="text-xs text-muted-foreground">{formatDate(feedback.created_at)}</p>
                             </div>
-                            <div className="flex items-center gap-3 text-sm">
-                              <span className="text-orange-600">😰 {feedback.fatigue_level}/10</span>
-                              <span className={`${
-                                feedback.energy_level === 'high' ? 'text-green-600' : 
-                                feedback.energy_level === 'normal' ? 'text-blue-600' : 'text-red-600'
-                              }`}>
-                                ⚡ {feedback.energy_level === 'high' ? 'Kõrge' : 
-                                    feedback.energy_level === 'normal' ? 'Normaalne' : 'Madal'}
+                          <div className="flex items-center gap-3 text-sm flex-wrap">
+                            {feedback.avg_rpe !== null && (
+                              <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-1 rounded-full text-xs font-medium">
+                                Keskmine RPE: {feedback.avg_rpe.toFixed(1)}
                               </span>
-                            </div>
+                            )}
+                            <span className="text-orange-600">😰 {feedback.fatigue_level}/10</span>
+                            <span className={`${
+                              feedback.energy_level === 'high' ? 'text-green-600' : 
+                              feedback.energy_level === 'normal' ? 'text-blue-600' : 'text-red-600'
+                            }`}>
+                              ⚡ {feedback.energy_level === 'high' ? 'Kõrge' : 
+                                  feedback.energy_level === 'normal' ? 'Normaalne' : 'Madal'}
+                            </span>
+                          </div>
                           </div>
                           {feedback.joint_pain_location && (
                             <div className="mb-2">
@@ -489,7 +535,12 @@ export default function ClientSpecificAnalytics() {
                             </h4>
                             <p className="text-xs text-muted-foreground">{formatDate(feedback.created_at)}</p>
                           </div>
-                          <div className="flex items-center gap-3 text-sm">
+                          <div className="flex items-center gap-3 text-sm flex-wrap">
+                            {feedback.avg_rpe !== null && (
+                              <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-1 rounded-full text-xs font-medium">
+                                Keskmine RPE: {feedback.avg_rpe.toFixed(1)}
+                              </span>
+                            )}
                             <span className={`${
                               feedback.fatigue_level >= 8 ? 'text-red-600' : 
                               feedback.fatigue_level >= 5 ? 'text-orange-600' : 'text-green-600'

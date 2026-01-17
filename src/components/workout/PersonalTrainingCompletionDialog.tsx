@@ -35,7 +35,7 @@ export default function PersonalTrainingCompletionDialog({
   };
 
   const handleGoHome = () => {
-    navigate("/programs");
+    navigate("/programs/stats");
     onClose();
   };
 
@@ -61,7 +61,7 @@ export default function PersonalTrainingCompletionDialog({
             variant="default"
           >
             <BarChart3 className="mr-3 h-6 w-6" />
-            Statistikad
+            Statistika
           </Button>
 
           <Button 

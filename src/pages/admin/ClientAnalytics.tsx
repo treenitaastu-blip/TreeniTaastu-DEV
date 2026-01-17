@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, User, Calendar, TrendingUp, Activity, Target, Clock } from "lucide-react";
+import { ArrowLeft, User, Calendar, TrendingUp, Activity, Target, Clock, BookOpen, Zap, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import ProgressChart from "@/components/analytics/ProgressChart";
@@ -32,6 +32,29 @@ type WeeklyData = {
   avg_rpe: number;
 };
 
+type JournalEntry = {
+  id: string;
+  title: string;
+  content: string;
+  mood: number | null;
+  energy_level: number | null;
+  motivation: number | null;
+  created_at: string;
+};
+
+type WorkoutFeedbackEntry = {
+  id: string;
+  session_id: string;
+  energy: 'low' | 'normal' | 'high';
+  joint_pain: boolean;
+  joint_pain_location: string | null;
+  notes: string | null;
+  created_at: string;
+  session_started_at: string | null;
+  session_ended_at: string | null;
+  avg_rpe: number | null;
+};
+
 export default function ClientAnalytics() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -40,6 +63,8 @@ export default function ClientAnalytics() {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<ClientStats | null>(null);
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [workoutFeedback, setWorkoutFeedback] = useState<WorkoutFeedbackEntry[]>([]);
 
   const loadClientStats = useCallback(async () => {
     if (!userId) return;
@@ -97,6 +122,93 @@ export default function ClientAnalytics() {
           avg_rpe: Number(week.avg_rpe) || 0,
         }));
         setWeeklyData(weeklyFormatted);
+      }
+
+      // Load journal entries
+      const { data: journalData, error: journalError } = await supabase
+        .from("training_journal")
+        .select("id, title, content, mood, energy_level, motivation, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (journalError) {
+        console.warn('Error loading journal entries:', journalError);
+      } else {
+        setJournalEntries(journalData || []);
+      }
+
+      // Load workout feedback with session info and average RPE
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from("workout_feedback")
+        .select(`
+          id,
+          session_id,
+          energy,
+          joint_pain,
+          joint_pain_location,
+          notes,
+          created_at,
+          workout_sessions:session_id(
+            started_at,
+            ended_at
+          )
+        `)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (feedbackError) {
+        console.warn('Error loading workout feedback:', feedbackError);
+        setWorkoutFeedback([]);
+      } else {
+        // Get average RPE for each session
+        const sessionIds = (feedbackData || []).map(f => f.session_id);
+        const rpeData: Record<string, number> = {};
+        
+        if (sessionIds.length > 0) {
+          const { data: rpeResults, error: rpeError } = await supabase
+            .from("exercise_notes")
+            .select("session_id, rpe")
+            .in("session_id", sessionIds)
+            .not("rpe", "is", null);
+
+          if (!rpeError && rpeResults) {
+            // Calculate average RPE per session
+            const rpeBySession: Record<string, number[]> = {};
+            rpeResults.forEach(entry => {
+              if (!rpeBySession[entry.session_id]) {
+                rpeBySession[entry.session_id] = [];
+              }
+              if (entry.rpe !== null) {
+                rpeBySession[entry.session_id].push(Number(entry.rpe));
+              }
+            });
+
+            Object.keys(rpeBySession).forEach(sessionId => {
+              const rpes = rpeBySession[sessionId];
+              if (rpes.length > 0) {
+                rpeData[sessionId] = rpes.reduce((a, b) => a + b, 0) / rpes.length;
+              }
+            });
+          }
+        }
+
+        // Combine feedback with session data and RPE
+        const feedbackWithData: WorkoutFeedbackEntry[] = (feedbackData || []).map(f => ({
+          id: f.id,
+          session_id: f.session_id,
+          energy: f.energy,
+          joint_pain: f.joint_pain,
+          joint_pain_location: f.joint_pain_location,
+          notes: f.notes,
+          created_at: f.created_at,
+          session_started_at: f.workout_sessions?.started_at || null,
+          session_ended_at: f.workout_sessions?.ended_at || null,
+          avg_rpe: rpeData[f.session_id] || null,
+        }));
+
+        setWorkoutFeedback(feedbackWithData);
       }
 
     } catch (err) {
@@ -321,6 +433,126 @@ export default function ClientAnalytics() {
             )}
           </CardContent>
         </Card>
+
+        {/* Journal Entries */}
+        {journalEntries.length > 0 && (
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-primary/5 to-accent/5 mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Kliendi märkmik ({journalEntries.length} märget)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {journalEntries.map((entry) => (
+                  <div key={entry.id} className="rounded-xl border bg-card/50 p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="font-medium">{entry.title}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(entry.created_at).toLocaleDateString("et-EE", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          })}
+                        </p>
+                      </div>
+                      {(entry.mood || entry.energy_level || entry.motivation) && (
+                        <div className="flex items-center gap-3 text-sm">
+                          {entry.mood && <span>😊 {entry.mood}/5</span>}
+                          {entry.energy_level && <span>⚡ {entry.energy_level}/5</span>}
+                          {entry.motivation && <span>🎯 {entry.motivation}/5</span>}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {entry.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Workout Feedback */}
+        {workoutFeedback.length > 0 && (
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-accent/5 to-primary/5 mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Kliendi tagasiside treeningsessioonide kohta ({workoutFeedback.length} tagasisidet)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {workoutFeedback.map((feedback) => (
+                  <div key={feedback.id} className="rounded-xl border bg-card/50 p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-sm font-medium">
+                            {feedback.session_ended_at 
+                              ? new Date(feedback.session_ended_at).toLocaleDateString("et-EE", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit"
+                                })
+                              : new Date(feedback.created_at).toLocaleDateString("et-EE")
+                            }
+                          </span>
+                          {feedback.avg_rpe !== null && (
+                            <span className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-1 rounded-full">
+                              Keskmine RPE: {feedback.avg_rpe.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 flex-wrap text-sm">
+                          <div className="flex items-center gap-2">
+                            <Zap className={`h-4 w-4 ${
+                              feedback.energy === 'high' ? 'text-green-500' : 
+                              feedback.energy === 'normal' ? 'text-yellow-500' : 'text-gray-500'
+                            }`} />
+                            <span className="text-muted-foreground">
+                              Energia: {
+                                feedback.energy === 'high' ? 'Kõrge' : 
+                                feedback.energy === 'normal' ? 'Normaalne' : 'Madal'
+                              }
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {feedback.joint_pain ? (
+                              <>
+                                <AlertTriangle className="h-4 w-4 text-red-500" />
+                                <span className="text-red-600">
+                                  Liigesevalu{feedback.joint_pain_location ? ` (${feedback.joint_pain_location})` : ''}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Activity className="h-4 w-4 text-green-500" />
+                                <span className="text-green-600">Pole liigesevalu</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {feedback.notes && (
+                          <p className="text-sm text-muted-foreground mt-2 italic">
+                            "{feedback.notes}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
