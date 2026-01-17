@@ -35,8 +35,11 @@ export default function PersonalTrainingCompletionDialog({
   };
 
   const handleGoHome = () => {
-    navigate("/programs/stats");
     onClose();
+    // Add a small delay to ensure dialog closes before navigation
+    setTimeout(() => {
+      navigate("/home");
+    }, 100);
   };
 
   return (

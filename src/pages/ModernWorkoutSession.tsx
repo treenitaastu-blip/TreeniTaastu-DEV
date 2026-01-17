@@ -1486,7 +1486,7 @@ export default function ModernWorkoutSession() {
           isOpen={showCompletionDialog}
           onClose={() => {
             setShowCompletionDialog(false);
-            navigate("/programs/stats");
+            // Don't auto-navigate on close - let user choose via buttons
           }}
         />
 
