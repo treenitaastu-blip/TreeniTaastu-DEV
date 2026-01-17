@@ -522,6 +522,56 @@ export default function ModernWorkoutSession() {
           console.warn('Failed to persist reps default', persistErr);
         }
 
+        // Persist personalized weight default for this user (only for weight-based exercises)
+        // Calculate average weight from all completed sets to handle progressive overload
+        if (exercise.weight_kg !== null && exercise.weight_kg !== undefined && exercise.weight_kg > 0) {
+          try {
+            // Get all completed set weights for this exercise from current session
+            const allSetWeights: number[] = [];
+            for (let setNum = 1; setNum <= completedSets; setNum++) {
+              const setKey = `${exerciseId}:${setNum}`;
+              const setInput = setInputs[setKey];
+              // Use setInput if available (most up-to-date), otherwise use actualWeight for current set
+              let setWeight: number | undefined;
+              if (setInput?.kg !== undefined) {
+                setWeight = setInput.kg;
+              } else if (setNum === setNumber) {
+                // Current set - use actualWeight from this completion
+                setWeight = actualWeight ?? undefined;
+              } else {
+                // Previous sets - check setLogs as fallback
+                const setLog = setLogs[setKey];
+                setWeight = setLog?.weight_kg_done ?? undefined;
+              }
+              
+              if (setWeight && typeof setWeight === 'number' && Number.isFinite(setWeight) && setWeight > 0) {
+                allSetWeights.push(setWeight);
+              }
+            }
+            
+            // If we have weight data from sets, persist it
+            if (allSetWeights.length > 0) {
+              // Use average weight (more representative of actual training load)
+              // Round to 2 decimal places for cleaner storage
+              const averageWeight = allSetWeights.reduce((sum, w) => sum + w, 0) / allSetWeights.length;
+              const weightToPersist = Math.round(averageWeight * 100) / 100;
+              
+              // Only update if weight changed (avoid unnecessary DB writes)
+              if (Math.abs(weightToPersist - (exercise.weight_kg || 0)) > 0.01) {
+                await supabase
+                  .from('client_items')
+                  .update({ weight_kg: weightToPersist })
+                  .eq('id', exerciseId);
+                // Optimistically reflect in local state
+                setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, weight_kg: weightToPersist } : ex));
+                console.log(`Persisted weight for exercise ${exerciseId}: ${exercise.weight_kg}kg → ${weightToPersist}kg`);
+              }
+            }
+          } catch (persistWeightErr) {
+            console.warn('Failed to persist weight default', persistWeightErr);
+          }
+        }
+
         // Show success feedback first
         toast.success(`✅ ${exercise.exercise_name} lõpetatud!`, {
           description: "Hinda oma sooritust - see aitab järgmist treeningut kohandada"
