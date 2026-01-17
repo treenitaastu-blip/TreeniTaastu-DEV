@@ -418,28 +418,9 @@ export default function ClientSpecificAnalytics() {
           </div>
         ) : stats ? (
           <div className="space-y-8">
-            {/* Weekly Progress Charts */}
-            {weeklyData.length > 0 && (
-              <Card className="rounded-2xl shadow-soft">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    12 nädala progressi analüütika
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ProgressChart 
-                    weeklyData={weeklyData}
-                    stats={stats}
-                    lastLogin={lastLogin}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
             {/* Client Header */}
             {selectedClientEmail && (
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-4 mb-2">
                 <div className="rounded-full bg-primary/10 p-3">
                   <User className="h-6 w-6 text-primary" />
                 </div>
@@ -575,6 +556,25 @@ export default function ClientSpecificAnalytics() {
                 </div>
               )}
             </div>
+
+            {/* Weekly Progress Charts */}
+            {weeklyData.length > 0 && (
+              <Card className="rounded-2xl shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    12 nädala progressi analüütika
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ProgressChart 
+                    weeklyData={weeklyData}
+                    stats={stats}
+                    lastLogin={lastLogin}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Journal Entries */}
             {journalEntries.length > 0 && (
