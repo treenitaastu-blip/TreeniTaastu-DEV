@@ -13,6 +13,7 @@ import { Progress as ProgressBar } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useProgressTracking } from "@/hooks/useProgressTracking";
+import { useOverallPTStats } from "@/hooks/useOverallPTStats";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { supabase } from "@/integrations/supabase/client";
 import { calcProgramStreak } from "@/lib/workweek";
@@ -35,22 +36,10 @@ import {
   BarChart3
 } from "lucide-react";
 
-type Stats = {
-  completedDays: number;
-  totalDays: number;
-  streak: number;
-  reps: number;
-  sets: number;
-  seconds: number;
-  totalVolume: number;
-  avgRPE: number;
-  lastWorkout: string | null;
-};
-
-
 export default function Home() {
   const { status, user } = useAuth();
-  const { streaks, totalVolumeKg, summary, weekly } = useProgressTracking();
+  const { streaks } = useProgressTracking();
+  const ptStats = useOverallPTStats();
   const { trackButtonClick, trackPageView } = useTrackEvent();
   
   // Trial status using new hook
@@ -66,32 +55,14 @@ export default function Home() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const [stats, setStats] = useState<Stats>({
-    completedDays: 0,
-    totalDays: 20,
-    streak: 0,
-    reps: 0,
-    sets: 0,
-    seconds: 0,
-    totalVolume: 0,
-    avgRPE: 0,
-    lastWorkout: null,
-  });
   const [loading, setLoading] = useState(true);
 
   // No need for redirect logic - RequireAuth guard handles this
 
-  const progressPct = useMemo(() => {
-    if (stats.totalDays <= 0) return 0;
-    return Math.min(
-      100,
-      Math.round((stats.completedDays / stats.totalDays) * 100)
-    );
-  }, [stats.completedDays, stats.totalDays]);
 
-  // Get motivational message based on streak and progress (first-person affirmations)
+  // Get motivational message based on streak (first-person affirmations)
   const getMotivationalMessage = () => {
-    const currentStreak = streaks?.current_streak ?? stats.streak;
+    const currentStreak = streaks?.current_streak ?? 0;
     
     if (currentStreak >= 7) {
       return "Ma olen see, mida ma korduvalt teen. Järjepidevus on minu võti.";
@@ -110,161 +81,17 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       trackPageView('home', { 
-        user_type: 'authenticated',
-        completion_percentage: progressPct 
+        user_type: 'authenticated'
       });
     }
-  }, [user, trackPageView, progressPct]);
+  }, [user, trackPageView]);
 
 
 
-  // PT stats loading - exact same logic as PersonalTrainingStats page
+  // Set loading state based on PT stats loading
   useEffect(() => {
-    if (!user?.id) return;
-    
-    const loadPTStats = async () => {
-      try {
-        // Exact same query as PersonalTrainingStats
-        const { data: sessionData, error: sessionError } = await supabase
-          .from("v_session_summary")
-          .select(`
-            *,
-            set_logs(
-              weight_kg_done,
-              reps_done,
-              seconds_done
-            )
-          `)
-          .eq("user_id", user.id)
-          .order("started_at", { ascending: false })
-          .limit(50);
-
-        if (sessionError) {
-          console.error("PT stats error:", sessionError);
-          return;
-        }
-
-        const sessions = sessionData || [];
-
-        // Exact same calculation logic as PersonalTrainingStats overallStats
-        let totalVolumeKg = 0;
-        
-        sessions.forEach(session => {
-          if (session.set_logs && Array.isArray(session.set_logs)) {
-            session.set_logs.forEach((setLog: any) => {
-              if (setLog.weight_kg_done && setLog.reps_done) {
-                totalVolumeKg += setLog.weight_kg_done * setLog.reps_done;
-              }
-            });
-          }
-        });
-        
-        const avgRPE = sessions.length > 0 
-          ? sessions.filter(s => s.avg_rpe).reduce((sum, s) => sum + (s.avg_rpe || 0), 0) / sessions.filter(s => s.avg_rpe).length 
-          : 0;
-
-        setStats(prev => ({ 
-          ...prev, 
-          totalVolume: totalVolumeKg, 
-          avgRPE: avgRPE 
-        }));
-        
-      } catch (error) {
-        console.error("PT stats error:", error);
-      }
-    };
-
-    loadPTStats();
-  }, [user?.id]);
-
-  // Optimized comprehensive stats loading
-  useEffect(() => {
-    if (!user?.id) return;
-    
-    const loadOptimizedStats = async () => {
-      try {
-        setLoading(true);
-
-        // Parallel queries for better performance
-        const [sessionResult, progressResult] = await Promise.all([
-          supabase
-            .from("v_session_summary")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("started_at", { ascending: false })
-            .limit(50),
-          
-          supabase
-            .from("userprogress")
-            .select("completed_at, sets, total_sets, reps, total_reps, total_seconds")
-            .eq("user_id", user.id)
-            .eq("done", true)
-            .order("completed_at", { ascending: false })
-        ]);
-
-        if (sessionResult.error && import.meta.env.DEV) {
-          console.error("Session data error:", sessionResult.error);
-        }
-
-        if (progressResult.error && import.meta.env.DEV) {
-          console.error("Progress data error:", progressResult.error);
-        }
-
-        const completedDays = progressResult.data?.length ?? 0;
-        let lastWorkout = null;
-
-        // Get last workout date from PT sessions
-        if (sessionResult.data && sessionResult.data.length > 0) {
-          lastWorkout = sessionResult.data[0]?.ended_at || sessionResult.data[0]?.started_at;
-        }
-
-        // Calculate actual Kontorikeha program metrics from userprogress data
-        // Use sets/reps/seconds columns (current data) and total_* columns (new format)
-        console.log("[Home] Progress data:", progressResult.data);
-        const actualSets = progressResult.data?.reduce((sum, p) => sum + Math.max(p.sets || 0, p.total_sets || 0), 0) || 0;
-        const actualReps = progressResult.data?.reduce((sum, p) => sum + Math.max(p.reps || 0, p.total_reps || 0), 0) || 0;
-        const actualSeconds = progressResult.data?.reduce((sum, p) => sum + (p.total_seconds || 0), 0) || 0;
-        console.log("[Home] Calculated stats:", { actualSets, actualReps, actualSeconds, completedDays: progressResult.data?.length });
-
-        let totalDays = 20;
-        try {
-          const { count, error: countError } = await supabase
-            .from("programday")
-            .select("*", { count: "exact", head: true });
-          if (countError) {
-            console.error("Program day count error:", countError);
-          } else if (typeof count === "number" && count > 0) {
-            totalDays = count;
-          }
-        } catch (error) {
-          console.error("Total days calculation error:", error);
-        }
-
-        // Calculate streak properly using the same logic as Progress page
-        const doneDates = progressResult.data?.map((p: any) => p.completed_at?.slice(0, 10)).filter(Boolean) ?? [];
-        const calculatedStreak = calcProgramStreak(doneDates);
-        
-        setStats(prev => ({
-          completedDays, 
-          totalDays, 
-          streak: calculatedStreak,
-          reps: actualReps, 
-          sets: actualSets,
-          seconds: actualSeconds,
-          // Preserve existing PT stats values
-          totalVolume: prev.totalVolume || 0,
-          avgRPE: prev.avgRPE || 0,
-          lastWorkout
-        }));
-      } catch (e) {
-        console.error("[Home] stats load error:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadOptimizedStats();
-  }, [user?.id]); // Use user.id for more precise dependency
+    setLoading(ptStats.loading);
+  }, [ptStats.loading]);
 
   // Redirect to trial-expired page if trial AND grace period have expired
   useEffect(() => {
@@ -374,8 +201,8 @@ export default function Home() {
                 Personaaltreening
               </CardTitle>
               <CardDescription className="text-center text-[#212121] font-bold">
-                {stats.lastWorkout 
-                  ? `Viimane treening: ${new Date(stats.lastWorkout).toLocaleDateString("et-EE")}`
+                {ptStats.lastWorkout 
+                  ? `Viimane treening: ${new Date(ptStats.lastWorkout).toLocaleDateString("et-EE")}`
                   : "Valmis järgmiseks treeningukorraks?"
                 }
               </CardDescription>
@@ -385,14 +212,14 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
                   <div className="text-2xl font-bold text-gray-900">
-                    {Math.round(stats.totalVolume)} kg
+                    {Math.round(ptStats.totalVolumeKg)} kg
                   </div>
                   <div className="text-sm text-gray-600">Kogu maht</div>
                 </div>
                 
                 <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
                   <div className="text-2xl font-bold text-gray-900">
-                    {stats.avgRPE > 0 ? stats.avgRPE.toFixed(1) : "0"}/10
+                    {ptStats.avgRPE > 0 ? ptStats.avgRPE.toFixed(1) : "0"}/10
                   </div>
                   <div className="text-sm text-gray-600">Keskmine pingutus</div>
                 </div>
