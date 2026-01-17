@@ -400,11 +400,11 @@ export default function Home() {
           {/* Personal Training Card - Apple Liquid Glass */}
           <Card className="bg-white/70 backdrop-blur-sm border border-gray-200/50 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+              <CardTitle className="flex items-center justify-center gap-3 text-xl font-bold text-gray-900">
                 <Dumbbell className="h-6 w-6 text-gray-700" />
                 Personaaltreening
               </CardTitle>
-              <CardDescription className="text-[#212121] font-bold">
+              <CardDescription className="text-center text-[#212121] font-bold">
                 {stats.lastWorkout 
                   ? `Viimane treening: ${new Date(stats.lastWorkout).toLocaleDateString("et-EE")}`
                   : "Valmis järgmiseks treeningukorraks?"
@@ -445,11 +445,11 @@ export default function Home() {
           {/* Programs Card - Apple Liquid Glass */}
           <Card className="bg-white/70 backdrop-blur-sm border border-gray-200/50 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+              <CardTitle className="flex items-center justify-center gap-3 text-xl font-bold text-gray-900">
                 <Target className="h-6 w-6 text-gray-700" />
                 Programmid
               </CardTitle>
-              <CardDescription className="text-[#212121] font-bold">
+              <CardDescription className="text-center text-[#212121] font-bold">
                 Vali oma treeningprogramm ja alusta teekonda
               </CardDescription>
             </CardHeader>
