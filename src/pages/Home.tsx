@@ -35,7 +35,8 @@ import {
   ArrowRight,
   Dumbbell,
   BookOpen,
-  BarChart3
+  BarChart3,
+  Loader2
 } from "lucide-react";
 
 export default function Home() {
@@ -252,37 +253,63 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {!programLoading && hasActiveProgram && program ? (
-                // Active Program Preview with Progress
+              {programLoading ? (
+                // Loading state
+                <div className="text-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
+                  <p className="text-sm text-gray-500">Laen programmi andmeid...</p>
+                </div>
+              ) : hasActiveProgram && program ? (
+                // Active Program Preview with Progress - Beautiful Design
                 <>
                   <div className="space-y-4">
-                    <div className="p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <div className="text-lg font-bold text-gray-900 mb-1">{program.title}</div>
-                          <div className="text-sm text-gray-600">{totalDays} päeva • Alustaja</div>
+                    <div className="relative overflow-hidden p-6 bg-gradient-to-br from-green-50 via-white to-blue-50 backdrop-blur-sm rounded-xl border-2 border-green-200/50 shadow-lg">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-green-200/20 rounded-full blur-2xl -mr-16 -mt-16"></div>
+                      <div className="relative">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Target className="h-5 w-5 text-green-600" />
+                              <div className="text-xl font-bold text-gray-900">{program.title}</div>
+                            </div>
+                            <div className="text-sm text-gray-600 mb-1">{totalDays} päeva programm</div>
+                            <div className="text-xs text-gray-500">Alustaja tase</div>
+                          </div>
+                          <Badge className="bg-green-500 text-white border-0 shadow-md px-3 py-1">
+                            <CheckCircle className="h-3 w-3 mr-1.5" />
+                            Aktiivne
+                          </Badge>
                         </div>
-                        <Badge className="bg-green-100 text-green-800 border-green-200">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Aktiivne
-                        </Badge>
-                      </div>
-                      
-                      {/* Progress Bar */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Progress</span>
-                          <span className="font-semibold text-gray-900">
-                            {completedDays}/{totalDays} päeva ({Math.round((completedDays / totalDays) * 100)}%)
-                          </span>
+                        
+                        {/* Enhanced Progress Bar */}
+                        <div className="space-y-3 mt-4 pt-4 border-t border-green-200/30">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">Edusammud</span>
+                            <span className="text-lg font-bold text-gray-900">
+                              {completedDays}/{totalDays} päeva
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <ProgressBar 
+                              value={(completedDays / totalDays) * 100} 
+                              className="h-3 bg-gray-200"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-xs font-semibold text-gray-700">
+                                {Math.round((completedDays / totalDays) * 100)}%
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <ProgressBar value={(completedDays / totalDays) * 100} className="h-2" />
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <Button asChild className="bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 text-gray-900">
+                    <Button 
+                      asChild 
+                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                    >
                       <Link 
                         to="/programm"
                         onClick={() => trackButtonClick('continue_program', '/programm', 'programs_card')}
@@ -291,7 +318,11 @@ export default function Home() {
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Link>
                     </Button>
-                    <Button asChild variant="outline" className="border-gray-300">
+                    <Button 
+                      asChild 
+                      variant="outline" 
+                      className="border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all"
+                    >
                       <Link 
                         to="/programmid"
                         onClick={() => trackButtonClick('view_all_programs', '/programmid', 'programs_card')}
@@ -302,24 +333,38 @@ export default function Home() {
                   </div>
                 </>
               ) : (
-                // No Active Program - Show Selection Prompt
+                // No Active Program - Beautiful Selection Prompt
                 <>
-                  <div className="text-center p-6 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
-                    <Target className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <div className="text-lg font-bold text-gray-900 mb-2">Vali oma programm</div>
-                    <div className="text-sm text-gray-600 mb-4">
-                      Alusta oma tervisliku elustiili teekonda valides endale sobiva treeningprogrammi
+                  <div className="relative overflow-hidden text-center p-8 bg-gradient-to-br from-blue-50 via-white to-purple-50 backdrop-blur-sm rounded-xl border-2 border-blue-200/50 shadow-lg">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-blue-200/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-200/20 rounded-full blur-2xl -ml-16 -mb-16"></div>
+                    <div className="relative">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mb-4 shadow-lg">
+                        <Target className="h-8 w-8 text-white" />
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900 mb-2">Vali oma programm</div>
+                      <div className="text-sm text-gray-600 mb-2 max-w-md mx-auto">
+                        Alusta oma tervisliku elustiili teekonda
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Programm avaneb päev-päevalt ja aitab sul järjepidevust hoida
+                      </div>
                     </div>
                   </div>
 
-                  <Button asChild size="lg" className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
+                  <Button 
+                    asChild 
+                    size="lg" 
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                  >
                     <Link 
                       to="/programmid" 
                       className="flex items-center justify-center gap-2"
                       onClick={() => trackButtonClick('select_program', '/programmid', 'programs_card')}
                     >
+                      <Target className="h-5 w-5" />
                       Vali programm
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="h-5 w-5" />
                     </Link>
                   </Button>
                 </>

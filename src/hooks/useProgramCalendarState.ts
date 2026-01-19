@@ -53,40 +53,18 @@ export const useProgramCalendarState = () => {
       });
 
       if (error) {
-        console.log('Database function not available, using fallback for Kontorikeha Reset');
-        // Fallback: return Kontorikeha Reset program
-        return {
-          id: 'kontorikeha-reset-fallback', // Use string ID for fallback, not UUID
-          title: 'Kontorikeha Reset',
-          description: '20-päevane programm kontoritöötajatele, mis aitab parandada kehahoiakut ja vähendada põhja- ja kaelavalusid.',
-          duration_days: 20,
-          difficulty: 'alustaja',
-          status: 'available',
-          created_at: new Date().toISOString()
-        };
+        console.error('Error getting active program:', error);
+        return null;
       }
 
-      // Filter out personal training programs - only return static programs
-      const staticProgram = data?.find(program => 
-        program.title === 'Kontorikeha Reset' || 
-        program.title === 'Static Program'
-      );
-      
-      if (staticProgram) {
-        return staticProgram;
+      // RPC now returns empty array if no active program (no fallback)
+      // Return first result if exists, otherwise null
+      if (data && data.length > 0) {
+        return data[0];
       }
       
-      // If no static program found, return fallback
-      console.log('No static program found, using fallback for Kontorikeha Reset');
-      return {
-        id: 'kontorikeha-reset-fallback',
-        title: 'Kontorikeha Reset',
-        description: '20-päevane programm kontoritöötajatele, mis aitab parandada kehahoiakut ja vähendada põhja- ja kaelavalusid.',
-        duration_days: 20,
-        difficulty: 'alustaja',
-        status: 'available',
-        created_at: new Date().toISOString()
-      };
+      // No active program found - return null
+      return null;
     } catch (error) {
       console.error('Error getting active program:', error);
       return null;
@@ -158,19 +136,36 @@ export const useProgramCalendarState = () => {
       // Get active program
       const activeProgram = await getActiveProgram();
       
-      if (!activeProgram) {
+      // Check if user actually has an active program in user_programs
+      let hasActualActiveProgram = false;
+      if (activeProgram) {
+        const { data: userProgram } = await supabase
+          .from('user_programs')
+          .select('status, program_id')
+          .eq('user_id', user.id)
+          .eq('program_id', activeProgram.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        hasActualActiveProgram = !!userProgram && userProgram.status === 'active';
+      }
+      
+      if (!activeProgram || !hasActualActiveProgram) {
         setState(prev => ({ 
           ...prev, 
           loading: false, 
           hasActiveProgram: false,
-          error: 'No active program found'
+          program: null,
+          days: [],
+          totalDays: 0,
+          completedDays: 0,
+          error: null // No error - just no active program
         }));
         return;
       }
 
       // Fetch user's actual start date from static_starts table
-      // Auto-create if missing for static program (currently only Kontorikeha Reset)
-      // TODO: When adding multiple static programs, update static_starts to include program_id
+      // Only fetch if user actually has active program (prevent auto-start on browse)
       let userStartDate: Date | undefined = undefined;
       if (activeProgram.id === KONTORIKEHA_RESET_PROGRAM_ID) {
         const { data: staticStart, error: staticStartError } = await supabase
@@ -183,8 +178,8 @@ export const useProgramCalendarState = () => {
           console.error('Error checking static_starts:', staticStartError);
         }
 
-        // If no static_starts entry exists, auto-create it
-        if (!staticStart?.start_monday) {
+        // Only auto-create static_starts if user has active program but missing start date
+        if (!staticStart?.start_monday && hasActualActiveProgram) {
           try {
             const { data: startDate, error: startError } = await supabase
               .rpc('start_static_program', { p_force: false });
@@ -289,17 +284,22 @@ export const useProgramCalendarState = () => {
         totalDays: activeProgram.duration_days,
         completedDays,
         loading: false,
-        hasActiveProgram: true,
+        hasActiveProgram: hasActualActiveProgram, // Use actual check result
         error: null
       }));
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading program data:', error);
+      const errorMessage = error?.message || 'Programmi andmete laadimine ebaõnnestus. Palun proovi hiljem uuesti.';
       setState(prev => ({
         ...prev,
         loading: false,
-        error: 'Failed to load program data',
-        hasActiveProgram: false
+        error: errorMessage,
+        hasActiveProgram: false,
+        program: null,
+        days: [],
+        totalDays: 0,
+        completedDays: 0
       }));
     }
   }, [user, getActiveProgram, generateCalendarDays]);
@@ -326,8 +326,10 @@ export const useProgramCalendarState = () => {
         completedDays: prev.completedDays + 1
       }));
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error marking day completed:', error);
+      // Error is handled in the calling component via toast
+      throw error; // Re-throw so calling component can handle it
     }
   }, [user, state.program]);
 

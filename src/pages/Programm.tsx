@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useProgramCalendarState } from '@/hooks/useProgramCalendarState';
 import { useWeekendRedirect } from '@/hooks/useWeekendRedirect';
-import { Loader2, RefreshCw, ArrowLeft, Target, ArrowRight, RotateCcw } from 'lucide-react';
+import { Loader2, RefreshCw, ArrowLeft, Target, ArrowRight, RotateCcw, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -60,12 +60,16 @@ export default function Programm() {
         .eq('week', week)
         .eq('day', day)
         .single();
-      if (error) {
-        console.error('programday load error', error);
-        toast({ title: 'Viga', description: 'Päeva laadimine ebaõnnestus', variant: 'destructive' });
-        setActiveDayData(null);
-        return;
-      }
+        if (error) {
+          console.error('programday load error', error);
+          toast({ 
+            title: 'Viga', 
+            description: error.message || 'Päeva laadimine ebaõnnestus. Palun proovi hiljem uuesti.', 
+            variant: 'destructive' 
+          });
+          setActiveDayData(null);
+          return;
+        }
       setActiveDayData(data);
     } else {
       // For future programs, this would load from a different structure
@@ -160,7 +164,12 @@ export default function Programm() {
         
         if (error) {
           console.error('Error completing day:', error);
-          toast({ title: 'Viga', description: 'Päeva märkimine ebaõnnestus', variant: 'destructive' });
+          const errorMsg = error?.message || 'Päeva märkimine ebaõnnestus. Palun proovi hiljem uuesti.';
+          toast({ 
+            title: 'Viga', 
+            description: errorMsg, 
+            variant: 'destructive' 
+          });
           return false;
         }
         
@@ -245,19 +254,39 @@ export default function Programm() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-destructive mb-4">{error}</p>
-            <Button onClick={refreshCalendar} variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Proovi uuesti
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center">
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <Card className="border-2 border-red-200 bg-white/90 backdrop-blur-sm shadow-xl">
+            <CardContent className="text-center py-12 px-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-6">
+                <Target className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Viga andmete laadimisel</h3>
+              <p className="text-red-600 mb-6">{error}</p>
+              <div className="flex gap-3 justify-center">
+                <Button 
+                  onClick={refreshCalendar} 
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Proovi uuesti
+                </Button>
+                <Button 
+                  onClick={() => navigate('/programmid')} 
+                  variant="outline"
+                  className="border-gray-300"
+                >
+                  Vali programm
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
+
+  const [startingProgramId, setStartingProgramId] = useState<string | null>(null);
 
   // Load available programs for empty state
   useEffect(() => {
@@ -271,6 +300,66 @@ export default function Programm() {
       })();
     }
   }, [hasActiveProgram, loading]);
+
+  // Handle starting program from empty state
+  const handleStartFromEmptyState = useCallback(async (programId: string) => {
+    if (!user) return;
+    
+    setStartingProgramId(programId);
+    try {
+      // Pause any existing active programs
+      await supabase
+        .from('user_programs')
+        .update({ 
+          status: 'paused',
+          paused_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      // Create user_programs entry
+      const { error: upsertError } = await supabase
+        .from('user_programs')
+        .upsert({
+          user_id: user.id,
+          program_id: programId,
+          status: 'active',
+          started_at: new Date().toISOString(),
+          paused_at: null,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,program_id'
+        });
+
+      if (upsertError) throw upsertError;
+
+      // For Kontorikeha Reset, call start_static_program
+      if (programId === KONTORIKEHA_RESET_PROGRAM_ID) {
+        await supabase.rpc('start_static_program', { p_force: false });
+      }
+
+      toast({ title: 'Programm alustatud!', description: 'Sinu programm on nüüd aktiivne.' });
+      
+      // Refresh calendar to show new program
+      refreshCalendar();
+      
+      // Small delay to ensure state updates
+      setTimeout(() => {
+        navigate('/programm');
+      }, 100);
+    } catch (error: any) {
+      console.error('Error starting program:', error);
+      const errorMsg = error?.message || 'Programmi alustamine ebaõnnestus. Palun proovi hiljem uuesti.';
+      toast({ 
+        title: 'Viga', 
+        description: errorMsg, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setStartingProgramId(null);
+    }
+  }, [user, navigate, toast, refreshCalendar]);
 
   // Handle program switching
   const handleSwitchProgram = useCallback(async () => {
@@ -304,69 +393,125 @@ export default function Programm() {
 
       toast({ title: 'Programm peatatud', description: 'Sinu progress on salvestatud. Saad seda hiljem jätkata.' });
       navigate('/programmid');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error switching program:', error);
-      toast({ title: 'Viga', description: 'Programmi vahetamine ebaõnnestus', variant: 'destructive' });
+      const errorMsg = error?.message || 'Programmi vahetamine ebaõnnestus. Palun proovi hiljem uuesti.';
+      toast({ 
+        title: 'Viga', 
+        description: errorMsg, 
+        variant: 'destructive' 
+      });
     } finally {
       setSwitchingProgram(false);
       setShowSwitchDialog(false);
     }
   }, [user, program, navigate, toast]);
 
-  // Better empty state with program selection
+  // Beautiful empty state with program selection
   if (!loading && !hasActiveProgram) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <div className="text-center mb-8">
-            <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Pole aktiivset programmi
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="container mx-auto px-4 py-12 max-w-5xl">
+          {/* Hero Section */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mb-6 shadow-xl">
+              <Target className="h-10 w-10 text-white" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+              Vali oma treeningprogramm
             </h2>
-            <p className="text-gray-600 mb-2">
-              Vali programm, et alustada oma treeningteekonda.
+            <p className="text-lg text-gray-600 mb-2 max-w-2xl mx-auto">
+              Alusta oma tervisliku elustiili teekonda valides endale sobiva programmi
             </p>
             <p className="text-sm text-gray-500">
-              Programm avaneb päev-päevalt ja aitab sul järjepidevust hoida.
+              Programm avaneb päev-päevalt ja aitab sul järjepidevust hoida
             </p>
           </div>
 
-          {/* Available Programs Grid */}
+          {/* Available Programs Grid - Beautiful Cards */}
           {availablePrograms.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {availablePrograms.map((p) => (
-                <Card key={p.id} className="bg-white/70 backdrop-blur-sm border border-gray-200/50">
-                  <CardHeader>
-                    <CardTitle className="text-lg">{p.title}</CardTitle>
-                    <CardDescription>{p.description || `${p.duration_weeks * 7} päeva programm`}</CardDescription>
+                <Card 
+                  key={p.id} 
+                  className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 hover:border-blue-300 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:to-purple-500/5 transition-all duration-300"></div>
+                  <CardHeader className="relative pb-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <CardTitle className="text-xl font-bold text-gray-900 pr-2">{p.title}</CardTitle>
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                          <Target className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                    </div>
+                    <CardDescription className="text-gray-600 min-h-[3rem]">
+                      {p.description || `${(p.duration_weeks || 4) * 7} päeva programm`}
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Button asChild className="w-full">
-                      <Link to="/programmid">
-                        Vaata üksikasju
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Link>
-                    </Button>
+                  <CardContent className="relative space-y-3 pt-2">
+                    <div className="flex items-center gap-4 text-xs text-gray-500 pb-2 border-b border-gray-200">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {(p.duration_weeks || 4) * 7} päeva
+                      </span>
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                        Alustaja
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => handleStartFromEmptyState(p.id)}
+                        disabled={startingProgramId === p.id}
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all"
+                      >
+                        {startingProgramId === p.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Alustan...
+                          </>
+                        ) : (
+                          <>
+                            <Target className="h-4 w-4 mr-2" />
+                            Alusta kohe
+                          </>
+                        )}
+                      </Button>
+                      <Button 
+                        asChild
+                        variant="outline"
+                        className="flex-1 border-gray-300 hover:bg-gray-50"
+                      >
+                        <Link to="/programmid">
+                          Üksikasjad
+                        </Link>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : (
-            <Card className="bg-white/70 backdrop-blur-sm border border-gray-200/50 mb-6">
-              <CardContent className="text-center py-8">
-                <p className="text-gray-600 mb-4">Programme pole hetkel saadaval</p>
+            <Card className="bg-white/80 backdrop-blur-sm border-2 border-gray-200/50 mb-8 shadow-lg">
+              <CardContent className="text-center py-12">
+                <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-2 font-medium">Programme pole hetkel saadaval</p>
+                <p className="text-sm text-gray-500">Palun kontrolli hiljem uuesti</p>
               </CardContent>
             </Card>
           )}
 
+          {/* Footer CTA */}
           <div className="text-center">
             <Button 
               onClick={() => navigate('/programmid')}
               size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              variant="outline"
+              className="border-2 border-gray-300 hover:bg-gray-50 text-gray-700 font-medium px-8"
             >
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Vaata kõiki programme
-              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </div>
@@ -376,31 +521,45 @@ export default function Programm() {
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-4xl space-y-6 sm:space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-3 sm:space-y-4">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+      {/* Header - Beautiful Design */}
+      <div className="text-center space-y-4 sm:space-y-5 mb-6">
+        <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mb-2 shadow-lg">
+          <Target className="h-7 w-7 text-white" />
+        </div>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           {program?.title || 'Treeningprogramm'}
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
+        <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
           {program?.description || 'Treeningprogramm, mis avaneb päev-päevalt'}
         </p>
+        
+        {/* Progress Badge */}
         <div className="flex items-center justify-center gap-4 flex-wrap">
-          <span className="text-sm text-muted-foreground">{completedDays}/{totalDays} päeva tehtud</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border-2 border-blue-200/50 shadow-md">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <span className="text-sm font-semibold text-gray-900">
+              {completedDays}/{totalDays} päeva tehtud
+            </span>
+            <span className="text-xs text-gray-500">
+              ({Math.round((completedDays / totalDays) * 100)}%)
+            </span>
+          </div>
+          
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => setShowSwitchDialog(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
             >
               <RotateCcw className="h-4 w-4" />
-              Vaheta programmi
+              Vaheta
             </Button>
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/programmid')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 hover:bg-gray-100"
             >
               <ArrowLeft className="h-4 w-4" />
               Tagasi
@@ -534,36 +693,41 @@ export default function Programm() {
         </div>
       )}
 
-      {/* Instructions */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <div className="space-y-3 sm:space-y-4">
-            <h3 className="text-base sm:text-lg font-semibold">Kuidas programm töötab?</h3>
-            <div className="grid gap-3 sm:gap-4 text-xs sm:text-sm">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold">1</div>
-                <div>
-                  <p className="font-medium">Uued päevad avanevad</p>
-                  <p className="text-muted-foreground">
-                    Igal nädalapäeval kell 07:00 avaneb uus treeningpäev
+      {/* Instructions - Enhanced Visual Design */}
+      <Card className="bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 border-2 border-blue-100/50">
+        <CardContent className="p-6 sm:p-8">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                <Target className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Kuidas programm töötab?</h3>
+            </div>
+            <div className="grid gap-4 sm:gap-5">
+              <div className="flex items-start gap-4 p-4 bg-white/60 rounded-lg border border-gray-200/50 hover:bg-white/80 transition-colors">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-md">1</div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 mb-1">Uued päevad avanevad</p>
+                  <p className="text-sm text-gray-600">
+                    Igal nädalapäeval kell 07:00 avaneb uus treeningpäev automaatselt
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold">2</div>
-                <div>
-                  <p className="font-medium">Nädalavahetused</p>
-                  <p className="text-muted-foreground">
-                    Nädalavahetused suunatakse mindfulness lehele
+              <div className="flex items-start gap-4 p-4 bg-white/60 rounded-lg border border-gray-200/50 hover:bg-white/80 transition-colors">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-md">2</div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 mb-1">Nädalavahetused</p>
+                  <p className="text-sm text-gray-600">
+                    Nädalavahetused suunatakse mindfulness lehele puhkamiseks
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold">3</div>
-                <div>
-                  <p className="font-medium">Järjepidevus</p>
-                  <p className="text-muted-foreground">
-                    Võid alati tagasi minna ja lõpetada varem avatud päevi
+              <div className="flex items-start gap-4 p-4 bg-white/60 rounded-lg border border-gray-200/50 hover:bg-white/80 transition-colors">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-sm font-bold text-white shadow-md">3</div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 mb-1">Järjepidevus</p>
+                  <p className="text-sm text-gray-600">
+                    Võid alati tagasi minna ja lõpetada varem avatud päevi. Progress salvestatakse automaatselt.
                   </p>
                 </div>
               </div>

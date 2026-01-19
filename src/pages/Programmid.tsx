@@ -16,9 +16,9 @@ import {
   Users,
   Loader2
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 interface Program {
   id: string;
@@ -41,6 +41,7 @@ interface UserProgram {
 const Programmid: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [userPrograms, setUserPrograms] = useState<UserProgram[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,45 +59,27 @@ const Programmid: React.FC = () => {
       // Try to load programs from database
       const { data: programsData, error: programsError } = await supabase
         .from('programs')
-        .select('*')
+        .select('id, title, description, duration_weeks, created_at')
         .order('created_at');
 
       if (programsError) {
-        console.log('Programs table not found, using fallback data');
-        // Fallback data if tables don't exist yet
-        const fallbackPrograms: Program[] = [
-          {
-            id: 'kontorikeha-reset',
-            title: 'Kontorikeha Reset',
-            description: '20-päevane programm kontoritöötajatele, mis aitab parandada kehahoiakut ja vähendada põhja- ja kaelavalusid. Sisaldab lihtsaid harjutusi, mida saab teha kodus või kontoris.',
-            duration_days: 20,
-            difficulty: 'alustaja',
-            status: 'available',
-            created_at: new Date().toISOString()
-          },
-          {
-            id: '35-naised-kodus',
-            title: '35+ Naised Kodus Tugevaks',
-            description: 'Spetsiaalselt 35+ naistele mõeldud tugevustreeningu programm, mida saab teha kodus. Fookus lihaste tugevdamisel ja luutiheduse säilitamisel.',
-            duration_days: 28,
-            difficulty: 'keskmine',
-            status: 'coming_soon',
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 'alaseljavalu-lahendus',
-            title: 'Alaseljavalu Lahendus',
-            description: 'Keskendub alaselja tugevdamisele ja valude vähendamisele. Sisaldab spetsiaalseid harjutusi, mis aitavad parandada selja tervist ja vähendada kroonilisi valusid.',
-            duration_days: 21,
-            difficulty: 'alustaja',
-            status: 'coming_soon',
-            created_at: new Date().toISOString()
-          }
-        ];
-        setPrograms(fallbackPrograms);
+        console.error('Error loading programs:', programsError);
+            toast({ title: 'Viga', description: 'Programmide laadimine ebaõnnestus', variant: 'destructive' });
+        setPrograms([]);
         setUserPrograms([]);
         return;
       }
+
+      // Convert programs data: duration_weeks -> duration_days
+      const convertedPrograms: Program[] = (programsData || []).map(p => ({
+        id: p.id,
+        title: p.title,
+        description: p.description || '',
+        duration_days: (p.duration_weeks || 4) * 7, // Convert weeks to days
+        difficulty: 'alustaja' as const, // Default, can be enhanced later
+        status: 'available' as const, // Default, can be enhanced later
+        created_at: p.created_at || new Date().toISOString()
+      }));
 
       // Load user programs
       const { data: userProgramsData, error: userProgramsError } = await supabase
@@ -105,16 +88,19 @@ const Programmid: React.FC = () => {
         .eq('user_id', user?.id);
 
       if (userProgramsError) {
-        console.log('User programs table not found, using empty array');
+        console.error('Error loading user programs:', userProgramsError);
+        // Continue with empty array - not critical
         setUserPrograms([]);
       } else {
         setUserPrograms(userProgramsData || []);
       }
 
-      setPrograms(programsData || []);
+      setPrograms(convertedPrograms);
     } catch (error) {
       console.error('Error loading programs:', error);
-      toast.error('Programmide laadimine ebaõnnestus');
+      toast({ title: 'Viga', description: 'Programmide laadimine ebaõnnestus. Palun proovi hiljem uuesti.', variant: 'destructive' });
+      setPrograms([]);
+      setUserPrograms([]);
     } finally {
       setLoading(false);
     }
@@ -211,7 +197,7 @@ const Programmid: React.FC = () => {
           if (krProgram) {
             actualProgramId = krProgram.id;
           } else {
-            toast.error('Programm ei leitud');
+            toast({ title: 'Viga', description: 'Programm ei leitud', variant: 'destructive' });
             return;
           }
         } else {
@@ -257,7 +243,7 @@ const Programmid: React.FC = () => {
           await supabase.rpc('start_static_program', { p_force: false });
         }
 
-        toast.success('Programm jätkatud!');
+        toast({ title: 'Õnnestus!', description: 'Programm jätkatud!' });
       } else {
         // Start new program - pause any active programs first
         const { error: pauseError } = await supabase
@@ -293,15 +279,27 @@ const Programmid: React.FC = () => {
           await supabase.rpc('start_static_program', { p_force: false });
         }
 
-        toast.success('Programm alustatud!');
+        toast({ title: 'Õnnestus!', description: 'Programm alustatud!' });
       }
 
       await loadData();
       setSelectedProgram(null);
-      navigate('/programm');
-    } catch (error) {
+      
+      // Small delay to ensure state updates before navigation
+      setTimeout(() => {
+        navigate('/programm');
+      }, 100);
+    } catch (error: any) {
       console.error('Error starting program:', error);
-      toast.error('Programmi alustamine ebaõnnestus');
+      const errorMessage = error?.message || 'Programmi alustamine ebaõnnestus';
+      toast.error(errorMessage);
+      
+      // Try to reload data to get current state
+      try {
+        await loadData();
+      } catch (reloadError) {
+        console.error('Error reloading data:', reloadError);
+      }
     } finally {
       setStartingProgram(null);
     }
@@ -309,21 +307,32 @@ const Programmid: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Laen programme...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Target className="h-6 w-6 text-purple-500 animate-pulse" />
+            </div>
+          </div>
+          <div>
+            <p className="text-base font-semibold text-gray-900 mb-1">Laen programme...</p>
+            <p className="text-sm text-gray-500">Palun oota hetke</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
+        {/* Header - Beautiful Design */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mb-6 shadow-xl">
+            <Target className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Treeningprogrammid
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -335,16 +344,22 @@ const Programmid: React.FC = () => {
         {programs.length === 0 ? (
           <div className="text-center py-16 px-4">
             <div className="max-w-md mx-auto">
-              <div className="bg-white/70 backdrop-blur-sm rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center border border-gray-200/50 shadow-lg">
-                <Calendar className="h-12 w-12 text-muted-foreground" />
+              <div className="relative inline-flex items-center justify-center mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-200/50 to-purple-200/50 rounded-full blur-xl"></div>
+                <div className="relative bg-white/80 backdrop-blur-sm rounded-full p-8 w-28 h-28 flex items-center justify-center border-2 border-gray-200/50 shadow-xl">
+                  <Calendar className="h-14 w-14 text-gray-400" />
+                </div>
               </div>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
                 Programme pole saadaval
               </h2>
-              <p className="text-gray-600 mb-6">
-                Praegu pole sinu jaoks programme saadaval. Palun kontrolli hiljem uuesti või võta ühendust toega.
+              <p className="text-gray-600 mb-2">
+                Praegu pole sinu jaoks programme saadaval.
               </p>
-              <Button asChild variant="outline" className="gap-2">
+              <p className="text-sm text-gray-500 mb-8">
+                Palun kontrolli hiljem uuesti või võta ühendust toega.
+              </p>
+              <Button asChild variant="outline" className="gap-2 border-2 border-gray-300 hover:bg-gray-50">
                 <Link to="/home">
                   <ArrowLeft className="h-4 w-4" />
                   Tagasi avalehele
@@ -361,31 +376,51 @@ const Programmid: React.FC = () => {
             return (
               <Card 
                 key={program.id} 
-                className={`bg-white/70 backdrop-blur-sm border border-gray-200/50 shadow-lg transition-all duration-200 hover:shadow-xl ${
-                  status === 'completed' ? 'ring-2 ring-yellow-200' : ''
+                className={`group relative overflow-hidden bg-white/80 backdrop-blur-sm border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+                  status === 'completed' 
+                    ? 'border-yellow-300 ring-2 ring-yellow-200/50' 
+                    : status === 'active'
+                    ? 'border-green-300 ring-2 ring-green-200/50'
+                    : status === 'paused'
+                    ? 'border-orange-300 ring-2 ring-orange-200/50'
+                    : 'border-gray-200/50 hover:border-blue-300'
                 }`}
               >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
+                <div className={`absolute inset-0 transition-all duration-300 ${
+                  status === 'completed' 
+                    ? 'bg-gradient-to-br from-yellow-500/0 to-yellow-500/0 group-hover:from-yellow-500/5 group-hover:to-yellow-500/5'
+                    : status === 'active'
+                    ? 'bg-gradient-to-br from-green-500/0 to-green-500/0 group-hover:from-green-500/5 group-hover:to-green-500/5'
+                    : 'bg-gradient-to-br from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:to-purple-500/5'
+                }`}></div>
+                <CardHeader className="relative pb-4">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <CardTitle className="text-xl text-gray-900 mb-2">
+                      <CardTitle className="text-xl font-bold text-gray-900 mb-2 pr-2">
                         {program.title}
                       </CardTitle>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge className={getDifficultyColor(program.difficulty)}>
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <Badge className={`${getDifficultyColor(program.difficulty)} border`}>
                           {getDifficultyText(program.difficulty)}
                         </Badge>
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <Calendar className="h-4 w-4" />
-                          {program.duration_days} päeva
+                          <span className="font-medium">{program.duration_days} päeva</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {getStatusIcon(status)}
-                      <span className="text-sm font-medium text-gray-700">
+                      <Badge 
+                        className={`text-xs font-semibold ${
+                          status === 'active' ? 'bg-green-500 text-white border-0' :
+                          status === 'paused' ? 'bg-orange-500 text-white border-0' :
+                          status === 'completed' ? 'bg-yellow-500 text-white border-0' :
+                          'bg-blue-100 text-blue-700 border-blue-300'
+                        }`}
+                      >
                         {getStatusText(status)}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
                 </CardHeader>
@@ -400,7 +435,7 @@ const Programmid: React.FC = () => {
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button 
-                            className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900"
+                            className="relative w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
                             disabled={startingProgram === program.id}
                           >
                             {startingProgram === program.id ? (
@@ -453,7 +488,7 @@ const Programmid: React.FC = () => {
                     {status === 'active' && (
                       <Button 
                         asChild
-                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transition-all"
                       >
                         <Link to="/programm">
                           <Play className="h-4 w-4 mr-2" />
@@ -465,7 +500,7 @@ const Programmid: React.FC = () => {
                     {status === 'paused' && (
                       <Button 
                         onClick={() => handleStartProgram(program.id)}
-                        className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                        className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-md hover:shadow-lg transition-all"
                         disabled={startingProgram === program.id}
                       >
                         {startingProgram === program.id ? (
@@ -546,16 +581,22 @@ const Programmid: React.FC = () => {
         {/* Coming Soon Notice - Only show if there are programs */}
         {programs.length > 0 && (
           <div className="mt-12 text-center">
-          <div className="bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30 p-6 max-w-2xl mx-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Rohkem programme tulekul
-            </h3>
-            <p className="text-gray-600">
-              Töötame pidevalt uute treeningprogrammide kallal, 
-              mis aitavad sul saavutada oma tervise- ja fitnesseesmärke.
-            </p>
+            <div className="relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 backdrop-blur-sm rounded-xl border-2 border-blue-200/50 p-8 max-w-2xl mx-auto shadow-lg">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full blur-2xl -mr-16 -mt-16"></div>
+              <div className="relative">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mb-4">
+                  <Target className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Rohkem programme tulekul
+                </h3>
+                <p className="text-gray-600">
+                  Töötame pidevalt uute treeningprogrammide kallal, 
+                  mis aitavad sul saavutada oma tervise- ja fitnesseesmärke.
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
         )}
       </div>
     </div>
