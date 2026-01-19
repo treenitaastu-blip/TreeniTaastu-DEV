@@ -278,8 +278,9 @@ export default function Programm() {
     try {
       console.log('[handleStartFromEmptyState] Starting program:', programId);
       
-      // Pause any existing active programs
-      const { error: pauseError } = await supabase
+      // Pause any existing active programs (both static and PT)
+      // First pause static programs in user_programs
+      const { error: pauseStaticError } = await supabase
         .from('user_programs')
         .update({ 
           status: 'paused',
@@ -289,10 +290,27 @@ export default function Programm() {
         .eq('user_id', user.id)
         .eq('status', 'active');
 
-      if (pauseError) {
-        console.error('[handleStartFromEmptyState] Pause error:', pauseError);
+      if (pauseStaticError) {
+        console.error('[handleStartFromEmptyState] Pause static programs error:', pauseStaticError);
         // Don't throw - might be no active programs, which is fine
       }
+
+      // Also pause PT programs in client_programs
+      const { error: pausePTError } = await supabase
+        .from('client_programs')
+        .update({ 
+          status: 'paused',
+          updated_at: new Date().toISOString()
+        })
+        .eq('assigned_to', user.id)
+        .eq('status', 'active');
+
+      if (pausePTError) {
+        console.error('[handleStartFromEmptyState] Pause PT programs error:', pausePTError);
+        // Don't throw - might be no active PT programs, which is fine
+      }
+      
+      console.log('[handleStartFromEmptyState] Paused existing programs (static and PT)');
 
       // Create user_programs entry
       const { data: upsertData, error: upsertError } = await supabase
