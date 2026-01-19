@@ -105,7 +105,7 @@ export default function ProgramDetail() {
   }, [program?.days, completedDays]);
 
   // Auto-progression function when a week is completed
-  const handleWeekCompletion = async (weekNumber: number) => {
+  const handleWeekCompletion = useCallback(async (weekNumber: number) => {
     if (!program) return;
 
     try {
@@ -120,7 +120,7 @@ export default function ProgramDetail() {
     } catch (err) {
       console.error('Failed to auto progress:', err);
     }
-  };
+  }, [program]);
 
   const loadProgram = useCallback(async () => {
     if (!user || !programId) return;
@@ -356,10 +356,11 @@ export default function ProgramDetail() {
       } finally {
         setLoading(false);
       }
-    };
+    }, [user, programId, handleWeekCompletion]);
 
+  useEffect(() => {
     loadProgram();
-  }, [user, programId]);
+  }, [loadProgram]);
 
   const openSessionDay = openSessionDayId ? daysById[openSessionDayId] : null;
   const nextDay = nextUncompletedDayId ? daysById[nextUncompletedDayId] : null;
