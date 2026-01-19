@@ -18,11 +18,13 @@ import { supabase } from '@/integrations/supabase/client';
 const KONTORIKEHA_RESET_PROGRAM_ID = 'e1ab6f77-5a43-4c05-ac0d-02101b499e4c';
 
 export default function Programm() {
+  
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { handleWeekendClick } = useWeekendRedirect();
   const { dayNumber: routeDayNumber } = useParams();
+  
   
   const {
     program,
@@ -35,6 +37,7 @@ export default function Programm() {
     refreshCalendar,
     markDayCompleted
   } = useProgramCalendarState();
+  
 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [activeDayData, setActiveDayData] = useState<any | null>(null);
@@ -239,6 +242,7 @@ export default function Programm() {
     }
   }, [days]);
 
+  
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -519,6 +523,20 @@ export default function Programm() {
     );
   }
 
+  // Safety check: if hasActiveProgram is true but program is null, show loading state
+  if (hasActiveProgram && !program) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+            <p className="text-muted-foreground">Laen programmi andmeid...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-4xl space-y-6 sm:space-y-8">
       {/* Header - Beautiful Design */}
@@ -527,7 +545,9 @@ export default function Programm() {
           <Target className="h-7 w-7 text-white" />
         </div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          {program?.title || 'Treeningprogramm'}
+          {(() => {
+            return program?.title || 'Treeningprogramm';
+          })()}
         </h1>
         <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
           {program?.description || 'Treeningprogramm, mis avaneb päev-päevalt'}

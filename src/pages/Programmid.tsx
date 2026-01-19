@@ -63,6 +63,7 @@ const Programmid: React.FC = () => {
         .from('programs')
         .select('id, title, description, duration_weeks, created_at')
         .order('created_at');
+      
 
       if (programsError) {
         console.error('Error loading programs:', programsError);
@@ -355,6 +356,7 @@ const Programmid: React.FC = () => {
     }
   };
 
+  
   if (loading || accessLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
