@@ -196,7 +196,8 @@ export const useProgramCalendarState = () => {
         }
 
         // Only auto-create static_starts if user has active program but missing start date
-        if (!staticStart?.start_monday && hasActualActiveProgram) {
+        // We know activeProgram exists because we're inside this block
+        if (!staticStart?.start_monday) {
           try {
             const { data: startDate, error: startError } = await supabase
               .rpc('start_static_program', { p_force: false });
@@ -316,7 +317,7 @@ export const useProgramCalendarState = () => {
         totalDays: actualDurationDays,
         completedDays,
         loading: false,
-        hasActiveProgram: hasActualActiveProgram, // Use actual check result
+        hasActiveProgram: true, // We have an active program (activeProgram exists)
         error: null
       }));
 
