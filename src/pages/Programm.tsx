@@ -243,54 +243,6 @@ export default function Programm() {
     }
   }, [days]);
 
-  
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-            <p className="text-muted-foreground">Laen kalendrit...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center">
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <Card className="border-2 border-red-200 bg-white/90 backdrop-blur-sm shadow-xl">
-            <CardContent className="text-center py-12 px-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-6">
-                <Target className="h-8 w-8 text-red-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Viga andmete laadimisel</h3>
-              <p className="text-red-600 mb-6">{error}</p>
-              <div className="flex gap-3 justify-center">
-                <Button 
-                  onClick={refreshCalendar} 
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Proovi uuesti
-                </Button>
-                <Button 
-                  onClick={() => navigate('/programmid')} 
-                  variant="outline"
-                  className="border-gray-300"
-                >
-                  Vali programm
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   // Handle starting program from empty state
   const handleStartFromEmptyState = useCallback(async (programId: string) => {
     if (!user) return;
@@ -396,6 +348,66 @@ export default function Programm() {
       setShowSwitchDialog(false);
     }
   }, [user, program, navigate, toast]);
+
+  // Load available programs for empty state
+  useEffect(() => {
+    if (!hasActiveProgram && !loading) {
+      (async () => {
+        const { data } = await supabase
+          .from('programs')
+          .select('*')
+          .order('created_at');
+        if (data) setAvailablePrograms(data);
+      })();
+    }
+  }, [hasActiveProgram, loading]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+            <p className="text-muted-foreground">Laen kalendrit...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center">
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <Card className="border-2 border-red-200 bg-white/90 backdrop-blur-sm shadow-xl">
+            <CardContent className="text-center py-12 px-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-6">
+                <Target className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Viga andmete laadimisel</h3>
+              <p className="text-red-600 mb-6">{error}</p>
+              <div className="flex gap-3 justify-center">
+                <Button 
+                  onClick={refreshCalendar} 
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Proovi uuesti
+                </Button>
+                <Button 
+                  onClick={() => navigate('/programmid')} 
+                  variant="outline"
+                  className="border-gray-300"
+                >
+                  Vali programm
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   // Beautiful empty state with program selection
   if (!loading && !hasActiveProgram) {
