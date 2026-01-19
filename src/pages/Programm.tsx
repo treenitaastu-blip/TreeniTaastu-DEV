@@ -40,6 +40,7 @@ export default function Programm() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [activeDayData, setActiveDayData] = useState<any | null>(null);
   const [completingDay, setCompletingDay] = useState<number | null>(null); // Track which day is being completed
+  const completingDayRef = useRef<number | null>(null); // Ref for race condition check
   const [showSwitchDialog, setShowSwitchDialog] = useState(false);
   const [switchingProgram, setSwitchingProgram] = useState(false);
   const [availablePrograms, setAvailablePrograms] = useState<any[]>([]);
@@ -87,15 +88,13 @@ export default function Programm() {
         }
       setActiveDayData(data);
     } else {
-      // For future programs, this would load from a different structure
-      // For now, show a placeholder
-      setActiveDayData({
-        note: `${program.title} - Päev ${dayNum}`,
-        exercise1: 'Harjutus 1',
-        reps1: '10',
-        sets1: '3',
-        hint1: 'See programm on veel arendamisel'
+      // Program ID missing - show error instead of placeholder
+      toast({
+        title: 'Viga',
+        description: 'Programmi ID puudub. Palun kontrolli programmi seadeid.',
+        variant: 'destructive'
       });
+      setActiveDayData(null);
     }
   }, [program, toast]);
 
@@ -108,7 +107,7 @@ export default function Programm() {
     } else {
       setActiveDayData(null);
     }
-  }, [routeDayNumber, loadProgramDayByNumber]);
+  }, [routeDayNumber, loadProgramDayByNumber, totalDays]);
 
   // Auto-scroll to first exercise when day loads
   useEffect(() => {
@@ -152,10 +151,12 @@ export default function Programm() {
     if (!user || !program) return false;
     
     // Prevent race condition - if already completing this day, return early
-    if (completingDay === dayNumber) {
+    // Use ref to avoid stale closure issues
+    if (completingDayRef.current === dayNumber) {
       return false;
     }
     
+    completingDayRef.current = dayNumber;
     setCompletingDay(dayNumber);
     
     try {
@@ -232,9 +233,10 @@ export default function Programm() {
       toast({ title: 'Viga', description: 'Päeva märkimine ebaõnnestus', variant: 'destructive' });
       return false;
     } finally {
-      setCompletingDay(null); // Always clear completing state
+      completingDayRef.current = null; // Always clear completing state
+      setCompletingDay(null);
     }
-  }, [user, program, activeDayData, markDayCompleted, navigate, toast, completingDay]);
+  }, [user, program, activeDayData, markDayCompleted, navigate, toast]);
 
   // Show quote for locked days
   const showQuoteForDay = useCallback((dayNumber: number) => {
