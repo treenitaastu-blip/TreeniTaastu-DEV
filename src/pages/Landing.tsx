@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import useAccess from "@/hooks/useAccess";
 import type { ProgramDay, UserProgress } from "@/types/program";
 import { normalizeExercises, convertLegacyProgramDay } from "@/lib/program";
+import { KONTORIKEHA_RESET_PROGRAM_ID } from "@/constants/programs";
 
 function fmt(dt?: string | null) {
   if (!dt) return "";
@@ -190,7 +191,7 @@ function Dashboard() {
               seconds1, seconds2, seconds3, seconds4, seconds5,
               hint1, hint2, hint3, hint4, hint5
             `)
-            .eq("program_id", program?.id || "e1ab6f77-5a43-4c05-ac0d-02101b499e4c")
+            .eq("program_id", program?.id || KONTORIKEHA_RESET_PROGRAM_ID)
             .order("week", { ascending: true })
             .order("day", { ascending: true }),
           user

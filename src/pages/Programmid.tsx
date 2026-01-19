@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import useAccess from '@/hooks/useAccess';
+import { KONTORIKEHA_RESET_PROGRAM_ID } from '@/constants/programs';
 
 interface Program {
   id: string;
@@ -290,7 +291,7 @@ const Programmid: React.FC = () => {
         }
 
         // For static programs, also ensure static_starts is set
-        if (actualProgramId === 'e1ab6f77-5a43-4c05-ac0d-02101b499e4c') {
+        if (actualProgramId === KONTORIKEHA_RESET_PROGRAM_ID) {
           await supabase.rpc('start_static_program', { p_force: false });
         }
 
@@ -326,7 +327,7 @@ const Programmid: React.FC = () => {
         }
 
         // For static programs, also call start_static_program
-        if (actualProgramId === 'e1ab6f77-5a43-4c05-ac0d-02101b499e4c') {
+        if (actualProgramId === KONTORIKEHA_RESET_PROGRAM_ID) {
           await supabase.rpc('start_static_program', { p_force: false });
         }
 

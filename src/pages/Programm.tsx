@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useProgramCalendarState } from '@/hooks/useProgramCalendarState';
 import { useWeekendRedirect } from '@/hooks/useWeekendRedirect';
-import { Loader2, RefreshCw, ArrowLeft, Target, ArrowRight, RotateCcw, Calendar } from 'lucide-react';
+import { Loader2, RefreshCw, ArrowLeft, Target, ArrowRight, RotateCcw, Calendar, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -13,9 +13,7 @@ import CalendarGrid from '@/components/calendar/CalendarGrid';
 import QuoteDisplay from '@/components/calendar/QuoteDisplay';
 import { getTallinnDate, isAfterUnlockTime } from '@/lib/workweek';
 import { supabase } from '@/integrations/supabase/client';
-
-// Static program IDs
-const KONTORIKEHA_RESET_PROGRAM_ID = 'e1ab6f77-5a43-4c05-ac0d-02101b499e4c';
+import { KONTORIKEHA_RESET_PROGRAM_ID } from '@/constants/programs';
 
 export default function Programm() {
   
@@ -51,7 +49,6 @@ export default function Programm() {
   const loadProgramDayByNumber = useCallback(async (dayNum: number) => {
     if (!program) return;
 
-    console.log('Loading program day:', dayNum, 'for program:', program.title);
 
     // Load program day using program_id
     if (program.id) {
@@ -91,7 +88,7 @@ export default function Programm() {
   useEffect(() => {
     if (routeDayNumber) {
       const dayNum = Number(routeDayNumber);
-      if (!Number.isNaN(dayNum) && dayNum >= 1 && dayNum <= 20) {
+      if (!Number.isNaN(dayNum) && dayNum >= 1 && dayNum <= (totalDays || 20)) {
         loadProgramDayByNumber(dayNum);
       }
     } else {
@@ -142,11 +139,8 @@ export default function Programm() {
     
     // Prevent race condition - if already completing this day, return early
     if (completingDay === dayNumber) {
-      console.log('Day completion already in progress, ignoring duplicate click');
       return false;
     }
-    
-    console.log('handleDayCompletion called with:', { dayNumber, user: user.id, program: program.title, activeDayData });
     
     setCompletingDay(dayNumber);
     
@@ -164,8 +158,6 @@ export default function Programm() {
           p_programday_id: activeDayData.id
         });
         
-        console.log('Database call result:', { data, error, activeDayDataId: activeDayData.id });
-        
         if (error) {
           console.error('Error completing day:', error);
           const errorMsg = error?.message || 'Päeva märkimine ebaõnnestus. Palun proovi hiljem uuesti.';
@@ -177,12 +169,8 @@ export default function Programm() {
           return false;
         }
         
-        console.log('Database call successful, data:', data);
-        
         if (data?.success) {
-          console.log('Database function succeeded, calling markDayCompleted with dayNumber:', dayNumber);
           const success = await markDayCompleted(dayNumber);
-          console.log('markDayCompleted result:', success);
           if (success) {
             toast({ title: 'Suurepärane!', description: `Päev ${dayNumber} on märgitud lõpetatuks` });
             setActiveDayData(null);
@@ -200,7 +188,6 @@ export default function Programm() {
             return true;
           }
         } else {
-          console.log('Database function returned success: false, data:', data);
           // Check if it's already completed today
           if (data?.message === 'Already completed today') {
             toast({ title: 'Juba tehtud!', description: 'See päev on juba täna lõpetatud', variant: 'default' });
@@ -647,10 +634,8 @@ export default function Programm() {
               <div className="flex justify-center pt-6 border-t">
                 <Button
                   onClick={async () => {
-                    console.log('Märgi tehtuks button clicked!', { routeDayNumber, activeDayData });
                     const dn = Number(routeDayNumber);
-                    const ok = await handleDayCompletion(dn);
-                    console.log('handleDayCompletion result:', ok);
+                    await handleDayCompletion(dn);
                     // The scroll logic is now handled in handleDayCompletion
                   }}
                   disabled={completingDay === Number(routeDayNumber)}

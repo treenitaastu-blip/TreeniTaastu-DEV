@@ -188,8 +188,6 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
   const isTodayTheRightDay = dayNumber === weekdaysIncludingToday;
   const isAfterUnlock = isAfterUnlockTime();
   return isTodayTheRightDay && isAfterUnlock;
-  
-  return result;
 }
 
 /**

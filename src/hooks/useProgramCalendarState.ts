@@ -9,9 +9,7 @@ import {
   formatTimeUntilUnlock 
 } from '@/lib/workweek';
 import { CalendarDay } from '@/components/calendar/DayTile';
-
-// Static program IDs
-const KONTORIKEHA_RESET_PROGRAM_ID = 'e1ab6f77-5a43-4c05-ac0d-02101b499e4c';
+import { KONTORIKEHA_RESET_PROGRAM_ID } from '@/constants/programs';
 
 interface ProgramInfo {
   id: string;
@@ -190,7 +188,6 @@ export const useProgramCalendarState = () => {
             } else if (startDate) {
               // Convert the returned date string to Date object
               userStartDate = new Date(startDate + 'T00:00:00');
-              console.log('Auto-created static_starts with start date:', startDate);
             }
           } catch (err) {
             console.warn('Exception creating static_starts (will use fallback):', err);
