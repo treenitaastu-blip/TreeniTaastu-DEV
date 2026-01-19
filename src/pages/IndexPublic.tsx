@@ -208,16 +208,27 @@ export default function IndexPublic() {
 
       if (error) {
         console.error('[IndexPublic] Function error', { error, message: error.message, status: error.status, context: error.context });
+        
         // Try to get more details from the error response
+        let errorDetails = error.message;
         if (error.context?.response) {
           try {
-            const errorText = await error.context.response.text();
+            const errorText = await error.context.response.clone().text();
             console.error('[IndexPublic] Function error response body', { errorText });
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorDetails = errorJson.error || errorText;
+            } catch {
+              errorDetails = errorText || error.message;
+            }
           } catch (e) {
             console.error('[IndexPublic] Could not read error response', { e });
           }
         }
-        throw error;
+        
+        // Create a more informative error
+        const detailedError = new Error(errorDetails || error.message);
+        throw detailedError;
       }
 
       if (data?.url) {
