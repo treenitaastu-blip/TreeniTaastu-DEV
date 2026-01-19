@@ -256,7 +256,7 @@ export default function IndexPublic() {
       }
 
     } catch (error) {
-      console.error('[IndexPublic] Checkout error caught', { error, message: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
+      console.error('Checkout error:', error);
       toast({
         title: "Viga tellimuse vormistamisel",
         description: error instanceof Error ? error.message : "Proovi hiljem uuesti või loo konto",
