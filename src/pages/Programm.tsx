@@ -265,12 +265,21 @@ export default function Programm() {
 
   // Handle starting program from empty state
   const handleStartFromEmptyState = useCallback(async (programId: string) => {
-    if (!user) return;
+    if (!user) {
+      toast({ 
+        title: 'Viga', 
+        description: 'Palun logi sisse', 
+        variant: 'destructive' 
+      });
+      return;
+    }
     
     setStartingProgramId(programId);
     try {
+      console.log('[handleStartFromEmptyState] Starting program:', programId);
+      
       // Pause any existing active programs
-      await supabase
+      const { error: pauseError } = await supabase
         .from('user_programs')
         .update({ 
           status: 'paused',
@@ -280,8 +289,13 @@ export default function Programm() {
         .eq('user_id', user.id)
         .eq('status', 'active');
 
+      if (pauseError) {
+        console.error('[handleStartFromEmptyState] Pause error:', pauseError);
+        // Don't throw - might be no active programs, which is fine
+      }
+
       // Create user_programs entry
-      const { error: upsertError } = await supabase
+      const { data: upsertData, error: upsertError } = await supabase
         .from('user_programs')
         .upsert({
           user_id: user.id,
@@ -292,33 +306,66 @@ export default function Programm() {
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id,program_id'
-        });
+        })
+        .select();
 
-      if (upsertError) throw upsertError;
+      if (upsertError) {
+        console.error('[handleStartFromEmptyState] Upsert error:', upsertError);
+        throw upsertError;
+      }
+
+      console.log('[handleStartFromEmptyState] User program created:', upsertData);
 
       // For Kontorikeha Reset, call start_static_program
       if (programId === KONTORIKEHA_RESET_PROGRAM_ID) {
-        await supabase.rpc('start_static_program', { p_force: false });
+        const { data: startDate, error: startError } = await supabase.rpc('start_static_program', { p_force: false });
+        if (startError) {
+          console.error('[handleStartFromEmptyState] Start static program error:', startError);
+          // Don't throw - might already exist, which is fine
+        } else {
+          console.log('[handleStartFromEmptyState] Static program started, start date:', startDate);
+        }
       }
 
+      // Verify the program was created
+      const { data: verifyProgram } = await supabase
+        .from('user_programs')
+        .select('id, status, program_id')
+        .eq('user_id', user.id)
+        .eq('program_id', programId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (!verifyProgram) {
+        throw new Error('Programmi loomine ebaõnnestus. Palun proovi uuesti.');
+      }
+
+      console.log('[handleStartFromEmptyState] Program verified:', verifyProgram);
+      
+      // Clear starting state immediately so UI updates
+      setStartingProgramId(null);
+      
       toast({ title: 'Programm alustatud!', description: 'Sinu programm on nüüd aktiivne.' });
       
-      // Refresh calendar to show new program
+      // Refresh calendar to show new program - wait for it to complete
+      console.log('[handleStartFromEmptyState] Refreshing calendar...');
       await refreshCalendar();
       
-      // Navigate immediately - calendar will update
-      navigate('/programm');
+      // Force a full page reload to ensure everything refreshes
+      // This is necessary because we're already on /programm and React Router won't re-render
+      console.log('[handleStartFromEmptyState] Reloading page to show calendar...');
+      window.location.reload();
     } catch (error: any) {
-      console.error('Error starting program:', error);
+      console.error('[handleStartFromEmptyState] Error starting program:', error);
       const errorMsg = error?.message || 'Programmi alustamine ebaõnnestus. Palun proovi hiljem uuesti.';
       toast({ 
         title: 'Viga', 
         description: errorMsg, 
         variant: 'destructive' 
       });
-    } finally {
       setStartingProgramId(null);
     }
+    // Note: Don't clear startingProgramId in finally - let it clear when navigation completes
   }, [user, navigate, toast, refreshCalendar]);
 
   // Handle program switching
