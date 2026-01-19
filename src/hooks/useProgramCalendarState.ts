@@ -41,28 +41,57 @@ export const useProgramCalendarState = () => {
     hasActiveProgram: false
   });
 
-  // Get user's active program
+  // Get user's active static program
+  // This hook is specifically for static programs, so we check user_programs directly
+  // Users can have both PT and static programs active simultaneously
   const getActiveProgram = useCallback(async () => {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase.rpc('get_user_active_program', {
-        p_user_id: user.id
-      });
+      // Check for active static program directly (not using RPC which prioritizes PT)
+      const { data: userProgram, error: userProgramError } = await supabase
+        .from('user_programs')
+        .select('program_id, status')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error getting active program:', error);
+      if (userProgramError) {
+        console.error('Error getting active static program:', userProgramError);
         return null;
       }
 
-      // RPC now returns empty array if no active program (no fallback)
-      // Return first result if exists, otherwise null
-      if (data && data.length > 0) {
-        return data[0];
+      if (!userProgram || userProgram.status !== 'active') {
+        // No active static program found
+        return null;
       }
-      
-      // No active program found - return null
-      return null;
+
+      // Fetch the program details
+      const { data: program, error: programError } = await supabase
+        .from('programs')
+        .select('id, title, description, duration_weeks, difficulty, created_at')
+        .eq('id', userProgram.program_id)
+        .maybeSingle();
+
+      if (programError) {
+        console.error('Error fetching program details:', programError);
+        return null;
+      }
+
+      if (!program) {
+        return null;
+      }
+
+      // Convert to the expected format
+      return {
+        id: program.id,
+        title: program.title,
+        description: program.description,
+        duration_days: (program.duration_weeks * 7),
+        difficulty: program.difficulty || 'alustaja',
+        status: 'available',
+        created_at: program.created_at
+      };
     } catch (error) {
       console.error('Error getting active program:', error);
       return null;
@@ -131,24 +160,10 @@ export const useProgramCalendarState = () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      // Get active program
+      // Get active static program (already verified in getActiveProgram)
       const activeProgram = await getActiveProgram();
       
-      // Check if user actually has an active program in user_programs
-      let hasActualActiveProgram = false;
-      if (activeProgram) {
-        const { data: userProgram } = await supabase
-          .from('user_programs')
-          .select('status, program_id')
-          .eq('user_id', user.id)
-          .eq('program_id', activeProgram.id)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        hasActualActiveProgram = !!userProgram && userProgram.status === 'active';
-      }
-      
-      if (!activeProgram || !hasActualActiveProgram) {
+      if (!activeProgram) {
         setState(prev => ({ 
           ...prev, 
           loading: false, 
