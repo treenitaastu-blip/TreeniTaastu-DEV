@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Users, Plus, Pause, Play, Trash2, Search, Mail, BarChart3 } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAdminData, UserProfile } from "@/hooks/useAdminData";
+import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 
 // Types (UserProfile imported from useAdminData hook)
 
@@ -40,6 +41,7 @@ type AccessMatrix = {
 export default function UserManagement() {
   const navigate = useNavigate();
   const { users, loading, error, refetch } = useAdminData();
+  const { showDialog, hideDialog, dialog } = useConfirmationDialog();
   const [entitlements, setEntitlements] = useState<UserEntitlement[]>([]);
   const [accessMatrix, setAccessMatrix] = useState<AccessMatrix[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,6 +103,16 @@ export default function UserManagement() {
   const handleGrantAccess = async () => {
     if (!selectedUser) return;
 
+    // Validate days
+    if (grantForm.days < 1) {
+      toast({
+        title: "Viga",
+        description: "Kestus peab olema vähemalt 1 päev",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const { error } = await getAdminClient().rpc("admin_set_entitlement_service", {
         p_user: selectedUser.id,
@@ -159,11 +171,21 @@ export default function UserManagement() {
   };
 
   // Clear entitlement
-  const handleClearAccess = async (user: UserProfile, product: string) => {
-    if (!confirm(`Kas oled kindel, et soovid eemaldada ${product} ligipääsu kasutajalt ${user.email || 'tundmatu kasutaja'}?`)) {
-      return;
-    }
+  const handleClearAccess = (user: UserProfile, product: string) => {
+    showDialog({
+      title: "Ligipääsu eemaldamine",
+      description: `Kas oled kindel, et soovid eemaldada ${product} ligipääsu kasutajalt ${user.email || 'tundmatu kasutaja'}?`,
+      onConfirm: () => performClearAccess(user, product),
+      variant: "warning",
+      confirmText: "Eemalda",
+      cancelText: "Tühista",
+      icon: <Trash2 className="h-6 w-6" />
+    });
+  };
 
+  const performClearAccess = async (user: UserProfile, product: string) => {
+    hideDialog();
+    
     try {
       const { error } = await getAdminClient().rpc("admin_clear_entitlement_service", {
         p_user: user.id,
@@ -198,11 +220,15 @@ export default function UserManagement() {
     return accessMatrix.find(a => a.user_id === userId);
   };
 
-  // Filter users based on search
-  const filteredUsers = users.filter(user => 
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter users based on search (including full_name if available)
+  const filteredUsers = users.filter(user => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      user.email?.toLowerCase().includes(searchLower) ||
+      user.id.toLowerCase().includes(searchLower) ||
+      ((user as any).full_name?.toLowerCase().includes(searchLower) ?? false)
+    );
+  });
 
   // Status badge component
   const StatusBadge = ({ status }: { status: string }) => {
@@ -353,10 +379,19 @@ export default function UserManagement() {
                           <Input
                             type="number"
                             value={grantForm.days}
-                            onChange={(e) => setGrantForm(prev => ({ ...prev, days: parseInt(e.target.value) || 0 }))}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              if (value >= 1) {
+                                setGrantForm(prev => ({ ...prev, days: Math.min(value, 365) }));
+                              }
+                            }}
                             min="1"
                             max="365"
+                            placeholder="1-365"
                           />
+                          {grantForm.days < 1 && (
+                            <p className="text-xs text-destructive mt-1">Kestus peab olema vähemalt 1 päev</p>
+                          )}
                         </div>
 
                         <div>
@@ -377,7 +412,7 @@ export default function UserManagement() {
                         }}>
                           Tühista
                         </Button>
-                        <Button onClick={handleGrantAccess}>
+                        <Button onClick={handleGrantAccess} disabled={grantForm.days < 1 || !selectedUser}>
                           Anna ligipääs
                         </Button>
                       </DialogFooter>
@@ -472,6 +507,21 @@ export default function UserManagement() {
           );
         })}
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={dialog.isOpen}
+        onClose={hideDialog}
+        onConfirm={dialog.onConfirm}
+        title={dialog.title}
+        description={dialog.description}
+        variant={dialog.variant}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        isLoading={dialog.isLoading}
+        loadingText={dialog.loadingText}
+        icon={dialog.icon}
+      />
     </AdminLayout>
   );
 }

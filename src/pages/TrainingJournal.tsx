@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, Activity, Target, Plus, Save } from "lucide-react";
+import { Calendar, Clock, Activity, Target, Plus, Save, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type JournalEntry = {
@@ -35,6 +35,7 @@ export default function TrainingJournal() {
     motivation: 3
   });
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; content?: string }>({});
 
   useEffect(() => {
     const loadJournal = async () => {
@@ -84,14 +85,31 @@ export default function TrainingJournal() {
   }, [user]);
 
   const handleSaveEntry = async () => {
-    if (!user || !newEntry.title.trim() || !newEntry.content.trim()) {
+    if (!user) return;
+    
+    // Validate fields
+    const newErrors: { title?: string; content?: string } = {};
+    
+    if (!newEntry.title.trim()) {
+      newErrors.title = 'Pealkiri on kohustuslik';
+    }
+    
+    if (!newEntry.content.trim()) {
+      newErrors.content = 'Sisu on kohustuslik';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors(newErrors);
       toast({
         title: "Viga",
-        description: "Palun täida pealkiri ja sisu",
+        description: "Palun täida kõik nõutud väljad",
         variant: "destructive"
       });
       return;
     }
+    
+    // Clear errors if validation passes
+    setFieldErrors({});
 
     try {
       setSaving(true);
@@ -133,6 +151,7 @@ export default function TrainingJournal() {
         energy_level: 3,
         motivation: 3
       });
+      setFieldErrors({});
       setShowAddForm(false);
 
       toast({
@@ -195,23 +214,45 @@ export default function TrainingJournal() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Pealkiri</label>
+                    <label className="text-sm font-medium">Pealkiri *</label>
                     <Input
                       value={newEntry.title}
-                      onChange={(e) => setNewEntry(prev => ({ ...prev, title: e.target.value }))}
+                      onChange={(e) => {
+                        setNewEntry(prev => ({ ...prev, title: e.target.value }));
+                        if (fieldErrors.title) {
+                          setFieldErrors(prev => ({ ...prev, title: undefined }));
+                        }
+                      }}
                       placeholder="Näiteks: Tänane treening"
-                      className="mt-1"
+                      className={`mt-1 ${fieldErrors.title ? "border-destructive" : ""}`}
                     />
+                    {fieldErrors.title && (
+                      <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {fieldErrors.title}
+                      </p>
+                    )}
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium">Sisu</label>
+                    <label className="text-sm font-medium">Sisu *</label>
                     <Textarea
                       value={newEntry.content}
-                      onChange={(e) => setNewEntry(prev => ({ ...prev, content: e.target.value }))}
+                      onChange={(e) => {
+                        setNewEntry(prev => ({ ...prev, content: e.target.value }));
+                        if (fieldErrors.content) {
+                          setFieldErrors(prev => ({ ...prev, content: undefined }));
+                        }
+                      }}
                       placeholder="Kirjuta oma mõtted treeningu kohta..."
-                      className="mt-1 min-h-[100px]"
+                      className={`mt-1 min-h-[100px] ${fieldErrors.content ? "border-destructive" : ""}`}
                     />
+                    {fieldErrors.content && (
+                      <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {fieldErrors.content}
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -273,12 +314,22 @@ export default function TrainingJournal() {
                       disabled={saving}
                       className="flex items-center gap-2"
                     >
-                      <Save className="h-4 w-4" />
-                      {saving ? "Salvestan..." : "Salvesta"}
+                      {saving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Salvestan...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" />
+                          Salvesta
+                        </>
+                      )}
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => setShowAddForm(false)}
+                      disabled={saving}
                     >
                       Tühista
                     </Button>

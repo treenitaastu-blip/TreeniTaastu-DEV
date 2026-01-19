@@ -1,5 +1,6 @@
 // src/pages/admin/Analytics.tsx
 import * as React from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { Button } from "@/components/ui/button";
@@ -126,6 +127,7 @@ function SkeletonGrid() {
 /** ---------- Page ---------- */
 export default function Analytics() {
   const navigate = useNavigate();
+  const [refreshing, setRefreshing] = useState(false);
   
   // Be liberal with the hook return shape so we never crash if the hook evolves
   const { data, loading, error, refresh } = (useAnalytics() as unknown) as {
@@ -133,6 +135,16 @@ export default function Analytics() {
     loading: boolean;
     error?: unknown;
     refresh?: () => void | Promise<void>;
+  };
+
+  const handleRefresh = async () => {
+    if (!refresh) return;
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setTimeout(() => setRefreshing(false), 500);
+    }
   };
 
   if (loading) {
@@ -163,11 +175,12 @@ export default function Analytics() {
               <h2 className="text-lg font-semibold">Viga andmete laadimisel</h2>
               {refresh && (
                 <button
-                  onClick={() => void refresh()}
-                  className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs hover:bg-red-50"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <RotateCw className="h-3.5 w-3.5" />
-                  Proovi uuesti
+                  <RotateCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? "Värskendamine..." : "Proovi uuesti"}
                 </button>
               )}
             </div>
@@ -215,12 +228,13 @@ export default function Analytics() {
               </Button>
               {refresh && (
                 <button
-                  onClick={() => void refresh()}
-                  className="inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs hover:bg-muted transition-colors w-full sm:w-auto"
+                  onClick={handleRefresh}
+                  disabled={refreshing || loading}
+                  className="inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs hover:bg-muted transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Värskenda"
                 >
-                  <RotateCw className="h-3.5 w-3.5" />
-                  Värskenda
+                  <RotateCw className={`h-3.5 w-3.5 ${refreshing || loading ? 'animate-spin' : ''}`} />
+                  {refreshing || loading ? "Värskendamine..." : "Värskenda"}
                 </button>
               )}
             </div>

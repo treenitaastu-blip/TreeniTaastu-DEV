@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import {
   Select,
   SelectContent,
@@ -32,7 +33,9 @@ import {
   X,
   Dumbbell,
   Clock,
-  Weight
+  Weight,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 
 interface ClientDay {
@@ -73,6 +76,7 @@ export default function ProgramContentEditor({
   onSuccess
 }: ProgramContentEditorProps) {
   const { toast } = useToast();
+  const { showDialog, hideDialog, dialog } = useConfirmationDialog();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [days, setDays] = useState<ClientDay[]>([]);
@@ -232,12 +236,14 @@ export default function ProgramContentEditor({
         description: `${newExercise.exercise_name} on lisatud programmi`,
       });
 
-      // Reset form
+      // Keep exercise name for quick re-add, reset the rest
+      const savedName = newExercise.exercise_name;
       setNewExercise({
-        exercise_name: "",
+        exercise_name: savedName, // Keep name for quick re-add of similar exercises
         sets: 3,
         reps: "10",
         weight_kg: null,
+        seconds: null,
         rest_seconds: 60,
         coach_notes: "",
         video_url: "",
@@ -245,7 +251,7 @@ export default function ProgramContentEditor({
         reps_per_side: null,
         total_reps: null
       });
-      setSelectedDayId(null);
+      // Don't reset selectedDayId - allow adding multiple exercises to same day quickly
 
       // Reload content
       await loadProgramContent();
@@ -261,12 +267,26 @@ export default function ProgramContentEditor({
     }
   };
 
-  const handleRemoveExercise = async (itemId: string) => {
-    if (!confirm("Kas oled kindel, et soovid selle harjutuse kustutada?")) {
-      return;
-    }
+  const handleRemoveExercise = (itemId: string) => {
+    const exercise = days
+      .flatMap(day => day.items)
+      .find(item => item.id === itemId);
+    
+    showDialog({
+      title: "Harjutuse kustutamine",
+      description: `Kas oled kindel, et soovid harjutuse "${exercise?.exercise_name || 'valitud harjutus'}" programmist kustutada?`,
+      onConfirm: () => performRemoveExercise(itemId),
+      variant: "destructive",
+      confirmText: "Kustuta",
+      cancelText: "Tühista",
+      icon: <Trash2 className="h-6 w-6" />
+    });
+  };
 
+  const performRemoveExercise = async (itemId: string) => {
     setSaving(true);
+    hideDialog();
+    
     try {
       const { error } = await supabase.rpc("remove_exercise_from_program_day", {
         p_program_id: programId,
@@ -294,17 +314,75 @@ export default function ProgramContentEditor({
     }
   };
 
+  const handleMoveExercise = async (dayId: string, itemId: string, direction: "up" | "down") => {
+    const day = days.find(d => d.id === dayId);
+    if (!day) return;
+
+    const items = [...(day.items || [])];
+    const currentIndex = items.findIndex(item => item.id === itemId);
+    
+    if (currentIndex === -1) return;
+    
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+
+    setSaving(true);
+    try {
+      // Swap order_in_day values
+      const currentItem = items[currentIndex];
+      const targetItem = items[targetIndex];
+      
+      const currentOrder = currentItem.order_in_day;
+      const targetOrder = targetItem.order_in_day;
+
+      // Update both items
+      const { error: error1 } = await supabase
+        .from("client_items")
+        .update({ order_in_day: targetOrder })
+        .eq("id", currentItem.id);
+
+      if (error1) throw error1;
+
+      const { error: error2 } = await supabase
+        .from("client_items")
+        .update({ order_in_day: currentOrder })
+        .eq("id", targetItem.id);
+
+      if (error2) throw error2;
+
+      // Reload content to show new order
+      await loadProgramContent();
+      
+      toast({
+        title: "Harjutus liigutatud",
+        description: `Harjutus liigutatud ${direction === "up" ? "üles" : "alla"}`,
+      });
+    } catch (error: any) {
+      console.error("Error moving exercise:", error);
+      toast({
+        title: "Viga",
+        description: error.message || "Harjutuse liigutamisel tekkis viga",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleUpdateExercise = async (itemId: string, updates: Partial<ClientItem>) => {
     setSaving(true);
     try {
       // Process unilateral exercise input if needed
-      const processedUpdates = (updates.reps !== undefined || updates.is_unilateral !== undefined) 
-        ? processExerciseInputUtil({
-            reps: updates.reps || "",
-            is_unilateral: updates.is_unilateral || false,
-            weight_kg: updates.weight_kg
-          })
-        : {};
+      let processedUpdates: { reps?: string; reps_per_side?: number | null; total_reps?: number | null } = {};
+      
+      if (updates.reps !== undefined || updates.is_unilateral !== undefined) {
+        processedUpdates = processExerciseInputUtil({
+          reps: updates.reps || "",
+          is_unilateral: updates.is_unilateral || false,
+          weight_kg: updates.weight_kg
+        });
+      }
       
       const updateData: any = {};
       if (updates.exercise_name !== undefined) updateData.exercise_name = updates.exercise_name;
@@ -557,8 +635,17 @@ export default function ProgramContentEditor({
                               }}
                               disabled={saving}
                             >
-                              <Save className="h-4 w-4 mr-2" />
-                              Salvesta muudatused
+                              {saving ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                                  Salvestan...
+                                </>
+                              ) : (
+                                <>
+                                  <Save className="h-4 w-4 mr-2" />
+                                  Salvesta muudatused
+                                </>
+                              )}
                             </Button>
                             <Button
                               variant="outline"
@@ -638,6 +725,24 @@ export default function ProgramContentEditor({
                         )}
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleMoveExercise(day.id, item.id, "up")}
+                          disabled={saving || day.items.findIndex(ex => ex.id === item.id) === 0}
+                          title="Liiguta üles"
+                        >
+                          <ChevronUp className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleMoveExercise(day.id, item.id, "down")}
+                          disabled={saving || day.items.findIndex(ex => ex.id === item.id) === day.items.length - 1}
+                          title="Liiguta alla"
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -862,8 +967,17 @@ export default function ProgramContentEditor({
                           onClick={() => handleAddExercise(day.id)}
                           disabled={saving}
                         >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Lisa harjutus
+                          {saving ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                              Lisan...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Lisa harjutus
+                            </>
+                          )}
                         </Button>
                         <Button
                           variant="outline"
@@ -898,6 +1012,21 @@ export default function ProgramContentEditor({
       )}
         </div>
         )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={dialog.isOpen}
+        onClose={hideDialog}
+        onConfirm={dialog.onConfirm}
+        title={dialog.title}
+        description={dialog.description}
+        variant={dialog.variant}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        isLoading={dialog.isLoading || saving}
+        loadingText={dialog.loadingText || "Kustutamine..."}
+        icon={dialog.icon}
+      />
       </DialogContent>
     </Dialog>
   );

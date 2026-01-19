@@ -10,6 +10,7 @@ import { AdminCard, AdminCardHeader, AdminCardTitle, AdminCardContent } from "@/
 import { ProgramProgressCard } from "@/components/smart-progression/ProgramProgressCard";
 import { useSmartProgression } from "@/hooks/useSmartProgression";
 import ProgramContentEditor from "@/components/admin/ProgramContentEditor";
+import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 
 type UUID = string;
 
@@ -33,6 +34,7 @@ export default function ProgramEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { showDialog, hideDialog, dialog } = useConfirmationDialog();
 
   const [program, setProgram] = useState<ProgramData | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -122,8 +124,12 @@ export default function ProgramEdit() {
         description: "Muudatused on edukalt salvestatud.",
       });
 
-      // Navigate back after successful save
-      setTimeout(() => navigate("/admin/programs"), 1000);
+      // Navigate back after successful save (give user time to see success message)
+      setTimeout(() => {
+        if (!saving) { // Only navigate if still not saving (safety check)
+          navigate("/admin/programs");
+        }
+      }, 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Viga salvestamisel";
       setError(message);
@@ -137,15 +143,26 @@ export default function ProgramEdit() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!id || !program) return;
 
-    if (!confirm("Kas oled kindel, et soovid selle programmi kustutada? Seda tegevust ei saa tühistada.")) {
-      return;
-    }
+    showDialog({
+      title: "Programm kustutamine",
+      description: "Kas oled kindel, et soovid selle programmi jäädavalt kustutada? See kustutab kõik seotud andmed (sessioonid, logid, jne) ja seda tegevust ei saa tagasi võtta.",
+      onConfirm: performDelete,
+      variant: "destructive",
+      confirmText: "Kustuta jäädavalt",
+      cancelText: "Tühista",
+      icon: <Trash2 className="h-6 w-6" />
+    });
+  };
+
+  const performDelete = async () => {
+    if (!id || !program) return;
 
     setDeleting(true);
     setError(null);
+    hideDialog();
 
     try {
       const { error } = await supabase.rpc("admin_delete_client_program_cascade", {
@@ -176,6 +193,20 @@ export default function ProgramEdit() {
   const handleReassign = async () => {
     if (!id || !program || !newAssigneeEmail.trim()) return;
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const trimmedEmail = newAssigneeEmail.trim();
+    
+    if (!emailRegex.test(trimmedEmail)) {
+      setError("Palun sisesta kehtiv e-maili aadress");
+      toast({
+        title: "Viga",
+        description: "E-maili aadress ei ole kehtiv",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -184,10 +215,39 @@ export default function ProgramEdit() {
       const { data: userData, error: userError } = await supabase
         .from("profiles")
         .select("id, email")
-        .eq("email", newAssigneeEmail.trim())
+        .eq("email", trimmedEmail)
         .single();
 
       if (userError) throw new Error("Kasutajat ei leitud antud e-maili aadressiga");
+
+      // Check if user has PT access (using access_matrix view or user_entitlements)
+      const { data: accessData, error: accessError } = await supabase
+        .from("user_entitlements")
+        .select("product, status, expires_at, paused")
+        .eq("user_id", userData.id)
+        .eq("product", "pt")
+        .in("status", ["active", "trialing"])
+        .maybeSingle();
+
+      if (accessError) {
+        console.warn("Error checking PT access:", accessError);
+        // Continue anyway - admin can override
+      }
+
+      // Warn if user doesn't have active PT access
+      const hasPTAccess = accessData && 
+        (accessData.status === "active" || accessData.status === "trialing") &&
+        !accessData.paused &&
+        (!accessData.expires_at || new Date(accessData.expires_at) > new Date());
+
+      if (!hasPTAccess) {
+        // Show warning but allow reassignment
+        toast({
+          title: "Hoiatus",
+          description: "Kasutajal ei ole aktiivset PT ligipääsu. Programm määratakse ümber, kuid kasutaja ei näe seda enne kui PT ligipääs on antud.",
+          variant: "default"
+        });
+      }
 
       // Update program assignment
       const { error } = await supabase
@@ -216,15 +276,26 @@ export default function ProgramEdit() {
     }
   };
 
-  const handleUnassign = async () => {
+  const handleUnassign = () => {
     if (!id || !program) return;
 
-    if (!confirm("Kas oled kindel, et soovid selle programmi määramise tühistada?")) {
-      return;
-    }
+    showDialog({
+      title: "Programm deaktiveerimine",
+      description: "Kas oled kindel, et soovid selle programmi kliendilt eemaldada? Programm jääb andmebaasi, kuid klient ei näe seda enam.",
+      onConfirm: performUnassign,
+      variant: "warning",
+      confirmText: "Eemalda kliendilt",
+      cancelText: "Tühista",
+      icon: <UserMinus className="h-6 w-6" />
+    });
+  };
+
+  const performUnassign = async () => {
+    if (!id || !program) return;
 
     setSaving(true);
     setError(null);
+    hideDialog();
 
     try {
       const { error } = await supabase
@@ -363,6 +434,11 @@ export default function ProgramEdit() {
           <p className="mt-2 text-xs text-muted-foreground">
             Sisesta kasutaja e-maili aadress, kellele soovid selle programmi määrata
           </p>
+          {error && newAssigneeEmail.trim() && (
+            <p className="mt-1 text-xs text-destructive">
+              {error}
+            </p>
+          )}
         </AdminCardContent>
       </AdminCard>
 
@@ -487,6 +563,21 @@ export default function ProgramEdit() {
           }}
         />
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={dialog.isOpen}
+        onClose={hideDialog}
+        onConfirm={dialog.onConfirm}
+        title={dialog.title}
+        description={dialog.description}
+        variant={dialog.variant}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        isLoading={dialog.isLoading || deleting || saving}
+        loadingText={dialog.loadingText}
+        icon={dialog.icon}
+      />
     </AdminLayout>
   );
 }

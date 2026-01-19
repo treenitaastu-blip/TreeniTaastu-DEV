@@ -10,6 +10,9 @@ import {
 } from '@/lib/workweek';
 import { CalendarDay } from '@/components/calendar/DayTile';
 
+// Static program IDs
+const KONTORIKEHA_RESET_PROGRAM_ID = 'e1ab6f77-5a43-4c05-ac0d-02101b499e4c';
+
 interface ProgramInfo {
   id: string;
   title: string;
@@ -166,9 +169,10 @@ export const useProgramCalendarState = () => {
       }
 
       // Fetch user's actual start date from static_starts table
-      // Auto-create if missing for Kontorikeha Reset program
+      // Auto-create if missing for static program (currently only Kontorikeha Reset)
+      // TODO: When adding multiple static programs, update static_starts to include program_id
       let userStartDate: Date | undefined = undefined;
-      if (activeProgram.title === 'Kontorikeha Reset') {
+      if (activeProgram.id === KONTORIKEHA_RESET_PROGRAM_ID) {
         const { data: staticStart, error: staticStartError } = await supabase
           .from('static_starts')
           .select('start_monday')
@@ -203,18 +207,19 @@ export const useProgramCalendarState = () => {
         }
       }
 
-      // Load completion data for Kontorikeha Reset program
+      // Load completion data for static program
       let completedProgramDayIds: string[] = [];
       let uniqueCompletedDayNumbers = new Set<number>();
       
-      // Create a mapping of programday_id to day number for Kontorikeha Reset
+      // Create a mapping of programday_id to day number
       let programDayToDayNumber: Record<string, number> = {};
       
-      if (activeProgram.title === 'Kontorikeha Reset') {
+      if (activeProgram.id === KONTORIKEHA_RESET_PROGRAM_ID) {
         // Get all programday records to map IDs to day numbers first
         const { data: programDays } = await supabase
           .from('programday')
-          .select('id, week, day');
+          .select('id, week, day')
+          .eq('program_id', activeProgram.id);
           
         if (programDays) {
           programDays.forEach(pd => {
@@ -253,7 +258,7 @@ export const useProgramCalendarState = () => {
       const updatedDays = days.map(day => {
         let isCompleted = false;
         
-        if (activeProgram.title === 'Kontorikeha Reset') {
+        if (activeProgram.id === KONTORIKEHA_RESET_PROGRAM_ID) {
           // Check if this specific day is completed by mapping programday_id to day number
           isCompleted = completedProgramDayIds.some(programDayId => {
             const mappedDayNumber = programDayToDayNumber[programDayId];

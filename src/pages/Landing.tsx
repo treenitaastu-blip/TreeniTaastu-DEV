@@ -171,6 +171,13 @@ function Dashboard() {
         setLoading(true);
         setErr(null);
 
+        // Get Kontorikeha Reset program ID
+        const { data: program } = await supabase
+          .from("programs")
+          .select("id")
+          .eq("title", "Kontorikeha Reset")
+          .single();
+
         const [d1, d2] = await Promise.all([
           supabase
             .from("programday")
@@ -183,6 +190,7 @@ function Dashboard() {
               seconds1, seconds2, seconds3, seconds4, seconds5,
               hint1, hint2, hint3, hint4, hint5
             `)
+            .eq("program_id", program?.id || "e1ab6f77-5a43-4c05-ac0d-02101b499e4c")
             .order("week", { ascending: true })
             .order("day", { ascending: true }),
           user

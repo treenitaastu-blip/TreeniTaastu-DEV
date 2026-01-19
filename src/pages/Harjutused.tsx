@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -441,16 +442,26 @@ const Harjutused = () => {
 
           {/* No routines */}
           {routines.length === 0 && !loading && (
-            <div className="text-center py-12">
+            <div className="text-center py-12 px-4">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <Play className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-medium text-foreground mb-2">
+              <h3 className="text-xl font-semibold text-foreground mb-3">
                 Harjutusrutiine ei leitud
               </h3>
-              <p className="text-muted-foreground">
-                {isAdmin ? 'Lisa esimene harjutusrutiin.' : 'Harjutusrutiinid lisatakse varsti.'}
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                {isAdmin 
+                  ? 'Hetkel pole ühtegi harjutusrutiini lisatud. Adminina saad hallata harjutusrutiine admin paneelist.' 
+                  : 'Hetkel pole ühtegi harjutusrutiini saadaval. Harjutusrutiinid lisatakse regulaarselt - palun kontrolli hiljem uuesti.'}
               </p>
+              {isAdmin && (
+                <Button asChild variant="outline">
+                  <Link to="/admin/routines">
+                    <Target className="h-4 w-4 mr-2" />
+                    Lisa harjutusrutiin
+                  </Link>
+                </Button>
+              )}
             </div>
           )}
         </>

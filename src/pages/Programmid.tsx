@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,8 @@ import {
   Lock,
   ArrowRight,
   Calendar,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,9 +40,11 @@ interface UserProgram {
 
 const Programmid: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [userPrograms, setUserPrograms] = useState<UserProgram[]>([]);
   const [loading, setLoading] = useState(true);
+  const [startingProgram, setStartingProgram] = useState<string | null>(null);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
 
   useEffect(() => {
@@ -184,39 +187,123 @@ const Programmid: React.FC = () => {
   };
 
   const handleStartProgram = async (programId: string) => {
+    if (!user) return;
+    
+    setStartingProgram(programId);
     try {
-      // For "Kontorikeha Reset" program, redirect directly to /programm
-      if (programId === 'kontorikeha-reset') {
-        toast.success('Programm alustatud!');
-        setSelectedProgram(null);
-        window.location.href = '/programm';
-        return;
+      // Check if program exists in programs table
+      let actualProgramId = programId;
+      const { data: programData } = await supabase
+        .from('programs')
+        .select('id')
+        .eq('id', programId)
+        .single();
+
+      if (!programData) {
+        // Fallback for legacy string IDs
+        if (programId === 'kontorikeha-reset') {
+          const { data: krProgram } = await supabase
+            .from('programs')
+            .select('id')
+            .eq('title', 'Kontorikeha Reset')
+            .single();
+          
+          if (krProgram) {
+            actualProgramId = krProgram.id;
+          } else {
+            toast.error('Programm ei leitud');
+            return;
+          }
+        } else {
+          toast.error('Programm ei leitud');
+          return;
+        }
+      } else {
+        actualProgramId = programId;
       }
 
-      // Try to use the database function
-      const { data, error } = await supabase.rpc('start_program', {
-        p_user_id: user?.id,
-        p_program_id: programId
-      });
+      // Check if user already has this program (paused or active)
+      const existingProgram = userPrograms.find(up => up.program_id === actualProgramId);
+      
+      if (existingProgram?.status === 'paused') {
+        // Resume paused program - set any other active programs to paused first (only one active at a time)
+        const { error: pauseOthersError } = await supabase
+          .from('user_programs')
+          .update({ 
+            status: 'paused',
+            paused_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .eq('status', 'active');
 
-      if (error) {
-        console.log('Database function not available, using fallback');
-        // Fallback: just redirect to programm page
+        // Resume this program
+        const { error: resumeError } = await supabase
+          .from('user_programs')
+          .update({ 
+            status: 'active',
+            paused_at: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .eq('program_id', actualProgramId);
+
+        if (resumeError) {
+          throw resumeError;
+        }
+
+        // For static programs, also ensure static_starts is set
+        if (actualProgramId === 'e1ab6f77-5a43-4c05-ac0d-02101b499e4c') {
+          await supabase.rpc('start_static_program', { p_force: false });
+        }
+
+        toast.success('Programm jätkatud!');
+      } else {
+        // Start new program - pause any active programs first
+        const { error: pauseError } = await supabase
+          .from('user_programs')
+          .update({ 
+            status: 'paused',
+            paused_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        // Create or update user_programs entry
+        const { error: upsertError } = await supabase
+          .from('user_programs')
+          .upsert({
+            user_id: user.id,
+            program_id: actualProgramId,
+            status: 'active',
+            started_at: existingProgram?.started_at || new Date().toISOString(),
+            paused_at: null,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,program_id'
+          });
+
+        if (upsertError) {
+          throw upsertError;
+        }
+
+        // For static programs, also call start_static_program
+        if (actualProgramId === 'e1ab6f77-5a43-4c05-ac0d-02101b499e4c') {
+          await supabase.rpc('start_static_program', { p_force: false });
+        }
+
         toast.success('Programm alustatud!');
-        setSelectedProgram(null);
-        window.location.href = '/programm';
-        return;
       }
 
-      if (data?.success) {
-        toast.success('Programm alustatud!');
-        await loadData();
-        setSelectedProgram(null);
-        window.location.href = '/programm';
-      }
+      await loadData();
+      setSelectedProgram(null);
+      navigate('/programm');
     } catch (error) {
       console.error('Error starting program:', error);
       toast.error('Programmi alustamine ebaõnnestus');
+    } finally {
+      setStartingProgram(null);
     }
   };
 
@@ -245,8 +332,29 @@ const Programmid: React.FC = () => {
         </div>
 
         {/* Programs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {programs.map((program) => {
+        {programs.length === 0 ? (
+          <div className="text-center py-16 px-4">
+            <div className="max-w-md mx-auto">
+              <div className="bg-white/70 backdrop-blur-sm rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center border border-gray-200/50 shadow-lg">
+                <Calendar className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+                Programme pole saadaval
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Praegu pole sinu jaoks programme saadaval. Palun kontrolli hiljem uuesti või võta ühendust toega.
+              </p>
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/home">
+                  <ArrowLeft className="h-4 w-4" />
+                  Tagasi avalehele
+                </Link>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {programs.map((program) => {
             const status = getProgramStatus(program);
             const isAvailable = status === 'available' || status === 'active' || status === 'paused';
             
@@ -293,9 +401,19 @@ const Programmid: React.FC = () => {
                         <DialogTrigger asChild>
                           <Button 
                             className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900"
+                            disabled={startingProgram === program.id}
                           >
-                            <Play className="h-4 w-4 mr-2" />
-                            Alusta programm
+                            {startingProgram === program.id ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Alustan...
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-4 w-4 mr-2" />
+                                Alusta programm
+                              </>
+                            )}
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
@@ -348,9 +466,19 @@ const Programmid: React.FC = () => {
                       <Button 
                         onClick={() => handleStartProgram(program.id)}
                         className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                        disabled={startingProgram === program.id}
                       >
-                        <Play className="h-4 w-4 mr-2" />
-                        Jätka programm
+                        {startingProgram === program.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Jätkan...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Jätka programm
+                          </>
+                        )}
                       </Button>
                     )}
 
@@ -411,11 +539,13 @@ const Programmid: React.FC = () => {
                 </CardContent>
               </Card>
             );
-          })}
-        </div>
+            })}
+          </div>
+        )}
 
-        {/* Coming Soon Notice */}
-        <div className="mt-12 text-center">
+        {/* Coming Soon Notice - Only show if there are programs */}
+        {programs.length > 0 && (
+          <div className="mt-12 text-center">
           <div className="bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30 p-6 max-w-2xl mx-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Rohkem programme tulekul
@@ -426,6 +556,7 @@ const Programmid: React.FC = () => {
             </p>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

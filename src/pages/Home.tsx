@@ -1,6 +1,6 @@
 // src/pages/Home.tsx
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -9,12 +9,14 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Progress as ProgressBar } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useProgressTracking } from "@/hooks/useProgressTracking";
 import { useOverallPTStats } from "@/hooks/useOverallPTStats";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useProgramCalendarState } from "@/hooks/useProgramCalendarState";
 import { supabase } from "@/integrations/supabase/client";
 import { calcProgramStreak } from "@/lib/workweek";
 import { TrialStatusBanner } from "@/components/TrialStatusBanner";
@@ -38,9 +40,11 @@ import {
 
 export default function Home() {
   const { status, user } = useAuth();
+  const navigate = useNavigate();
   const { streaks } = useProgressTracking();
   const ptStats = useOverallPTStats();
   const { trackButtonClick, trackPageView } = useTrackEvent();
+  const { program, completedDays, totalDays, hasActiveProgram, loading: programLoading } = useProgramCalendarState();
   
   // Trial status using new hook
   const trialStatus = useTrialStatus();
@@ -99,12 +103,12 @@ export default function Home() {
     if (trialStatus.isExpired && !trialStatus.isInGracePeriod) {
       // Small delay to allow access check to complete
       const timer = setTimeout(() => {
-        window.location.href = '/trial-expired';
+        navigate('/trial-expired', { replace: true });
       }, 500);
       
       return () => clearTimeout(timer);
     }
-  }, [user, trialStatus.isExpired, trialStatus.isInGracePeriod, trialStatus.loading]);
+  }, [user, trialStatus.isExpired, trialStatus.isInGracePeriod, trialStatus.loading, navigate]);
 
 
   if (status === "loading" || loading) {
@@ -236,7 +240,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Programs Card - Apple Liquid Glass */}
+          {/* Programs Card - Smart Homepage */}
           <Card className="bg-white/70 backdrop-blur-sm border border-gray-200/50 shadow-lg">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center justify-center gap-3 text-xl font-bold text-gray-900">
@@ -244,29 +248,82 @@ export default function Home() {
                 Programmid
               </CardTitle>
               <CardDescription className="text-center text-[#212121] font-bold">
-                Vali oma treeningprogramm ja alusta teekonda
+                {hasActiveProgram && program ? `${program.title} - sinu progress` : "Vali oma treeningprogramm ja alusta teekonda"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Program Preview - Only Available Programs */}
-              <div className="grid grid-cols-1 gap-4">
-                <div className="text-center p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
-                  <div className="text-lg font-bold text-gray-900 mb-2">Kontorikeha Reset</div>
-                  <div className="text-sm font-bold text-[#212121] mb-3">20 päeva • Alustaja</div>
-                  <div className="text-xs text-green-600 font-medium">✓ Saadaval</div>
-                </div>
-              </div>
+              {!programLoading && hasActiveProgram && program ? (
+                // Active Program Preview with Progress
+                <>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="text-lg font-bold text-gray-900 mb-1">{program.title}</div>
+                          <div className="text-sm text-gray-600">{totalDays} päeva • Alustaja</div>
+                        </div>
+                        <Badge className="bg-green-100 text-green-800 border-green-200">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Aktiivne
+                        </Badge>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Progress</span>
+                          <span className="font-semibold text-gray-900">
+                            {completedDays}/{totalDays} päeva ({Math.round((completedDays / totalDays) * 100)}%)
+                          </span>
+                        </div>
+                        <ProgressBar value={(completedDays / totalDays) * 100} className="h-2" />
+                      </div>
+                    </div>
+                  </div>
 
-              <Button asChild size="lg" className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
-                <Link 
-                  to="/programmid" 
-                  className="flex items-center justify-center gap-2"
-                  onClick={() => trackButtonClick('programmid', '/programmid', 'programs_card')}
-                >
-                  Vaata kõiki programme
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button asChild className="bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 text-gray-900">
+                      <Link 
+                        to="/programm"
+                        onClick={() => trackButtonClick('continue_program', '/programm', 'programs_card')}
+                      >
+                        Jätka programm
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="border-gray-300">
+                      <Link 
+                        to="/programmid"
+                        onClick={() => trackButtonClick('view_all_programs', '/programmid', 'programs_card')}
+                      >
+                        Vaata kõiki
+                      </Link>
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                // No Active Program - Show Selection Prompt
+                <>
+                  <div className="text-center p-6 bg-white/50 backdrop-blur-sm rounded-lg border border-gray-200/30">
+                    <Target className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <div className="text-lg font-bold text-gray-900 mb-2">Vali oma programm</div>
+                    <div className="text-sm text-gray-600 mb-4">
+                      Alusta oma tervisliku elustiili teekonda valides endale sobiva treeningprogrammi
+                    </div>
+                  </div>
+
+                  <Button asChild size="lg" className="w-full bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
+                    <Link 
+                      to="/programmid" 
+                      className="flex items-center justify-center gap-2"
+                      onClick={() => trackButtonClick('select_program', '/programmid', 'programs_card')}
+                    >
+                      Vali programm
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
 

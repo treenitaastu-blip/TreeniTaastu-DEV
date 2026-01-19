@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calculator, Info } from 'lucide-react';
+import { Calculator, Info, AlertCircle, RotateCcw, Copy, Check } from 'lucide-react';
 
 export default function EERCalculator() {
   const [age, setAge] = useState('');
@@ -13,6 +13,8 @@ export default function EERCalculator() {
   const [gender, setGender] = useState('');
   const [activityLevel, setActivityLevel] = useState('');
   const [eer, setEER] = useState<number | null>(null);
+  const [errors, setErrors] = useState<{ age?: string; weight?: string; height?: string; gender?: string; activityLevel?: string }>({});
+  const [copied, setCopied] = useState(false);
 
   const activityLevels = [
     { 
@@ -45,7 +47,64 @@ export default function EERCalculator() {
     }
   ];
 
+  const validateInputs = (): boolean => {
+    const newErrors: { age?: string; weight?: string; height?: string; gender?: string; activityLevel?: string } = {};
+    
+    const ageNum = parseFloat(age);
+    const weightNum = parseFloat(weight);
+    const heightNum = parseFloat(height);
+    
+    if (!age || age.trim() === '') {
+      newErrors.age = 'Vanus on kohustuslik';
+    } else if (isNaN(ageNum)) {
+      newErrors.age = 'Vanus peab olema number';
+    } else if (ageNum < 19) {
+      newErrors.age = 'Valem on mõeldud 19+ aastastele';
+    } else if (ageNum > 120) {
+      newErrors.age = 'Vanus peab olema väiksem kui 120';
+    }
+    
+    if (!weight || weight.trim() === '') {
+      newErrors.weight = 'Kaal on kohustuslik';
+    } else if (isNaN(weightNum)) {
+      newErrors.weight = 'Kaal peab olema number';
+    } else if (weightNum <= 0) {
+      newErrors.weight = 'Kaal peab olema suurem kui 0';
+    } else if (weightNum > 500) {
+      newErrors.weight = 'Kaal peab olema väiksem kui 500 kg';
+    }
+    
+    if (!height || height.trim() === '') {
+      newErrors.height = 'Pikkus on kohustuslik';
+    } else if (isNaN(heightNum)) {
+      newErrors.height = 'Pikkus peab olema number';
+    } else if (heightNum <= 0) {
+      newErrors.height = 'Pikkus peab olema suurem kui 0';
+    } else if (heightNum < 50 || heightNum > 250) {
+      newErrors.height = 'Pikkus peab olema vahemikus 50-250 cm';
+    }
+    
+    if (!gender) {
+      newErrors.gender = 'Sugu on kohustuslik';
+    }
+    
+    if (!activityLevel) {
+      newErrors.activityLevel = 'Aktiivsuse tase on kohustuslik';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const calculateEER = () => {
+    // Clear previous results
+    setEER(null);
+    
+    // Validate inputs
+    if (!validateInputs()) {
+      return;
+    }
+    
     const ageNum = parseFloat(age);
     const weightNum = parseFloat(weight);
     const heightNum = parseFloat(height) / 100; // convert cm to m
@@ -99,9 +158,30 @@ export default function EERCalculator() {
                 id="age"
                 type="number"
                 placeholder="25"
+                min="19"
+                max="120"
+                step="1"
                 value={age}
-                onChange={(e) => setAge(e.target.value)}
+                onChange={(e) => {
+                  setAge(e.target.value);
+                  if (errors.age) {
+                    setErrors(prev => ({ ...prev, age: undefined }));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    calculateEER();
+                  }
+                }}
+                className={errors.age ? "border-destructive" : ""}
               />
+              {errors.age && (
+                <p id="age-error" className="text-sm text-destructive flex items-center gap-1" role="alert">
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                  {errors.age}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="weight">Kaal (kg)</Label>
@@ -109,9 +189,30 @@ export default function EERCalculator() {
                 id="weight"
                 type="number"
                 placeholder="70"
+                min="10"
+                max="500"
+                step="0.1"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                onChange={(e) => {
+                  setWeight(e.target.value);
+                  if (errors.weight) {
+                    setErrors(prev => ({ ...prev, weight: undefined }));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    calculateEER();
+                  }
+                }}
+                className={errors.weight ? "border-destructive" : ""}
               />
+              {errors.weight && (
+                <p id="weight-error" className="text-sm text-destructive flex items-center gap-1" role="alert">
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                  {errors.weight}
+                </p>
+              )}
             </div>
           </div>
 
@@ -122,14 +223,48 @@ export default function EERCalculator() {
                 id="height"
                 type="number"
                 placeholder="175"
+                min="50"
+                max="250"
+                step="0.1"
                 value={height}
-                onChange={(e) => setHeight(e.target.value)}
+                onChange={(e) => {
+                  setHeight(e.target.value);
+                  if (errors.height) {
+                    setErrors(prev => ({ ...prev, height: undefined }));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    calculateEER();
+                  }
+                }}
+                className={errors.height ? "border-destructive" : ""}
               />
+              {errors.height && (
+                <p id="height-error" className="text-sm text-destructive flex items-center gap-1" role="alert">
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                  {errors.height}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="gender">Sugu</Label>
-              <Select value={gender} onValueChange={setGender}>
-                <SelectTrigger>
+              <Select 
+                value={gender} 
+                onValueChange={(value) => {
+                  setGender(value);
+                  if (errors.gender) {
+                    setErrors(prev => ({ ...prev, gender: undefined }));
+                  }
+                }}
+              >
+                <SelectTrigger 
+                  className={errors.gender ? "border-destructive" : ""}
+                  aria-label="Vali sugu"
+                  aria-describedby={errors.gender ? "gender-error" : undefined}
+                  aria-invalid={!!errors.gender}
+                >
                   <SelectValue placeholder="Vali sugu" />
                 </SelectTrigger>
                 <SelectContent>
@@ -137,13 +272,27 @@ export default function EERCalculator() {
                   <SelectItem value="female">Naine</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.gender && (
+                <p id="gender-error" className="text-sm text-destructive flex items-center gap-1" role="alert">
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                  {errors.gender}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="activity">Aktiivsuse tase</Label>
-            <Select value={activityLevel} onValueChange={setActivityLevel}>
-              <SelectTrigger>
+            <Select 
+              value={activityLevel} 
+              onValueChange={(value) => {
+                setActivityLevel(value);
+                if (errors.activityLevel) {
+                  setErrors(prev => ({ ...prev, activityLevel: undefined }));
+                }
+              }}
+            >
+              <SelectTrigger className={errors.activityLevel ? "border-destructive" : ""}>
                 <SelectValue placeholder="Vali aktiivsuse tase" />
               </SelectTrigger>
               <SelectContent>
@@ -157,14 +306,73 @@ export default function EERCalculator() {
                 ))}
               </SelectContent>
             </Select>
+            {errors.activityLevel && (
+              <p id="activity-error" className="text-sm text-destructive flex items-center gap-1" role="alert">
+                <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                {errors.activityLevel}
+              </p>
+            )}
           </div>
           
-          <Button onClick={calculateEER} className="w-full">
-            Arvuta energiavajadus
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={calculateEER} className="flex-1" aria-label="Arvuta päevane energiavajadus">
+              Arvuta energiavajadus
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setAge('');
+                setWeight('');
+                setHeight('');
+                setGender('');
+                setActivityLevel('');
+                setEER(null);
+                setErrors({});
+              }}
+              className="flex items-center gap-2"
+              disabled={!age && !weight && !height && !gender && !activityLevel && !eer}
+              aria-label="Tühjenda väljad ja tulemused"
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              Tühjenda
+            </Button>
+          </div>
 
           {eer && (
-            <div className="bg-muted/50 rounded-lg p-6 text-center">
+            <div className="bg-muted/50 rounded-lg p-6 text-center relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2"
+                aria-label={copied ? "Kopeeritud" : "Kopeeri tulemus lõikelauale"}
+                onClick={async () => {
+                  const activityText = activityLevel === 'sedentary' ? 'Istuv' : 
+                                     activityLevel === 'low' ? 'Väheaktiivne' :
+                                     activityLevel === 'active' ? 'Aktiivne' :
+                                     activityLevel === 'very_active' ? 'Väga aktiivne' : activityLevel;
+                  const genderText = gender === 'male' ? 'Mees' : gender === 'female' ? 'Naine' : gender;
+                  const resultText = `Päevane energiavajadus: ${eer.toFixed(0)} kcal\n\nVanus: ${age} aastat\nKaal: ${weight} kg\nPikkus: ${height} cm\nSugu: ${genderText}\nAktiivsustase: ${activityText}`;
+                  try {
+                    await navigator.clipboard.writeText(resultText);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  } catch (err) {
+                    console.error('Failed to copy:', err);
+                  }
+                }}
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-1" />
+                    Kopeeritud
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-1" />
+                    Kopeeri
+                  </>
+                )}
+              </Button>
               <div className="text-4xl font-bold mb-2">{eer}</div>
               <div className="text-lg text-muted-foreground mb-2">kcal päevas</div>
               <div className={`text-lg font-semibold ${getEERCategory(eer).color}`}>

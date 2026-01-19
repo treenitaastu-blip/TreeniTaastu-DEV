@@ -1,5 +1,5 @@
 // src/pages/ProgramDetail.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import PTAccessValidator from "@/components/PTAccessValidator";
-import { CheckCircle2, Edit, Check, X } from "lucide-react";
+import { CheckCircle2, Edit, Check, X, RefreshCw, AlertCircle, ChevronRight, Home } from "lucide-react";
 
 /** ---------- Types ---------- */
 type ClientProgram = {
@@ -122,13 +122,12 @@ export default function ProgramDetail() {
     }
   };
 
-  useEffect(() => {
+  const loadProgram = useCallback(async () => {
     if (!user || !programId) return;
 
-    const loadProgram = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    try {
+      setLoading(true);
+      setError(null);
 
         // Load program with better error handling
         const { data: programData, error: programError } = await supabase
@@ -376,11 +375,26 @@ export default function ProgramDetail() {
   if (error) {
     return (
       <div className="min-h-[40vh] grid place-items-center p-6">
-        <div className="text-center space-y-4">
-          <div className="text-sm text-destructive">{error}</div>
-          <Button asChild variant="outline">
-            <Link to="/programs">Tagasi programmidele</Link>
-          </Button>
+        <div className="text-center space-y-4 max-w-md">
+          <div className="flex items-center justify-center gap-2 text-destructive mb-2">
+            <AlertCircle className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">Viga programmi laadimisel</h2>
+          </div>
+          <div className="text-sm text-muted-foreground mb-6">{error}</div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button 
+              onClick={loadProgram} 
+              disabled={loading}
+              variant="default"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Proovi uuesti
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/programs">Tagasi programmidele</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -433,6 +447,17 @@ export default function ProgramDetail() {
     <PTAccessValidator>
       <div className="min-h-screen bg-gradient-to-br from-brand-light via-background to-secondary">
         <div className="mx-auto max-w-4xl px-4 py-8">
+          {/* Breadcrumb Navigation */}
+          <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6" aria-label="Breadcrumb">
+            <Link to="/programs" className="hover:text-foreground transition-colors flex items-center gap-1">
+              <Home className="h-4 w-4" />
+              Programmid
+            </Link>
+            <ChevronRight className="h-4 w-4" />
+            <span className="text-foreground font-medium">
+              {program?.title_override || "Treeningprogramm"}
+            </span>
+          </nav>
           <div className="mb-6 flex items-center justify-between">
             <div className="flex-1">
               {editingTitle ? (

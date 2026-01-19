@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+import { Trash2 } from "lucide-react";
 
 type UUID = string;
 
@@ -90,6 +92,7 @@ const processExerciseInput = (exercise: Partial<ItemRow>) => {
 export default function TemplateDetail() {
   const { id } = useParams<{ id: string }>(); // template id
   const navigate = useNavigate();
+  const { showDialog, hideDialog, dialog } = useConfirmationDialog();
 
   const [tpl, setTpl] = useState<Pick<TplRow, "id"|"title"|"goal"|"is_active"|"inserted_at"> | null>(null);
   const [days, setDays] = useState<Array<Pick<DayRow,"id"|"template_id"|"day_order"|"title"|"note"|"inserted_at">>>([]);
@@ -280,11 +283,27 @@ export default function TemplateDetail() {
     }
   };
 
-  const deleteDay = async (dayId: UUID) => {
-    if (!confirm("Kinnita: kustuta see päev koos selle harjutustega?")) return;
+  const deleteDay = (dayId: UUID) => {
+    const day = days.find(d => d.id === dayId);
+    const dayTitle = day?.title || `Päev ${day?.day_order || ''}`;
+    
+    showDialog({
+      title: "Päeva kustutamine",
+      description: `Kas oled kindel, et soovid päeva "${dayTitle}" kustutada? See kustutab ka kõik selle päeva harjutused.`,
+      onConfirm: () => performDeleteDay(dayId),
+      variant: "destructive",
+      confirmText: "Kustuta",
+      cancelText: "Tühista",
+      icon: <Trash2 className="h-6 w-6" />
+    });
+  };
+
+  const performDeleteDay = async (dayId: UUID) => {
+    hideDialog();
     setSaving(true);
     setError(null);
     setNotice(null);
+    
     try {
       // delete items first (FK)
       const { error: diErr } = await supabase.from("template_items").delete().eq("template_day_id", dayId);
@@ -535,11 +554,27 @@ export default function TemplateDetail() {
     }
   };
 
-  const deleteItem = async (dayId: UUID, itemId: UUID) => {
-    if (!confirm("Kinnita: kustuta see harjutus?")) return;
+  const deleteItem = (dayId: UUID, itemId: UUID) => {
+    const item = itemsByDay[dayId]?.find(it => it.id === itemId);
+    const exerciseName = item?.exercise_name || 'valitud harjutus';
+    
+    showDialog({
+      title: "Harjutuse kustutamine",
+      description: `Kas oled kindel, et soovid harjutuse "${exerciseName}" kustutada?`,
+      onConfirm: () => performDeleteItem(dayId, itemId),
+      variant: "destructive",
+      confirmText: "Kustuta",
+      cancelText: "Tühista",
+      icon: <Trash2 className="h-6 w-6" />
+    });
+  };
+
+  const performDeleteItem = async (dayId: UUID, itemId: UUID) => {
+    hideDialog();
     setSaving(true);
     setError(null);
     setNotice(null);
+    
     try {
       const { error } = await supabase.from("template_items").delete().eq("id", itemId);
       if (error) throw error;
@@ -1424,6 +1459,21 @@ export default function TemplateDetail() {
             </div>
           );
         })}
+
+        {/* Confirmation Dialog */}
+        <ConfirmationDialog
+          isOpen={dialog.isOpen}
+          onClose={hideDialog}
+          onConfirm={dialog.onConfirm}
+          title={dialog.title}
+          description={dialog.description}
+          variant={dialog.variant}
+          confirmText={dialog.confirmText}
+          cancelText={dialog.cancelText}
+          isLoading={dialog.isLoading || saving}
+          loadingText={dialog.loadingText || "Kustutamine..."}
+          icon={dialog.icon}
+        />
       </div>
     </div>
   );

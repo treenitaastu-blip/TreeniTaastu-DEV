@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, CheckCircle, AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Mail, CheckCircle, AlertCircle, Copy, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { emailSchema, validateAndSanitize } from "@/lib/validations";
 
 export default function ForgotPasswordPage() {
@@ -14,6 +16,9 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [newPassword, setNewPassword] = useState<string | null>(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
+  const { toast } = useToast();
 
   const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,8 +44,8 @@ export default function ForgotPasswordPage() {
       if (data.emailSent) {
         setSuccess(true);
       } else if (data.newPassword) {
-        // Show the new password directly
-        alert(`Uus parool genereeritud! Sinu uus parool on: ${data.newPassword}\n\nKopeeri see hoolikalt ja logi sisse.`);
+        // Show the new password in a secure dialog
+        setNewPassword(data.newPassword);
         setSuccess(true);
       } else {
         setSuccess(true);
@@ -50,6 +55,26 @@ export default function ForgotPasswordPage() {
       setError(e.message || "Parooli lähtestamine ebaõnnestus");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopyPassword = async () => {
+    if (!newPassword) return;
+    
+    try {
+      await navigator.clipboard.writeText(newPassword);
+      setPasswordCopied(true);
+      toast({
+        title: "Parool kopeeritud",
+        description: "Parool on lõikelauale kopeeritud. Palun kopeeri see kohe ja hoiusta turvaliselt.",
+      });
+      setTimeout(() => setPasswordCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Viga",
+        description: "Parooli kopeerimine ebaõnnestus. Palun kopeeri see käsitsi.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -63,8 +88,10 @@ export default function ForgotPasswordPage() {
             </div>
             <h2 className="text-xl font-semibold mb-2">Uus parool saadetud!</h2>
             <p className="text-muted-foreground mb-4">
-              Kui see e-mail on meie süsteemis olemas, saatsime sellele uue parooli. 
-              Kontrolli oma postkasti (ka rämpsposti kausta).
+              {newPassword 
+                ? "Uus parool on genereeritud. Palun kopeeri see kohe ja hoiusta turvaliselt."
+                : "Kui see e-mail on meie süsteemis olemas, saatsime sellele uue parooli. Kontrolli oma postkasti (ka rämpsposti kausta)."
+              }
             </p>
             <p className="text-sm text-muted-foreground mb-4">
               Soovitame kohe pärast sisselogimist parooli oma konto seadetes muuta.
@@ -76,6 +103,60 @@ export default function ForgotPasswordPage() {
             </Link>
           </CardContent>
         </Card>
+
+        {/* Password Dialog */}
+        {newPassword && (
+          <Dialog open={!!newPassword} onOpenChange={() => setNewPassword(null)}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Uus parool genereeritud</DialogTitle>
+                <DialogDescription>
+                  Palun kopeeri see parool kohe ja hoiusta turvaliselt. See parool kuvatakse ainult üks kord.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    value={newPassword}
+                    readOnly
+                    className="pr-10 font-mono text-center text-lg"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={handleCopyPassword}
+                    title="Kopeeri parool"
+                  >
+                    {passwordCopied ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <Alert className="bg-amber-50 border-amber-200">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800">
+                    Oluline: Kopeeri see parool kohe. Pärast selle dialoogi sulgemist ei saa seda enam näha.
+                  </AlertDescription>
+                </Alert>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCopyPassword} className="flex items-center gap-2">
+                  <Copy className="h-4 w-4" />
+                  Kopeeri parool
+                </Button>
+                <Button variant="outline" onClick={() => setNewPassword(null)}>
+                  Sulge
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     );
   }

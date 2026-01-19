@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,13 @@ import {
   Eye, 
   EyeOff, 
   Trash2,
-  ArrowLeft
+  ArrowLeft,
+  Filter
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Article {
   id: string;
@@ -31,9 +34,13 @@ interface Article {
 }
 
 export default function ArticlesList() {
+  const navigate = useNavigate();
+  const { showDialog, hideDialog, dialog } = useConfirmationDialog();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterPublished, setFilterPublished] = useState<"all" | "published" | "draft">("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
 
   const loadArticles = async () => {
     try {
@@ -83,11 +90,21 @@ export default function ArticlesList() {
     }
   };
 
-  const deleteArticle = async (id: string, title: string) => {
-    if (!confirm(`Kas oled kindel, et soovid kustutada artikli "${title}"?`)) {
-      return;
-    }
+  const deleteArticle = (id: string, title: string) => {
+    showDialog({
+      title: "Artikli kustutamine",
+      description: `Kas oled kindel, et soovid artikli "${title}" kustutada? Seda tegevust ei saa tagasi võtta.`,
+      onConfirm: () => performDeleteArticle(id),
+      variant: "destructive",
+      confirmText: "Kustuta",
+      cancelText: "Tühista",
+      icon: <Trash2 className="h-6 w-6" />
+    });
+  };
 
+  const performDeleteArticle = async (id: string) => {
+    hideDialog();
+    
     try {
       const { error } = await supabase
         .from("articles")
@@ -104,10 +121,25 @@ export default function ArticlesList() {
     }
   };
 
-  const filteredArticles = articles.filter(article =>
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredArticles = articles.filter(article => {
+    const matchesSearch = 
+      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.category.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesPublished = 
+      filterPublished === "all" ||
+      (filterPublished === "published" && article.published) ||
+      (filterPublished === "draft" && !article.published);
+    
+    const matchesCategory = 
+      filterCategory === "all" ||
+      article.category.toLowerCase() === filterCategory.toLowerCase();
+    
+    return matchesSearch && matchesPublished && matchesCategory;
+  });
+
+  // Get unique categories from articles
+  const categories = Array.from(new Set(articles.map(a => a.category))).sort();
 
   if (loading) {
     return (
@@ -124,11 +156,9 @@ export default function ArticlesList() {
       <div className="mx-auto max-w-6xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Button variant="ghost" className="mb-4" asChild>
-            <Link to="/admin">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Tagasi adminisse
-            </Link>
+          <Button variant="ghost" className="mb-4" onClick={() => navigate("/admin")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Tagasi adminisse
           </Button>
           
           <div className="flex items-center justify-between">
@@ -147,8 +177,8 @@ export default function ArticlesList() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="mb-6">
+        {/* Search and Filters */}
+        <div className="mb-6 space-y-4">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
@@ -159,6 +189,51 @@ export default function ArticlesList() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Filtrid:</span>
+            </div>
+            
+            <Select value={filterPublished} onValueChange={(value) => setFilterPublished(value as "all" | "published" | "draft")}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Staatus" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Kõik</SelectItem>
+                <SelectItem value="published">Avaldatud</SelectItem>
+                <SelectItem value="draft">Mustandid</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Kategooria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Kõik kategooriad</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {(filterPublished !== "all" || filterCategory !== "all" || searchQuery) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFilterPublished("all");
+                  setFilterCategory("all");
+                  setSearchQuery("");
+                }}
+                className="h-8 text-xs"
+              >
+                Tühista filtrid
+              </Button>
+            )}
           </div>
         </div>
 
@@ -252,6 +327,21 @@ export default function ArticlesList() {
             </Button>
           </div>
         )}
+
+        {/* Confirmation Dialog */}
+        <ConfirmationDialog
+          isOpen={dialog.isOpen}
+          onClose={hideDialog}
+          onConfirm={dialog.onConfirm}
+          title={dialog.title}
+          description={dialog.description}
+          variant={dialog.variant}
+          confirmText={dialog.confirmText}
+          cancelText={dialog.cancelText}
+          isLoading={dialog.isLoading}
+          loadingText={dialog.loadingText}
+          icon={dialog.icon}
+        />
       </div>
     </div>
   );

@@ -3,15 +3,55 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calculator } from 'lucide-react';
+import { Calculator, AlertCircle, RotateCcw, Copy, Check } from 'lucide-react';
 
 export default function OneRepMaxCalculator() {
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
   const [oneRM, setOneRM] = useState<number | null>(null);
   const [percentages, setPercentages] = useState<{ percent: number; weight: number }[]>([]);
+  const [errors, setErrors] = useState<{ weight?: string; reps?: string }>({});
+
+  const validateInputs = (): boolean => {
+    const newErrors: { weight?: string; reps?: string } = {};
+    
+    const w = parseFloat(weight);
+    const r = parseInt(reps);
+    
+    if (!weight || weight.trim() === '') {
+      newErrors.weight = 'Kaal on kohustuslik';
+    } else if (isNaN(w)) {
+      newErrors.weight = 'Kaal peab olema number';
+    } else if (w <= 0) {
+      newErrors.weight = 'Kaal peab olema suurem kui 0';
+    } else if (w > 1000) {
+      newErrors.weight = 'Kaal peab olema väiksem kui 1000 kg';
+    }
+    
+    if (!reps || reps.trim() === '') {
+      newErrors.reps = 'Kordused on kohustuslikud';
+    } else if (isNaN(r)) {
+      newErrors.reps = 'Kordused peavad olema number';
+    } else if (r < 1) {
+      newErrors.reps = 'Kordused peavad olema vähemalt 1';
+    } else if (r > 15) {
+      newErrors.reps = 'Kordused peavad olema maksimaalselt 15 (valem on täpsem 2-10 korduse vahemikus)';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const calculateOneRM = () => {
+    // Clear previous results
+    setOneRM(null);
+    setPercentages([]);
+    
+    // Validate inputs
+    if (!validateInputs()) {
+      return;
+    }
+    
     const w = parseFloat(weight);
     const r = parseInt(reps);
     
@@ -61,9 +101,30 @@ export default function OneRepMaxCalculator() {
                 id="weight"
                 type="number"
                 placeholder="100"
+                min="0.1"
+                max="1000"
+                step="0.1"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                onChange={(e) => {
+                  setWeight(e.target.value);
+                  if (errors.weight) {
+                    setErrors(prev => ({ ...prev, weight: undefined }));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    calculateOneRM();
+                  }
+                }}
+                className={errors.weight ? "border-destructive" : ""}
               />
+              {errors.weight && (
+                <p id="weight-error" className="text-sm text-destructive flex items-center gap-1" role="alert">
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                  {errors.weight}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="reps">Kordused</Label>
@@ -74,18 +135,82 @@ export default function OneRepMaxCalculator() {
                 min="1"
                 max="15"
                 value={reps}
-                onChange={(e) => setReps(e.target.value)}
+                onChange={(e) => {
+                  setReps(e.target.value);
+                  if (errors.reps) {
+                    setErrors(prev => ({ ...prev, reps: undefined }));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    calculateOneRM();
+                  }
+                }}
+                className={errors.reps ? "border-destructive" : ""}
               />
+              {errors.reps && (
+                <p id="reps-error" className="text-sm text-destructive flex items-center gap-1" role="alert">
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                  {errors.reps}
+                </p>
+              )}
             </div>
           </div>
           
-          <Button onClick={calculateOneRM} className="w-full">
-            Arvuta 1RM
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={calculateOneRM} className="flex-1" aria-label="Arvuta ühe korduse maksimum">
+              Arvuta 1RM
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setWeight('');
+                setReps('');
+                setOneRM(null);
+                setPercentages([]);
+                setErrors({});
+              }}
+              className="flex items-center gap-2"
+              disabled={!weight && !reps && !oneRM}
+              aria-label="Tühjenda väljad ja tulemused"
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              Tühjenda
+            </Button>
+          </div>
 
           {oneRM && (
-            <div className="space-y-4">
-              <div className="bg-muted/50 rounded-lg p-6 text-center">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="bg-muted/50 rounded-lg p-6 text-center relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  aria-label={copied ? "Kopeeritud" : "Kopeeri tulemus lõikelauale"}
+                  onClick={async () => {
+                    const resultText = `1RM: ${oneRM} kg\nKaal: ${weight} kg\nKordused: ${reps}\n\n${percentages.map(p => `${p.percent}%: ${p.weight} kg`).join('\n')}`;
+                    try {
+                      await navigator.clipboard.writeText(resultText);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    } catch (err) {
+                      console.error('Failed to copy:', err);
+                    }
+                  }}
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4 mr-1" />
+                      Kopeeritud
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-1" />
+                      Kopeeri
+                    </>
+                  )}
+                </Button>
                 <div className="text-4xl font-bold mb-2">{oneRM} kg</div>
                 <div className="text-lg font-semibold text-primary">
                   Hinnangeline 1RM

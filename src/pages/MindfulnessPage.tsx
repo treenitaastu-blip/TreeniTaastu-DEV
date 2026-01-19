@@ -173,6 +173,7 @@ export default function MindfulnessPage() {
   // Audio context for breathing sounds
   const audioContextRef = useRef<AudioContext | null>(null);
   const [audioSupported, setAudioSupported] = useState(true);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const [iosAudioUnlocked, setIosAudioUnlocked] = useState(false);
   
   // Track active audio sources to prevent overlapping sounds
@@ -223,6 +224,7 @@ export default function MindfulnessPage() {
         if (!AudioContextClass) {
           console.error('[Mindfulness] Web Audio API not supported');
           setAudioSupported(false);
+          setAudioError('Sinu brauser ei toeta heli. Harjutus toimib visuaalse juhendamisega.');
           return false;
         }
         
@@ -250,6 +252,8 @@ export default function MindfulnessPage() {
     } catch (error) {
       console.error('[Mindfulness] Audio context initialization failed:', error);
       setAudioSupported(false);
+      const errorMsg = error instanceof Error ? error.message : 'Heli algatamine ebaõnnestus';
+      setAudioError(`Heli ei ole saadaval: ${errorMsg}. Harjutus toimib siiski visuaalse juhendamisega.`);
       return false;
     }
   };
@@ -774,10 +778,27 @@ export default function MindfulnessPage() {
                 Võta aega, et ennast mugavalt sisse seada. Kui oled valmis, vajuta "Alusta"
               </p>
               {!audioSupported && (
-                <div className="mt-4 p-4 bg-warning/10 border border-warning/30 rounded-lg">
-                  <p className="text-sm text-warning-foreground text-center">
-                    Heli ei ole selles brauseris toetatud, kuid harjutus toimib siiski visuaalse juhendamisega.
-                  </p>
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="h-5 w-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-amber-900 mb-1">
+                        Heli ei ole saadaval
+                      </p>
+                      <p className="text-sm text-amber-800">
+                        {audioError || 'Harjutus toimib siiski visuaalse juhendamisega. Näed ekraanil, millal sisse ja välja hingata.'}
+                      </p>
+                      {isIOS() && (
+                        <p className="text-xs text-amber-700 mt-2 italic">
+                          Tip: iPhone'il veendu, et telefon on vaikimisrežiimist väljas ja brauseri helid on lubatud.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -793,14 +814,27 @@ export default function MindfulnessPage() {
                 Hingamisharjutus algab...
               </div>
               {!audioSupported && (
-                <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 max-w-md">
-                  <div className="flex items-center gap-2 text-yellow-800">
-                    <div className="w-2 h-2 bg-yellow-600 rounded-full animate-pulse"></div>
-                    <span className="font-medium">Lülita telefonist vaikimisrežiim välja</span>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 max-w-md mx-auto">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="h-5 w-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-amber-900 mb-1">
+                        Heli ei tööta
+                      </p>
+                      <p className="text-sm text-amber-800">
+                        Harjutus toimib visuaalse juhendamisega. Järgida ekraanil kuvatavaid juhiseid.
+                      </p>
+                      {isIOS() && (
+                        <p className="text-xs text-amber-700 mt-2">
+                          iPhone'il: lülita telefonist vaikimisrežiim välja ja kontrolli brauseri heli seadeid.
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-yellow-700 mt-2">
-                    Et kuulda hingamise juhendamist, lülita telefonist vaikimisrežiim välja
-                  </p>
                 </div>
               )}
             </div>

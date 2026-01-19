@@ -25,6 +25,7 @@ import PTAccessValidator from "@/components/PTAccessValidator";
 import ErrorRecovery from "@/components/ErrorRecovery";
 import WorkoutFeedback from "@/components/workout/WorkoutFeedback";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+import { useLocation } from "react-router-dom";
 // Removed unused import: calculateExerciseProgression from progressionLogic
 
 // Helper function to parse reps string to number
@@ -77,6 +78,7 @@ export default function ModernWorkoutSession() {
   const { user } = useAuth();
   const { trackFeatureUsage, trackPageView } = useTrackEvent();
   const navigate = useNavigate();
+  const location = useLocation();
   const { programId, dayId } = useParams<{ programId: string; dayId: string }>();
 
   // Core data
@@ -107,6 +109,8 @@ export default function ModernWorkoutSession() {
   const [error, setError] = useState<string | null>(null);
   const { loadingStates, setLoading: setLoadingState, setError: setLoadingError, getLoadingState } = useLoadingState();
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   
   // Rest timer
   const [restTimer, setRestTimer] = useState<{
@@ -130,6 +134,52 @@ export default function ModernWorkoutSession() {
   
   // Ref for notes debounce timeout cleanup (Bug #4 fix)
   const notesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    // Check if there are completed sets (workout has been started)
+    if (Object.keys(setLogs).length > 0) {
+      return true;
+    }
+    // Check if there are any set inputs with data (user has entered values)
+    const hasInputs = Object.values(setInputs).some(input => 
+      input.reps !== undefined || input.seconds !== undefined || input.kg !== undefined
+    );
+    if (hasInputs) {
+      return true;
+    }
+    // Check if there are unsaved notes or RPE
+    if (Object.keys(exerciseNotes).length > 0 || Object.keys(exerciseRPE).length > 0) {
+      return true;
+    }
+    return false;
+  }, [setLogs, setInputs, exerciseNotes, exerciseRPE]);
+
+  // Handle back navigation with confirmation
+  const handleBackNavigation = useCallback(() => {
+    if (hasUnsavedChanges && !session?.ended_at) {
+      setPendingNavigation(() => () => navigate("/programs"));
+      setShowLeaveConfirmation(true);
+    } else {
+      navigate("/programs");
+    }
+  }, [hasUnsavedChanges, session?.ended_at, navigate]);
+
+  // Browser navigation protection (refresh/close)
+  useEffect(() => {
+    if (!hasUnsavedChanges || session?.ended_at) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Kas oled kindel, et soovid lahkuda? Salvestamata muudatused võivad kaduda.';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges, session?.ended_at]);
 
   const totalSets = useMemo(() => {
     return exercises.reduce((total, ex) => total + ex.sets, 0);
@@ -432,13 +482,18 @@ export default function ModernWorkoutSession() {
       
       // For time-based exercises, allow completion with just seconds_done (reps_done can be null)
       // For weight/bodyweight exercises, require reps_done
-      const repsDone = isTimeBased 
-        ? (inputs.reps || targetReps) // Optional for time-based, but allow if provided
-        : (inputs.reps || targetReps); // Required for non-time-based
+      let repsDone: number | null;
+      if (isTimeBased) {
+        // Time-based: reps are optional - use provided value or null (not undefined)
+        repsDone = (inputs.reps ?? targetReps) ?? null;
+      } else {
+        // Non-time-based: reps are required - use provided value or fallback to target
+        repsDone = inputs.reps ?? targetReps ?? null;
+      }
       
       // Use overrideData (e.g. from timer) when provided, so we don't rely on async setInputs
-      const secondsDone = (overrideData?.seconds as number | undefined) ?? inputs.seconds ?? exercise?.seconds;
-      const weightDone = (overrideData?.kg as number | undefined) ?? inputs.kg ?? exercise?.weight_kg;
+      const secondsDone = (overrideData?.seconds as number | undefined) ?? inputs.seconds ?? exercise?.seconds ?? null;
+      const weightDone = (overrideData?.kg as number | undefined) ?? inputs.kg ?? exercise?.weight_kg ?? null;
       
       const setLogData = {
         session_id: session.id,
@@ -447,19 +502,23 @@ export default function ModernWorkoutSession() {
         program_id: programId!,
         user_id: user.id,
         set_number: setNumber,
-        reps_done: repsDone,
+        reps_done: repsDone, // Can be null for time-based exercises
         seconds_done: secondsDone,
         weight_kg_done: weightDone,
         marked_done_at: new Date().toISOString()
       };
       
-      // Validation: For time-based exercises, ensure seconds_done is present
+      // Validation: For time-based exercises, ensure seconds_done is present (reps_done can be null)
       // For non-time-based, ensure reps_done is present
-      if (isTimeBased && !setLogData.seconds_done) {
-        throw new Error('Ajaharjutus nõuab aja sisestamist');
-      }
-      if (!isTimeBased && !setLogData.reps_done) {
-        throw new Error('Harjutus nõuab korduste sisestamist');
+      if (isTimeBased) {
+        if (setLogData.seconds_done === null || setLogData.seconds_done === undefined) {
+          throw new Error('Ajaharjutus nõuab aja sisestamist');
+        }
+        // reps_done can be null for time-based exercises - this is valid
+      } else {
+        if (setLogData.reps_done === null || setLogData.reps_done === undefined) {
+          throw new Error('Harjutus nõuab korduste sisestamist');
+        }
       }
       
       // Bug #1 fix: Use upsert instead of insert to handle duplicates
@@ -1078,7 +1137,7 @@ export default function ModernWorkoutSession() {
         joint_pain_location: feedback.joint_pain_location ?? null,
         fatigue_level: feedback.fatigue_level,
         energy_level: feedback.energy_level,
-        notes: feedback.notes
+        notes: feedback.notes?.trim() || null // Ensure notes are trimmed and null instead of empty string
       });
 
       // Check last two feedback entries for gating condition
@@ -1508,7 +1567,12 @@ export default function ModernWorkoutSession() {
             userId: user?.id,
             action: "load_workout"
           }}
-          onRetry={() => window.location.reload()}
+          onRetry={() => {
+            setError(null);
+            setLoading(true);
+            // Reload workout data
+            window.location.reload(); // Full reload needed to re-initialize all state
+          }}
         />
       </PTAccessValidator>
     );
@@ -1522,7 +1586,7 @@ export default function ModernWorkoutSession() {
           programTitle={program?.title_override || "Isiklik programm"}
           dayTitle={day?.title || "Treening"}
           dayOrder={day?.day_order || undefined}
-          onBack={() => navigate("/programs")}
+          onBack={handleBackNavigation}
           startedAt={session?.started_at || new Date().toISOString()}
           isFinished={!!session?.ended_at}
           onFinish={handleFinishWorkout}
@@ -1698,6 +1762,27 @@ export default function ModernWorkoutSession() {
             exerciseName={rirDialogState.exerciseName}
           />
         )}
+
+        {/* Leave Confirmation Dialog */}
+        <ConfirmationDialog
+          isOpen={showLeaveConfirmation}
+          onClose={() => {
+            setShowLeaveConfirmation(false);
+            setPendingNavigation(null);
+          }}
+          onConfirm={() => {
+            setShowLeaveConfirmation(false);
+            if (pendingNavigation) {
+              pendingNavigation();
+              setPendingNavigation(null);
+            }
+          }}
+          title="Kas oled kindel, et soovid lahkuda?"
+          description="Sul on salvestamata muudatusi. Kui lahkud nüüd, võivad need kaduda."
+          confirmText="Jah, lahku"
+          cancelText="Tühista"
+          variant="warning"
+        />
 
         {/* Loading Overlay */}
         {saving && (

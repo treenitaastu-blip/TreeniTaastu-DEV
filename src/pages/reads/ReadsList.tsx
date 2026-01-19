@@ -199,7 +199,11 @@ export default function ReadsList() {
               Ei suutnud artikleid laadida. Palun proovige hiljem uuesti.
             </p>
             <button 
-              onClick={() => window.location.reload()} 
+              onClick={() => {
+                setError(false);
+                setLoading(true);
+                loadArticles();
+              }} 
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Proovi uuesti

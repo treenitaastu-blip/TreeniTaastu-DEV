@@ -622,27 +622,36 @@ export default function PersonalTraining() {
                         className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                       />
                     </div>
-                    <div className="flex gap-3 pt-4">
-                      <Button 
-                        onClick={() => {
-                          trackButtonClick('cancel_program_assignment', 'program_assignment', 'admin_dashboard');
-                          setShowAssignModal(false);
-                        }} 
-                        variant="outline" 
-                        className="flex-1"
-                      >
-                        Tühista
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          trackButtonClick('assign_program', 'program_assignment', 'admin_dashboard');
-                          handleQuickAssign();
-                        }}
-                        disabled={assigning || !selectedTemplate || !selectedUserId}
-                        className="flex-1"
-                      >
-                        {assigning ? "Määran..." : "Määra programm"}
-                      </Button>
+                    <div className="space-y-2">
+                      {(!selectedTemplate || !selectedUserId) && (
+                        <p className="text-xs text-destructive">
+                          {!selectedTemplate && !selectedUserId && "Palun vali nii mall kui ka klient"}
+                          {!selectedTemplate && selectedUserId && "Palun vali mall"}
+                          {selectedTemplate && !selectedUserId && "Palun vali klient"}
+                        </p>
+                      )}
+                      <div className="flex gap-3 pt-2">
+                        <Button 
+                          onClick={() => {
+                            trackButtonClick('cancel_program_assignment', 'program_assignment', 'admin_dashboard');
+                            setShowAssignModal(false);
+                          }} 
+                          variant="outline" 
+                          className="flex-1"
+                        >
+                          Tühista
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            trackButtonClick('assign_program', 'program_assignment', 'admin_dashboard');
+                            handleQuickAssign();
+                          }}
+                          disabled={assigning || !selectedTemplate || !selectedUserId}
+                          className="flex-1"
+                        >
+                          {assigning ? "Määran..." : "Määra programm"}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </DialogContent>
@@ -744,7 +753,7 @@ export default function PersonalTraining() {
                             <DropdownMenuItem
                               onClick={() => {
                                 // Navigate to template editing page
-                                window.location.href = `/admin/templates/${template.id}`;
+                                navigate(`/admin/templates/${template.id}`);
                               }}
                             >
                               <Edit className="h-3 w-3 mr-2" />

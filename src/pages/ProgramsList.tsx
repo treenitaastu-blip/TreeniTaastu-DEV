@@ -210,17 +210,26 @@ export default function ProgramsList() {
         </header>
 
         <div className="rounded-2xl border bg-card shadow-soft p-6 md:p-8 text-center">
-          <div className="text-lg font-medium mb-3">Pole programme</div>
-          <p className="text-muted-foreground mb-6">
-            Hetkel pole ühtegi isiklikku programmi. Vaata meie teenuseid ja vali endale sobiv programm.
+          <div className="text-xl font-semibold mb-3">Pole programme</div>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            Hetkel pole sulle ühtegi isiklikku programmi määratud. Tasuta tellijana saad vaadata staatilisi programme või tellida isiklikku programmi teenuste kaudu.
           </p>
-          <Link
-            to="/teenused"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-          >
-            <Target className="h-4 w-4" />
-            Vaata teenuseid
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <Link
+              to="/programm"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+            >
+              <Target className="h-4 w-4" />
+              Vaata staatilisi programme
+            </Link>
+            <Link
+              to="/teenused"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-6 py-3 text-sm font-medium hover:bg-secondary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors"
+            >
+              <BookOpen className="h-4 w-4" />
+              Vaata teenuseid
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -263,30 +272,41 @@ export default function ProgramsList() {
 
       {shaped.length === 0 ? (
         <div className="rounded-2xl border bg-card shadow-soft p-6 md:p-8 text-center">
-          <div className="text-lg font-medium mb-3">Pole programme</div>
-          <p className="text-muted-foreground mb-6">
+          <div className="text-xl font-semibold mb-3">Pole programme</div>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
             {isTrialUser 
-              ? "Hetkel pole ühtegi isiklikku programmi. Vaata meie teenuseid ja vali endale sobiv programm."
-              : "Hetkel pole ühtegi isiklikku programmi. Kontakteeru administraatoriga, et saada programm määratud."
+              ? "Hetkel pole sulle ühtegi isiklikku programmi määratud. Tasuta tellijana saad vaadata staatilisi programme või tellida isiklikku programmi teenuste kaudu."
+              : "Hetkel pole sulle ühtegi isiklikku programmi määratud. Võta ühendust oma treeneriga või vaata meie teenuseid, et tellida endale isiklik treeningprogramm."
             }
           </p>
-          {isTrialUser ? (
-            <Link
-              to="/teenused"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-            >
-              <Target className="h-4 w-4" />
-              Vaata teenuseid
-            </Link>
-          ) : (
-            <Link
-              to="/teenused"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-6 py-3 text-sm font-medium hover:bg-secondary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors"
-            >
-              <BookOpen className="h-4 w-4" />
-              Vaata teenuseid
-            </Link>
-          )}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            {isTrialUser ? (
+              <>
+                <Link
+                  to="/programm"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+                >
+                  <Target className="h-4 w-4" />
+                  Vaata staatilisi programme
+                </Link>
+                <Link
+                  to="/teenused"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-6 py-3 text-sm font-medium hover:bg-secondary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Vaata teenuseid
+                </Link>
+              </>
+            ) : (
+              <Link
+                to="/teenused"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+              >
+                <Target className="h-4 w-4" />
+                Vaata teenuseid
+              </Link>
+            )}
+          </div>
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3" role="list">

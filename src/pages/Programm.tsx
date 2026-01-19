@@ -1,17 +1,21 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useProgramCalendarState } from '@/hooks/useProgramCalendarState';
 import { useWeekendRedirect } from '@/hooks/useWeekendRedirect';
-import { Loader2, RefreshCw, ArrowLeft, Target } from 'lucide-react';
+import { Loader2, RefreshCw, ArrowLeft, Target, ArrowRight, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 import CalendarGrid from '@/components/calendar/CalendarGrid';
 import QuoteDisplay from '@/components/calendar/QuoteDisplay';
 import { getTallinnDate, isAfterUnlockTime } from '@/lib/workweek';
 import { supabase } from '@/integrations/supabase/client';
+
+// Static program IDs
+const KONTORIKEHA_RESET_PROGRAM_ID = 'e1ab6f77-5a43-4c05-ac0d-02101b499e4c';
 
 export default function Programm() {
   const { user } = useAuth();
@@ -34,6 +38,10 @@ export default function Programm() {
 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [activeDayData, setActiveDayData] = useState<any | null>(null);
+  const [completingDay, setCompletingDay] = useState<number | null>(null); // Track which day is being completed
+  const [showSwitchDialog, setShowSwitchDialog] = useState(false);
+  const [switchingProgram, setSwitchingProgram] = useState(false);
+  const [availablePrograms, setAvailablePrograms] = useState<any[]>([]);
   const firstExerciseRef = useRef<HTMLDivElement | null>(null);
 
   const loadProgramDayByNumber = useCallback(async (dayNum: number) => {
@@ -41,13 +49,14 @@ export default function Programm() {
 
     console.log('Loading program day:', dayNum, 'for program:', program.title);
 
-    // For "Kontorikeha Reset" program, use existing programday structure
-    if (program.title === 'Kontorikeha Reset') {
+    // Load program day using program_id
+    if (program.id) {
       const week = Math.ceil(dayNum / 5);
       const day = ((dayNum - 1) % 5) + 1;
       const { data, error } = await supabase
         .from('programday')
         .select('*')
+        .eq('program_id', program.id)
         .eq('week', week)
         .eq('day', day)
         .single();
@@ -123,11 +132,19 @@ export default function Programm() {
   const handleDayCompletion = useCallback(async (dayNumber: number): Promise<boolean> => {
     if (!user || !program) return false;
     
+    // Prevent race condition - if already completing this day, return early
+    if (completingDay === dayNumber) {
+      console.log('Day completion already in progress, ignoring duplicate click');
+      return false;
+    }
+    
     console.log('handleDayCompletion called with:', { dayNumber, user: user.id, program: program.title, activeDayData });
     
+    setCompletingDay(dayNumber);
+    
     try {
-      // For "Kontorikeha Reset" program, use existing function
-      if (program.title === 'Kontorikeha Reset') {
+      // For static programs, use existing completion function
+      if (program.id === KONTORIKEHA_RESET_PROGRAM_ID) {
         if (!activeDayData?.id) {
           console.error('No activeDayData.id found:', activeDayData);
           toast({ title: 'Viga', description: 'Päeva andmed puuduvad', variant: 'destructive' });
@@ -199,9 +216,11 @@ export default function Programm() {
     } catch (error) {
       console.error('Error completing day:', error);
       toast({ title: 'Viga', description: 'Päeva märkimine ebaõnnestus', variant: 'destructive' });
+      return false;
+    } finally {
+      setCompletingDay(null); // Always clear completing state
     }
-    return false;
-  }, [user, program, activeDayData, markDayCompleted, navigate, toast]);
+  }, [user, program, activeDayData, markDayCompleted, navigate, toast, completingDay]);
 
   // Show quote for locked days
   const showQuoteForDay = useCallback((dayNumber: number) => {
@@ -240,24 +259,116 @@ export default function Programm() {
     );
   }
 
-  // Redirect if no active program
+  // Load available programs for empty state
+  useEffect(() => {
+    if (!hasActiveProgram && !loading) {
+      (async () => {
+        const { data } = await supabase
+          .from('programs')
+          .select('*')
+          .order('created_at');
+        if (data) setAvailablePrograms(data);
+      })();
+    }
+  }, [hasActiveProgram, loading]);
+
+  // Handle program switching
+  const handleSwitchProgram = useCallback(async () => {
+    if (!user || !program) return;
+    
+    setSwitchingProgram(true);
+    try {
+      // Pause current program
+      const { error: pauseError } = await supabase
+        .from('user_programs')
+        .update({ 
+          status: 'paused',
+          paused_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('program_id', program.id)
+        .eq('status', 'active');
+
+      if (pauseError) {
+        // If no user_programs entry exists, create one as paused
+        await supabase
+          .from('user_programs')
+          .insert({
+            user_id: user.id,
+            program_id: program.id,
+            status: 'paused',
+            paused_at: new Date().toISOString()
+          });
+      }
+
+      toast({ title: 'Programm peatatud', description: 'Sinu progress on salvestatud. Saad seda hiljem jätkata.' });
+      navigate('/programmid');
+    } catch (error) {
+      console.error('Error switching program:', error);
+      toast({ title: 'Viga', description: 'Programmi vahetamine ebaõnnestus', variant: 'destructive' });
+    } finally {
+      setSwitchingProgram(false);
+      setShowSwitchDialog(false);
+    }
+  }, [user, program, navigate, toast]);
+
+  // Better empty state with program selection
   if (!loading && !hasActiveProgram) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Pole aktiivset programmi
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Vali programm, et alustada oma treeningteekonda.
-          </p>
-          <Button 
-            onClick={() => navigate('/programmid')}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            Vali programm
-          </Button>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <div className="text-center mb-8">
+            <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Pole aktiivset programmi
+            </h2>
+            <p className="text-gray-600 mb-2">
+              Vali programm, et alustada oma treeningteekonda.
+            </p>
+            <p className="text-sm text-gray-500">
+              Programm avaneb päev-päevalt ja aitab sul järjepidevust hoida.
+            </p>
+          </div>
+
+          {/* Available Programs Grid */}
+          {availablePrograms.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {availablePrograms.map((p) => (
+                <Card key={p.id} className="bg-white/70 backdrop-blur-sm border border-gray-200/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">{p.title}</CardTitle>
+                    <CardDescription>{p.description || `${p.duration_weeks * 7} päeva programm`}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button asChild className="w-full">
+                      <Link to="/programmid">
+                        Vaata üksikasju
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-white/70 backdrop-blur-sm border border-gray-200/50 mb-6">
+              <CardContent className="text-center py-8">
+                <p className="text-gray-600 mb-4">Programme pole hetkel saadaval</p>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="text-center">
+            <Button 
+              onClick={() => navigate('/programmid')}
+              size="lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Vaata kõiki programme
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -273,17 +384,28 @@ export default function Programm() {
         <p className="text-sm sm:text-base text-muted-foreground">
           {program?.description || 'Treeningprogramm, mis avaneb päev-päevalt'}
         </p>
-        <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-          <span>{completedDays}/{totalDays} päeva tehtud</span>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate('/programmid')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Tagasi programmide juurde
-          </Button>
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          <span className="text-sm text-muted-foreground">{completedDays}/{totalDays} päeva tehtud</span>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowSwitchDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Vaheta programmi
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/programmid')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Tagasi
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -356,9 +478,17 @@ export default function Programm() {
                     console.log('handleDayCompletion result:', ok);
                     // The scroll logic is now handled in handleDayCompletion
                   }}
-                  className="h-12 px-8 bg-green-600 hover:bg-green-700 text-white text-lg font-semibold"
+                  disabled={completingDay === Number(routeDayNumber)}
+                  className="h-12 px-8 bg-green-600 hover:bg-green-700 text-white text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Märgi tehtuks
+                  {completingDay === Number(routeDayNumber) ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvestan...
+                    </>
+                  ) : (
+                    'Märgi tehtuks'
+                  )}
                 </Button>
               </div>
             )}
@@ -442,6 +572,19 @@ export default function Programm() {
         </CardContent>
       </Card>
 
+      {/* Program Switching Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showSwitchDialog}
+        onClose={() => setShowSwitchDialog(false)}
+        onConfirm={handleSwitchProgram}
+        title="Vaheta programmi"
+        description={`Kas oled kindel, et soovid vahetada programmi "${program?.title}"? Sinu praegune progress salvestatakse ja saad seda hiljem jätkata.`}
+        confirmText="Jah, vaheta"
+        cancelText="Tühista"
+        variant="warning"
+        isLoading={switchingProgram}
+        loadingText="Salvestan..."
+      />
     </div>
   );
 }

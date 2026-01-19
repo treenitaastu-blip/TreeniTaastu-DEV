@@ -40,14 +40,19 @@ export default function ProgrammAdaptive() {
   const loadProgramDayByNumber = useCallback(async (dayNum: number) => {
     if (!program) return;
 
-    // For now, we'll use the existing programday table structure
-    // This would need to be adapted based on your program structure
+    // Load program day using program_id
+    if (!program?.id) {
+      toast({ title: 'Viga', description: 'Programmi ID puudub', variant: 'destructive' });
+      return;
+    }
+    
     const week = Math.ceil(dayNum / 5);
     const day = ((dayNum - 1) % 5) + 1;
     
     const { data, error } = await supabase
       .from('programday')
       .select('*')
+      .eq('program_id', program.id)
       .eq('week', week)
       .eq('day', day)
       .single();

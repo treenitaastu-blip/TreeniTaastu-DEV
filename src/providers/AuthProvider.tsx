@@ -117,25 +117,47 @@ export default function AuthProvider({
 
     let unsub: (() => void) | null = null;
     
-    // Fast timeout for better UX
+    // Immediate fallback: Set loading to false after 300ms no matter what
+    // FIX: Always call setState - don't check aliveRef (was blocking updates during remounts)
+    const immediateTimeout = setTimeout(() => {
+      // Always call setState - React safely ignores if component unmounted
+      setLoading(false);
+      setLoadingEntitlement(false);
+      setStatus("signedOut");
+      setEntitlement({ isSubscriber: false });
+    }, 300); // 300ms timeout - very fast
+    
+    // Backup timeout for safety
     const timeoutId = setTimeout(() => {
-      if (aliveRef.current) {
-        setLoading(false);
-        setLoadingEntitlement(false);
-        setStatus("signedOut");
-        setEntitlement({ isSubscriber: false });
-      }
-    }, 2000); // 2 second timeout
+      clearTimeout(immediateTimeout);
+      // Always call setState - React safely ignores if component unmounted
+      setLoading(false);
+      setLoadingEntitlement(false);
+      setStatus("signedOut");
+      setEntitlement({ isSubscriber: false });
+    }, 1000); // 1 second timeout
 
     (async () => {
       setLoading(true);
 
       try {
+        // Add timeout wrapper to prevent hanging
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => {
+          setTimeout(() => resolve({ data: { session: null } }), 1000);
+        });
+
+        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        clearTimeout(timeoutId);
+        clearTimeout(immediateTimeout);
+
+        if (!aliveRef.current) {
+          return;
+        }
+
         const {
           data: { session: sess },
-        } = await supabase.auth.getSession();
-
-        clearTimeout(timeoutId);
+        } = result;
 
         if (!aliveRef.current) {
           return;
@@ -152,6 +174,7 @@ export default function AuthProvider({
       } catch (error) {
         console.error("Auth initialization error:", error);
         clearTimeout(timeoutId);
+        clearTimeout(immediateTimeout);
         if (aliveRef.current) {
           setLoading(false);
           setLoadingEntitlement(false);
@@ -182,6 +205,7 @@ export default function AuthProvider({
 
     return () => {
       clearTimeout(timeoutId);
+      clearTimeout(immediateTimeout);
       try {
         unsub?.();
       } catch {
@@ -229,6 +253,21 @@ export default function AuthProvider({
   );
 
   // Don't render children until first bootstrap done
+  // But add a maximum timeout to prevent infinite loading - force render after 2s
+  // FIX: Always call setLoading even if component unmounts (React will handle it safely)
+  useEffect(() => {
+    const maxTimeout = setTimeout(() => {
+      // FIX: Always call setState - React safely ignores if component unmounted
+      // The aliveRef check was preventing state updates during remounts
+      setLoading(false);
+      setLoadingEntitlement(false);
+      setStatus("signedOut");
+      setEntitlement({ isSubscriber: false });
+    }, 2000); // Absolute maximum 2 seconds
+    
+    return () => clearTimeout(maxTimeout);
+  }, []); // Only run once on mount, not when loading changes
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -27,9 +27,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // componentStack can be an empty string; keep it nullable-friendly
     this.setState({ stack: errorInfo?.componentStack ?? null });
-
-    // Optional: hook for logging (kept internal so Fast Refresh is happy)
-    // sendToLoggingService(error, errorInfo);
   }
 
   render() {

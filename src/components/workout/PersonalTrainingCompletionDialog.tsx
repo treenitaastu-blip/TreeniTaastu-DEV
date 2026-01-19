@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BarChart3, BookOpen, CheckCircle, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,26 +20,29 @@ export default function PersonalTrainingCompletionDialog({
   onClose
 }: PersonalTrainingCompletionDialogProps) {
   const navigate = useNavigate();
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+
+  // Handle navigation after dialog closes
+  useEffect(() => {
+    if (!isOpen && pendingNavigation) {
+      navigate(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  }, [isOpen, pendingNavigation, navigate]);
 
   const handleViewStats = () => {
-    navigate("/programs/stats");
+    setPendingNavigation("/programs/stats");
     onClose();
   };
 
   const handleAddNote = () => {
+    setPendingNavigation("/programs/journal");
     onClose();
-    // Add a small delay to ensure dialog closes before navigation
-    setTimeout(() => {
-      navigate("/programs/journal");
-    }, 100);
   };
 
   const handleGoHome = () => {
+    setPendingNavigation("/home");
     onClose();
-    // Add a small delay to ensure dialog closes before navigation
-    setTimeout(() => {
-      navigate("/home");
-    }, 100);
   };
 
   return (
