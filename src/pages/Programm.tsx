@@ -48,13 +48,7 @@ export default function Programm() {
   const firstExerciseRef = useRef<HTMLDivElement | null>(null);
 
   const loadProgramDayByNumber = useCallback(async (dayNum: number) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Programm.tsx:50',message:'loadProgramDayByNumber called',data:{dayNum,hasProgram:!!program,programId:program?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     if (!program) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Programm.tsx:52',message:'No program available',data:{dayNum},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       toast({
         title: 'Ootan programmi andmeid',
         description: 'Programmi laadimine...',
@@ -67,9 +61,6 @@ export default function Programm() {
     if (program.id) {
       const week = Math.ceil(dayNum / 5);
       const day = ((dayNum - 1) % 5) + 1;
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Programm.tsx:63',message:'Querying programday',data:{programId:program.id,week,day,dayNum},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       const { data, error } = await supabase
         .from('programday')
         .select('*')
@@ -78,9 +69,6 @@ export default function Programm() {
         .eq('day', day)
         .single();
         if (error) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Programm.tsx:72',message:'programday load error',data:{error:error.message,code:error.code,dayNum,week,day},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
           console.error('programday load error', error);
           // Provide more specific error messages based on error type
           let errorMessage = 'Päeva laadimine ebaõnnestus. Palun proovi hiljem uuesti.';
@@ -104,14 +92,8 @@ export default function Programm() {
           setActiveDayData(null);
           return;
         }
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Programm.tsx:96',message:'programday loaded successfully',data:{dayNum,hasVideos:!!(data?.videolink1||data?.videolink2||data?.videolink3),exerciseCount:Object.keys(data||{}).filter(k=>k.startsWith('exercise')).length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       setActiveDayData(data);
     } else {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Programm.tsx:100',message:'Program ID missing',data:{hasProgram:!!program},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       // Program ID missing - show error instead of placeholder
       toast({
         title: 'Viga',
@@ -123,9 +105,6 @@ export default function Programm() {
   }, [program, toast]);
 
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Programm.tsx:120',message:'Route dayNumber effect',data:{routeDayNumber,hasProgram:!!program,totalDays,loading},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     if (routeDayNumber) {
       const dayNum = Number(routeDayNumber);
       if (!Number.isNaN(dayNum) && dayNum >= 1 && dayNum <= (totalDays || 20)) {
@@ -664,9 +643,6 @@ export default function Programm() {
                     {hint && <div className="text-sm text-muted-foreground mt-1">{hint}</div>}
                     {video && (
                       <div className="mt-3">
-                        {/* #region agent log */}
-                        {(() => {fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Programm.tsx:627',message:'Rendering video',data:{exerciseName:name,videoUrl:video,exerciseNum:n},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});return null;})()}
-                        {/* #endregion */}
                         <iframe
                           src={video.includes('youtube.com') || video.includes('youtu.be') ?
                             (video.includes('embed') ? `${video}` : `https://www.youtube-nocookie.com/embed/${(video.split('v=')[1]||'').split('&')[0] || video.split('youtu.be/')[1] || ''}`)
