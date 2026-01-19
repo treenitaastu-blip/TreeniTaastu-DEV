@@ -14,18 +14,7 @@ const isLocalhost = typeof window !== 'undefined' &&
 const finalUrl = SUPABASE_URL || (isLocalhost ? 'https://dtxbrnrpzepwoxooqwlj.supabase.co' : null);
 const finalKey = SUPABASE_ANON_KEY || (isLocalhost ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0eGJybnJwemVwd294b29xd2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzOTgzODgsImV4cCI6MjA3NDk3NDM4OH0.HEYeT-qEv0AsJ5-zh15xTwtr0V1soQ_3Hp4fzmRnryA' : null);
 
-// #region agent log
-if (typeof window !== 'undefined') {
-  fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase/client.ts:init',message:'Supabase client initialization',data:{hasUrl:!!SUPABASE_URL,hasKey:!!SUPABASE_ANON_KEY,isLocalhost,usingFallback:isLocalhost&&(!SUPABASE_URL||!SUPABASE_ANON_KEY),finalUrlExists:!!finalUrl,finalKeyExists:!!finalKey,hostname:window.location.hostname},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'J'})}).catch(()=>{});
-}
-// #endregion
-
 if (!finalUrl || !finalKey) {
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase/client.ts:error',message:'Missing Supabase config - will throw',data:{hasUrl:!!SUPABASE_URL,hasKey:!!SUPABASE_ANON_KEY,isLocalhost,envKeys:Object.keys(import.meta.env).filter(k=>k.startsWith('VITE_'))},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'K'})}).catch(()=>{});
-  }
-  // #endregion
   console.error("[Supabase Client] Missing configuration:", {
     hasUrl: !!SUPABASE_URL,
     hasKey: !!SUPABASE_ANON_KEY,

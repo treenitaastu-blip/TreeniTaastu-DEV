@@ -21,10 +21,30 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
+    // Check environment variables
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      const error = "Missing Supabase environment variables (SUPABASE_URL or SUPABASE_ANON_KEY)";
+      logStep("ERROR", { error });
+      return new Response(JSON.stringify({ error }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    if (!stripeSecretKey) {
+      const error = "Missing STRIPE_SECRET_KEY environment variable";
+      logStep("ERROR", { error });
+      return new Response(JSON.stringify({ error: "Stripe configuration missing. Please contact support." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
     const { priceId } = await req.json();
     if (!priceId) throw new Error("Price ID is required");
@@ -50,7 +70,7 @@ serve(async (req) => {
       logStep("No authenticated user - proceeding with guest checkout");
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
+    const stripe = new Stripe(stripeSecretKey, { 
       apiVersion: "2025-08-27.basil" 
     });
 
@@ -130,8 +150,13 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in create-checkout", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    logStep("ERROR in create-checkout", { message: errorMessage, stack: errorStack });
+    console.error("[CREATE-CHECKOUT] Full error:", error);
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      details: errorStack ? "Check function logs for details" : undefined
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

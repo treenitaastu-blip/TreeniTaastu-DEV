@@ -160,18 +160,12 @@ export default function IndexPublic() {
   // Handle plan selection for non-logged-in users
   const handleSelectPlan = async (planId: string) => {
     console.log('[IndexPublic] handleSelectPlan called', { planId, hostname: window.location.hostname, isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' });
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'IndexPublic.tsx:handleSelectPlan',message:'handleSelectPlan called',data:{planId,isProduction:window.location.hostname!=='localhost'&&window.location.hostname!=='127.0.0.1',hostname:window.location.hostname},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     
     const plan = SUBSCRIPTION_PLANS[planId];
     console.log('[IndexPublic] Plan lookup', { planId, planFound: !!plan, planName: plan?.name, availablePlanIds: Object.keys(SUBSCRIPTION_PLANS) });
     
     if (!plan) {
       console.error('[IndexPublic] Plan not found!', { planId, availablePlans: Object.keys(SUBSCRIPTION_PLANS) });
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'IndexPublic.tsx:handleSelectPlan',message:'Plan not found',data:{planId},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       toast({
         title: "Viga",
         description: "Planeeti ei leitud",
@@ -192,9 +186,6 @@ export default function IndexPublic() {
     // For paid plans, check if Stripe price ID exists
     if (!plan.stripePriceId) {
       console.error('[IndexPublic] No Stripe price ID for plan', { planId, planName: plan.name });
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'IndexPublic.tsx:handleSelectPlan',message:'No Stripe price ID',data:{planId,planName:plan.name},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       toast({
         title: "Stripe seadistus vajalik",
         description: "See plaan pole veel Stripe'is seadistatud. Palun kontakteeru toega.",
@@ -206,10 +197,6 @@ export default function IndexPublic() {
     console.log('[IndexPublic] Starting checkout process', { planId, stripePriceId: plan.stripePriceId, hasSupabase: !!supabase });
     setCheckoutLoading(planId);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'IndexPublic.tsx:handleSelectPlan',message:'Before supabase.functions.invoke',data:{planId,stripePriceId:plan.stripePriceId,hasSupabase:!!supabase},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
-
     try {
       console.log('[IndexPublic] Invoking create-checkout function', { priceId: plan.stripePriceId });
       // For non-logged-in users, no auth token needed
@@ -219,38 +206,31 @@ export default function IndexPublic() {
 
       console.log('[IndexPublic] Function response received', { hasError: !!error, error, hasData: !!data, data });
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'IndexPublic.tsx:handleSelectPlan',message:'supabase.functions.invoke response',data:{hasError:!!error,errorMessage:error?.message,errorStatus:error?.status,errorContext:error?.context,hasData:!!data,dataKeys:data?Object.keys(data):[],hasUrl:!!data?.url,url:data?.url?.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
-
       if (error) {
         console.error('[IndexPublic] Function error', { error, message: error.message, status: error.status, context: error.context });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'IndexPublic.tsx:handleSelectPlan',message:'Error from invoke - throwing',data:{errorMessage:error.message,errorStatus:error.status,errorContext:error.context,errorName:error.name},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
+        // Try to get more details from the error response
+        if (error.context?.response) {
+          try {
+            const errorText = await error.context.response.text();
+            console.error('[IndexPublic] Function error response body', { errorText });
+          } catch (e) {
+            console.error('[IndexPublic] Could not read error response', { e });
+          }
+        }
         throw error;
       }
 
       if (data?.url) {
         console.log('[IndexPublic] Redirecting to Stripe', { url: data.url });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'IndexPublic.tsx:handleSelectPlan',message:'Redirecting to Stripe checkout',data:{urlLength:data.url.length,urlStart:data.url.substring(0,50)},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'G'})}).catch(()=>{});
-        // #endregion
         // Redirect to Stripe checkout
         window.location.href = data.url;
       } else {
         console.error('[IndexPublic] No URL in response', { data });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'IndexPublic.tsx:handleSelectPlan',message:'No checkout URL in response',data:{data},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'H'})}).catch(()=>{});
-        // #endregion
         throw new Error("Checkout URL not received");
       }
 
     } catch (error) {
       console.error('[IndexPublic] Checkout error caught', { error, message: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'IndexPublic.tsx:handleSelectPlan',message:'Catch block - error caught',data:{errorMessage:error instanceof Error ? error.message : String(error),errorName:error instanceof Error ? error.name : typeof error,errorStack:error instanceof Error ? error.stack?.substring(0,200) : undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-checkout',hypothesisId:'I'})}).catch(()=>{});
-      // #endregion
       toast({
         title: "Viga tellimuse vormistamisel",
         description: error instanceof Error ? error.message : "Proovi hiljem uuesti või loo konto",
