@@ -145,7 +145,6 @@ export default function IndexPublic() {
 
   // Hide loading skeleton once React component mounts
   useEffect(() => {
-    console.log('[IndexPublic] Component mounted', { hasUser: !!user, hostname: window.location.hostname });
     const skeleton = document.getElementById('loading-skeleton');
     if (skeleton) {
       skeleton.style.display = 'none';
@@ -154,18 +153,12 @@ export default function IndexPublic() {
 
   // ✅ Redirect if already logged in
   if (user) return <Navigate to="/home" replace />;
-  
-  console.log('[IndexPublic] Rendering (user is null)', { hostname: window.location.hostname });
 
   // Handle plan selection for non-logged-in users
   const handleSelectPlan = async (planId: string) => {
-    console.log('[IndexPublic] handleSelectPlan called', { planId, hostname: window.location.hostname, isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' });
-    
     const plan = SUBSCRIPTION_PLANS[planId];
-    console.log('[IndexPublic] Plan lookup', { planId, planFound: !!plan, planName: plan?.name, availablePlanIds: Object.keys(SUBSCRIPTION_PLANS) });
     
     if (!plan) {
-      console.error('[IndexPublic] Plan not found!', { planId, availablePlans: Object.keys(SUBSCRIPTION_PLANS) });
       toast({
         title: "Viga",
         description: "Planeeti ei leitud",
@@ -185,7 +178,6 @@ export default function IndexPublic() {
 
     // For paid plans, check if Stripe price ID exists
     if (!plan.stripePriceId) {
-      console.error('[IndexPublic] No Stripe price ID for plan', { planId, planName: plan.name });
       toast({
         title: "Stripe seadistus vajalik",
         description: "See plaan pole veel Stripe'is seadistatud. Palun kontakteeru toega.",
