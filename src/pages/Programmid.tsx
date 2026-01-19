@@ -74,15 +74,21 @@ const Programmid: React.FC = () => {
 
       // Convert programs data: duration_weeks -> duration_days
       const convertedPrograms: Program[] = (programsData || []).map(p => {
-        // Calculate duration_days from duration_weeks (default to 4 weeks if missing)
-        const weeks = p.duration_weeks || 4;
-        const days = weeks * 7;
+        // Calculate duration_days from duration_weeks
+        // Special handling: "Kontorikeha Reset" is 20 days (4 weeks × 5 working days)
+        let days: number;
+        if (p.title === 'Kontorikeha Reset') {
+          days = 20; // 4 weeks × 5 working days = 20 days
+        } else {
+          const weeks = p.duration_weeks || 4;
+          days = weeks * 7; // Default: weeks × 7 calendar days
+        }
         
         return {
           id: p.id,
           title: p.title,
           description: p.description || '',
-          duration_days: days, // Convert weeks to days
+          duration_days: days,
           difficulty: 'alustaja' as const, // Default, can be enhanced later
           status: 'available' as const, // Default, can be enhanced later
           created_at: p.created_at || new Date().toISOString()
@@ -443,7 +449,7 @@ const Programmid: React.FC = () => {
                         </Badge>
                         <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-600">
                           <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                          <span className="font-medium whitespace-nowrap">{program.duration_days || 28} päeva</span>
+                          <span className="font-medium whitespace-nowrap">{program.duration_days || 20} päeva</span>
                         </div>
                       </div>
                     </div>

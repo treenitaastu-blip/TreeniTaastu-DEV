@@ -245,8 +245,13 @@ export const useProgramCalendarState = () => {
         }
       }
 
+      // Override duration_days for Kontorikeha Reset before generating calendar days
+      const programForCalendar = activeProgram.id === KONTORIKEHA_RESET_PROGRAM_ID
+        ? { ...activeProgram, duration_days: 20 }
+        : activeProgram;
+
       // Generate calendar days with user's actual start date
-      const days = generateCalendarDays(activeProgram, userStartDate);
+      const days = generateCalendarDays(programForCalendar, userStartDate);
       const today = getTallinnDate();
 
       // Update days with completion status
@@ -277,11 +282,22 @@ export const useProgramCalendarState = () => {
       // Count unique completed days, not total completions
       const completedDays = uniqueCompletedDayNumbers.size;
 
+      // Override duration_days for Kontorikeha Reset (20 days = 4 weeks × 5 working days)
+      const actualDurationDays = activeProgram.id === KONTORIKEHA_RESET_PROGRAM_ID 
+        ? 20 
+        : activeProgram.duration_days;
+
+      // Update program object with correct duration
+      const programWithCorrectDuration = {
+        ...activeProgram,
+        duration_days: actualDurationDays
+      };
+
       setState(prev => ({
         ...prev,
-        program: activeProgram,
+        program: programWithCorrectDuration,
         days: updatedDays,
-        totalDays: activeProgram.duration_days,
+        totalDays: actualDurationDays,
         completedDays,
         loading: false,
         hasActiveProgram: hasActualActiveProgram, // Use actual check result

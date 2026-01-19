@@ -39,7 +39,7 @@ export default function Landing() {
                 Muuda oma elu
               </span>
               <br />
-              <span className="text-5xl text-foreground font-bold">28 päevaga</span>
+              <span className="text-5xl text-foreground font-bold">20 päevaga</span>
             </h1>
             <p className="text-xl text-foreground/80 mb-8 max-w-2xl mx-auto font-medium">
               Personaalsed treeningkavad + ekspertide tugi. Tulemused garanteeritud.
