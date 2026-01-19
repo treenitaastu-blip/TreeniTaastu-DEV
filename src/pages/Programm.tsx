@@ -45,6 +45,7 @@ export default function Programm() {
   const [showSwitchDialog, setShowSwitchDialog] = useState(false);
   const [switchingProgram, setSwitchingProgram] = useState(false);
   const [availablePrograms, setAvailablePrograms] = useState<any[]>([]);
+  const [startingProgramId, setStartingProgramId] = useState<string | null>(null);
   const firstExerciseRef = useRef<HTMLDivElement | null>(null);
 
   const loadProgramDayByNumber = useCallback(async (dayNum: number) => {
@@ -289,21 +290,6 @@ export default function Programm() {
       </div>
     );
   }
-
-  const [startingProgramId, setStartingProgramId] = useState<string | null>(null);
-
-  // Load available programs for empty state
-  useEffect(() => {
-    if (!hasActiveProgram && !loading) {
-      (async () => {
-        const { data } = await supabase
-          .from('programs')
-          .select('*')
-          .order('created_at');
-        if (data) setAvailablePrograms(data);
-      })();
-    }
-  }, [hasActiveProgram, loading]);
 
   // Handle starting program from empty state
   const handleStartFromEmptyState = useCallback(async (programId: string) => {
