@@ -208,22 +208,29 @@ export const useProgramCalendarState = () => {
         }
       }
 
-      // #region agent log
-      if (typeof window !== 'undefined') {
-        console.log('[DEBUG useProgramCalendarState] Before generating calendar days', { hasUserStartDate: !!userStartDate, userStartDate: userStartDate?.toISOString(), programTitle: activeProgram.title });
-      }
-      // #endregion
-
-      // Generate calendar days with user's actual start date
-      const days = generateCalendarDays(activeProgram, userStartDate);
-      const today = getTallinnDate();
-      
-      // Load completion data for Kontorikeha Reset program
+      // Load completion data for Kontorikeha Reset program BEFORE generating calendar
+      // This allows us to fix the start date if it's wrong
       let completedProgramDayIds: string[] = [];
       let uniqueCompletedDayNumbers = new Set<number>();
       let earliestCompletionDate: Date | null = null;
       
+      // Create a mapping of programday_id to day number for Kontorikeha Reset
+      let programDayToDayNumber: Record<string, number> = {};
+      
       if (activeProgram.title === 'Kontorikeha Reset') {
+        // Get all programday records to map IDs to day numbers first
+        const { data: programDays } = await supabase
+          .from('programday')
+          .select('id, week, day');
+          
+        if (programDays) {
+          programDays.forEach(pd => {
+            const dayNumber = ((pd.week - 1) * 5) + pd.day;
+            programDayToDayNumber[pd.id] = dayNumber;
+          });
+        }
+        
+        // Load completion data
         const { data: progress, error: progressError } = await supabase
           .from('userprogress')
           .select('programday_id, completed_at, done')
@@ -235,6 +242,14 @@ export const useProgramCalendarState = () => {
           console.error('Error loading progress:', progressError);
         } else {
           completedProgramDayIds = progress?.map(p => p.programday_id) || [];
+          
+          // Map completed programday_ids to day numbers
+          completedProgramDayIds.forEach(programDayId => {
+            const dayNumber = programDayToDayNumber[programDayId];
+            if (dayNumber) {
+              uniqueCompletedDayNumbers.add(dayNumber);
+            }
+          });
           
           // Find earliest completion date to calculate actual start date
           if (progress && progress.length > 0) {
@@ -250,7 +265,8 @@ export const useProgramCalendarState = () => {
       // #region agent log
       if (typeof window !== 'undefined') {
         console.log('[DEBUG useProgramCalendarState] Progress loaded', { 
-          completedCount: completedProgramDayIds.length, 
+          completedCount: completedProgramDayIds.length,
+          completedDayNumbers: Array.from(uniqueCompletedDayNumbers),
           earliestCompletionDate: earliestCompletionDate?.toISOString(),
           hasUserStartDate: !!userStartDate,
           userStartDate: userStartDate?.toISOString()
@@ -258,26 +274,9 @@ export const useProgramCalendarState = () => {
       }
       // #endregion
 
-      // Create a mapping of programday_id to day number for Kontorikeha Reset
-      let programDayToDayNumber: Record<string, number> = {};
-      
-      if (activeProgram.title === 'Kontorikeha Reset') {
-        // Get all programday records to map IDs to day numbers
-        const { data: programDays } = await supabase
-          .from('programday')
-          .select('id, week, day');
-          
-        if (programDays) {
-          programDays.forEach(pd => {
-            const dayNumber = ((pd.week - 1) * 5) + pd.day;
-            programDayToDayNumber[pd.id] = dayNumber;
-          });
-        }
-      }
-
       // If user has completed days but start date is in the future, calculate correct start date
       // This happens when start_static_program creates a future date but user already has progress
-      if (userStartDate && uniqueCompletedDayNumbers.size > 0 && earliestCompletionDate) {
+      if (userStartDate && uniqueCompletedDayNumbers.size > 0) {
         const today = getTallinnDate();
         today.setHours(0, 0, 0, 0);
         const userStartDateOnly = new Date(userStartDate);
@@ -322,6 +321,16 @@ export const useProgramCalendarState = () => {
           userStartDate = calculatedStartDate;
         }
       }
+
+      // #region agent log
+      if (typeof window !== 'undefined') {
+        console.log('[DEBUG useProgramCalendarState] Before generating calendar days', { hasUserStartDate: !!userStartDate, userStartDate: userStartDate?.toISOString(), programTitle: activeProgram.title });
+      }
+      // #endregion
+
+      // Generate calendar days with user's actual start date (possibly corrected)
+      const days = generateCalendarDays(activeProgram, userStartDate);
+      const today = getTallinnDate();
 
       // Update days with completion status
       const updatedDays = days.map(day => {
