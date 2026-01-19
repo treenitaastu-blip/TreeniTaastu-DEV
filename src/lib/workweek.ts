@@ -155,16 +155,16 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
   }
   
   // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'shouldUnlockDay called',data:{dayNumber,hasUserStartDate:!!userStartDate,userStartDate:userStartDate?.toISOString(),startDate:startDate.toISOString(),todayDate:todayDate.toISOString(),weekdaysSinceStart,isCompleted,isWeekend:isWeekend(tallinnDate)},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'A'})}).catch(()=>{});
+  if (typeof window !== 'undefined' && dayNumber <= 6) {
+    console.log('[DEBUG shouldUnlockDay]', { dayNumber, hasUserStartDate: !!userStartDate, userStartDate: userStartDate?.toISOString(), startDate: startDate.toISOString(), todayDate: todayDate.toISOString(), weekdaysSinceStart, isCompleted, isWeekend: isWeekend(tallinnDate) });
   }
   // #endregion
   
   // Completed days should always be unlocked (even on weekends)
   if (isCompleted) {
     // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'Day is completed - returning true',data:{dayNumber},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'B'})}).catch(()=>{});
+    if (typeof window !== 'undefined' && dayNumber <= 6) {
+      console.log('[DEBUG shouldUnlockDay] Day is completed - returning true', { dayNumber });
     }
     // #endregion
     return true;
@@ -179,8 +179,8 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
     // So dayNumber should be <= weekdaysSinceStart (which includes all weekdays up to Friday)
     const result = dayNumber <= weekdaysSinceStart;
     // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'Weekend check',data:{dayNumber,weekdaysSinceStart,result},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'C'})}).catch(()=>{});
+    if (typeof window !== 'undefined' && dayNumber <= 6) {
+      console.log('[DEBUG shouldUnlockDay] Weekend check', { dayNumber, weekdaysSinceStart, result });
     }
     // #endregion
     return result;
@@ -198,8 +198,8 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
   const isPreviouslyUnlocked = dayNumber < weekdaysIncludingToday;
   if (isPreviouslyUnlocked) {
     // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'Previously unlocked day',data:{dayNumber,weekdaysIncludingToday},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'D'})}).catch(()=>{});
+    if (typeof window !== 'undefined' && dayNumber <= 6) {
+      console.log('[DEBUG shouldUnlockDay] Previously unlocked day', { dayNumber, weekdaysIncludingToday });
     }
     // #endregion
     return true;
@@ -212,8 +212,8 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
   const result = isTodayTheRightDay && isAfterUnlock;
   
   // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'New day unlock check',data:{dayNumber,weekdaysIncludingToday,isTodayTheRightDay,isAfterUnlock,result},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'E'})}).catch(()=>{});
+  if (typeof window !== 'undefined' && dayNumber <= 6) {
+    console.log('[DEBUG shouldUnlockDay] New day unlock check', { dayNumber, weekdaysIncludingToday, isTodayTheRightDay, isAfterUnlock, result });
   }
   // #endregion
   

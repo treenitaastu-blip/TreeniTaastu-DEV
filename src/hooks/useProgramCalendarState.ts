@@ -202,7 +202,7 @@ export const useProgramCalendarState = () => {
           userStartDate = new Date(staticStart.start_monday + 'T00:00:00');
           // #region agent log
           if (typeof window !== 'undefined') {
-            fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useProgramCalendarState.ts:loadProgramData',message:'User start date loaded',data:{userId:user.id,startMonday:staticStart.start_monday,userStartDate:userStartDate.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'F'})}).catch(()=>{});
+            console.log('[DEBUG useProgramCalendarState] User start date loaded', { userId: user.id, startMonday: staticStart.start_monday, userStartDate: userStartDate.toISOString() });
           }
           // #endregion
         }
@@ -210,7 +210,7 @@ export const useProgramCalendarState = () => {
 
       // #region agent log
       if (typeof window !== 'undefined') {
-        fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useProgramCalendarState.ts:loadProgramData',message:'Before generating calendar days',data:{hasUserStartDate:!!userStartDate,userStartDate:userStartDate?.toISOString(),programTitle:activeProgram.title},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'G'})}).catch(()=>{});
+        console.log('[DEBUG useProgramCalendarState] Before generating calendar days', { hasUserStartDate: !!userStartDate, userStartDate: userStartDate?.toISOString(), programTitle: activeProgram.title });
       }
       // #endregion
 
@@ -276,7 +276,7 @@ export const useProgramCalendarState = () => {
         
         // #region agent log
         if (typeof window !== 'undefined' && day.dayNumber <= 6) {
-          fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useProgramCalendarState.ts:loadProgramData',message:'Day unlock status calculated',data:{dayNumber:day.dayNumber,isCompleted,isUnlocked,isLocked,userStartDate:userStartDate?.toISOString(),isWeekend:day.isWeekend},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'H'})}).catch(()=>{});
+          console.log('[DEBUG useProgramCalendarState] Day unlock status calculated', { dayNumber: day.dayNumber, isCompleted, isUnlocked, isLocked, userStartDate: userStartDate?.toISOString(), isWeekend: day.isWeekend });
         }
         // #endregion
         
