@@ -126,6 +126,7 @@ export const useProgramCalendarState = () => {
       const isWeekendDay = isWeekend(currentDate);
       const isCompleted = false; // Will be loaded from database
       const isUnlocked = shouldUnlockDay(dayNumber, programStartDate, isCompleted);
+      const isLocked = !isUnlocked && !isWeekendDay;
       
       days.push({
         dayNumber,
@@ -133,6 +134,7 @@ export const useProgramCalendarState = () => {
         isWeekend: isWeekendDay,
         isUnlocked,
         isCompleted,
+        isLocked,
         isStarted: false // Will be loaded from database
       });
     }
@@ -198,8 +200,19 @@ export const useProgramCalendarState = () => {
         } else if (staticStart?.start_monday) {
           // Convert the date string to a Date object (start_monday is a date, so it comes as a string)
           userStartDate = new Date(staticStart.start_monday + 'T00:00:00');
+          // #region agent log
+          if (typeof window !== 'undefined') {
+            fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useProgramCalendarState.ts:loadProgramData',message:'User start date loaded',data:{userId:user.id,startMonday:staticStart.start_monday,userStartDate:userStartDate.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'F'})}).catch(()=>{});
+          }
+          // #endregion
         }
       }
+
+      // #region agent log
+      if (typeof window !== 'undefined') {
+        fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useProgramCalendarState.ts:loadProgramData',message:'Before generating calendar days',data:{hasUserStartDate:!!userStartDate,userStartDate:userStartDate?.toISOString(),programTitle:activeProgram.title},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'G'})}).catch(()=>{});
+      }
+      // #endregion
 
       // Generate calendar days with user's actual start date
       const days = generateCalendarDays(activeProgram, userStartDate);
@@ -259,11 +272,19 @@ export const useProgramCalendarState = () => {
         // Recalculate unlock status with completion info
         // Use user's actual start date for accurate unlock calculation
         const isUnlocked = shouldUnlockDay(day.dayNumber, userStartDate, isCompleted);
+        const isLocked = !isUnlocked && !day.isWeekend;
+        
+        // #region agent log
+        if (typeof window !== 'undefined' && day.dayNumber <= 6) {
+          fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useProgramCalendarState.ts:loadProgramData',message:'Day unlock status calculated',data:{dayNumber:day.dayNumber,isCompleted,isUnlocked,isLocked,userStartDate:userStartDate?.toISOString(),isWeekend:day.isWeekend},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'H'})}).catch(()=>{});
+        }
+        // #endregion
         
         return {
           ...day,
           isCompleted,
-          isUnlocked
+          isUnlocked,
+          isLocked
         };
       });
 

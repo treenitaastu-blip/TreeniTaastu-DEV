@@ -154,8 +154,19 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
     currentDate.setDate(currentDate.getDate() + 1);
   }
   
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'shouldUnlockDay called',data:{dayNumber,hasUserStartDate:!!userStartDate,userStartDate:userStartDate?.toISOString(),startDate:startDate.toISOString(),todayDate:todayDate.toISOString(),weekdaysSinceStart,isCompleted,isWeekend:isWeekend(tallinnDate)},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'A'})}).catch(()=>{});
+  }
+  // #endregion
+  
   // Completed days should always be unlocked (even on weekends)
   if (isCompleted) {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'Day is completed - returning true',data:{dayNumber},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'B'})}).catch(()=>{});
+    }
+    // #endregion
     return true;
   }
   
@@ -166,7 +177,13 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
     // On weekends, we check if the day was unlocked by the end of the previous week
     // If we're on Saturday/Sunday, we've had 5 weekdays this week (Mon-Fri)
     // So dayNumber should be <= weekdaysSinceStart (which includes all weekdays up to Friday)
-    return dayNumber <= weekdaysSinceStart;
+    const result = dayNumber <= weekdaysSinceStart;
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'Weekend check',data:{dayNumber,weekdaysSinceStart,result},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'C'})}).catch(()=>{});
+    }
+    // #endregion
+    return result;
   }
   
   // On weekdays: check unlock logic
@@ -180,6 +197,11 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
   // A day is "previously unlocked" if we've already had enough weekdays to unlock it
   const isPreviouslyUnlocked = dayNumber < weekdaysIncludingToday;
   if (isPreviouslyUnlocked) {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'Previously unlocked day',data:{dayNumber,weekdaysIncludingToday},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'D'})}).catch(()=>{});
+    }
+    // #endregion
     return true;
   }
   
@@ -187,8 +209,15 @@ export function shouldUnlockDay(dayNumber: number, userStartDate?: Date, isCompl
   // dayNumber should unlock when we're on the Nth weekday, so dayNumber === weekdaysIncludingToday
   const isTodayTheRightDay = dayNumber === weekdaysIncludingToday;
   const isAfterUnlock = isAfterUnlockTime();
+  const result = isTodayTheRightDay && isAfterUnlock;
   
-  return isTodayTheRightDay && isAfterUnlock;
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7242/ingest/d2dc5e69-0f61-4c4f-9e34-943daa1e22aa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workweek.ts:shouldUnlockDay',message:'New day unlock check',data:{dayNumber,weekdaysIncludingToday,isTodayTheRightDay,isAfterUnlock,result},timestamp:Date.now(),sessionId:'debug-session',runId:'static-program',hypothesisId:'E'})}).catch(()=>{});
+  }
+  // #endregion
+  
+  return result;
 }
 
 /**
