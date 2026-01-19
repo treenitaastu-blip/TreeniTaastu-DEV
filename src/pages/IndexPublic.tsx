@@ -199,6 +199,7 @@ export default function IndexPublic() {
 
     try {
       console.log('[IndexPublic] Invoking create-checkout function', { priceId: plan.stripePriceId });
+      
       // For non-logged-in users, no auth token needed
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { priceId: plan.stripePriceId }
