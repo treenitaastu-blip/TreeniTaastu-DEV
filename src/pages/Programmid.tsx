@@ -332,10 +332,8 @@ const Programmid: React.FC = () => {
       await loadData();
       setSelectedProgram(null);
       
-      // Small delay to ensure state updates before navigation
-      setTimeout(() => {
-        navigate('/programm');
-      }, 100);
+      // Navigate immediately - state will update asynchronously
+      navigate('/programm');
     } catch (error: any) {
       console.error('Error starting program:', error);
       const errorMessage = error?.message || 'Programmi alustamine ebaõnnestus. Palun proovi hiljem uuesti.';

@@ -287,12 +287,10 @@ export default function Programm() {
       toast({ title: 'Programm alustatud!', description: 'Sinu programm on nüüd aktiivne.' });
       
       // Refresh calendar to show new program
-      refreshCalendar();
+      await refreshCalendar();
       
-      // Small delay to ensure state updates
-      setTimeout(() => {
-        navigate('/programm');
-      }, 100);
+      // Navigate immediately - calendar will update
+      navigate('/programm');
     } catch (error: any) {
       console.error('Error starting program:', error);
       const errorMsg = error?.message || 'Programmi alustamine ebaõnnestus. Palun proovi hiljem uuesti.';
