@@ -327,7 +327,7 @@ export default function Programm() {
         }
       }
 
-      // Verify the program was created
+      // Verify the program was created in user_programs
       const { data: verifyProgram } = await supabase
         .from('user_programs')
         .select('id, status, program_id')
@@ -340,21 +340,40 @@ export default function Programm() {
         throw new Error('Programmi loomine ebaõnnestus. Palun proovi uuesti.');
       }
 
-      console.log('[handleStartFromEmptyState] Program verified:', verifyProgram);
+      console.log('[handleStartFromEmptyState] User program verified:', verifyProgram);
       
-      // Clear starting state immediately so UI updates
-      setStartingProgramId(null);
+      // Verify the RPC can find the program (might need a moment for database replication)
+      // Retry up to 5 times with 200ms delay
+      let rpcFoundProgram = false;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        const { data: rpcProgram } = await supabase.rpc('get_user_active_program', {
+          p_user_id: user.id
+        });
+        
+        if (rpcProgram && rpcProgram.length > 0 && rpcProgram[0].id === programId) {
+          rpcFoundProgram = true;
+          console.log(`[handleStartFromEmptyState] RPC found program on attempt ${attempt + 1}`);
+          break;
+        }
+      }
+      
+      if (!rpcFoundProgram) {
+        console.warn('[handleStartFromEmptyState] RPC did not find program, but continuing anyway');
+      }
       
       toast({ title: 'Programm alustatud!', description: 'Sinu programm on nüüd aktiivne.' });
+      
+      // Clear starting state immediately so button shows normal state
+      setStartingProgramId(null);
       
       // Refresh calendar to show new program - wait for it to complete
       console.log('[handleStartFromEmptyState] Refreshing calendar...');
       await refreshCalendar();
       
-      // Force a full page reload to ensure everything refreshes
-      // This is necessary because we're already on /programm and React Router won't re-render
-      console.log('[handleStartFromEmptyState] Reloading page to show calendar...');
-      window.location.reload();
+      console.log('[handleStartFromEmptyState] Calendar refresh complete');
+      // The component will automatically re-render when hasActiveProgram becomes true
+      // React will re-render when the hook's state updates
     } catch (error: any) {
       console.error('[handleStartFromEmptyState] Error starting program:', error);
       const errorMsg = error?.message || 'Programmi alustamine ebaõnnestus. Palun proovi hiljem uuesti.';
