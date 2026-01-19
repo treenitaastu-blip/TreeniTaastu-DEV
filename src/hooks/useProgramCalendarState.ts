@@ -340,11 +340,7 @@ export const useProgramCalendarState = () => {
           // Check if this specific day is completed by mapping programday_id to day number
           isCompleted = completedProgramDayIds.some(programDayId => {
             const mappedDayNumber = programDayToDayNumber[programDayId];
-            if (mappedDayNumber === day.dayNumber) {
-              uniqueCompletedDayNumbers.add(day.dayNumber);
-              return true;
-            }
-            return false;
+            return mappedDayNumber === day.dayNumber;
           });
         }
         
