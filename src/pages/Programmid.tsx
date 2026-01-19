@@ -73,15 +73,21 @@ const Programmid: React.FC = () => {
       }
 
       // Convert programs data: duration_weeks -> duration_days
-      const convertedPrograms: Program[] = (programsData || []).map(p => ({
-        id: p.id,
-        title: p.title,
-        description: p.description || '',
-        duration_days: (p.duration_weeks || 4) * 7, // Convert weeks to days
-        difficulty: 'alustaja' as const, // Default, can be enhanced later
-        status: 'available' as const, // Default, can be enhanced later
-        created_at: p.created_at || new Date().toISOString()
-      }));
+      const convertedPrograms: Program[] = (programsData || []).map(p => {
+        // Calculate duration_days from duration_weeks (default to 4 weeks if missing)
+        const weeks = p.duration_weeks || 4;
+        const days = weeks * 7;
+        
+        return {
+          id: p.id,
+          title: p.title,
+          description: p.description || '',
+          duration_days: days, // Convert weeks to days
+          difficulty: 'alustaja' as const, // Default, can be enhanced later
+          status: 'available' as const, // Default, can be enhanced later
+          created_at: p.created_at || new Date().toISOString()
+        };
+      });
 
       // Load user programs
       const { data: userProgramsData, error: userProgramsError } = await supabase
@@ -345,12 +351,12 @@ const Programmid: React.FC = () => {
 
   if (loading || accessLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="relative">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+            <Loader2 className="h-12 w-12 animate-spin text-[#00B6E5] mx-auto" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Target className="h-6 w-6 text-purple-500 animate-pulse" />
+              <Target className="h-6 w-6 text-[#009BC7] animate-pulse" />
             </div>
           </div>
           <div>
@@ -363,17 +369,17 @@ const Programmid: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header - Beautiful Design */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mb-6 shadow-xl">
-            <Target className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-6xl">
+        {/* Header - Clean Design */}
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-[#00B6E5] rounded-full mb-4 sm:mb-6 shadow-lg">
+            <Target className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">
             Treeningprogrammid
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
             Vali oma treeningprogramm ja alusta teekonda tervislikumaks eluks
           </p>
         </div>
@@ -383,9 +389,8 @@ const Programmid: React.FC = () => {
           <div className="text-center py-16 px-4">
             <div className="max-w-md mx-auto">
               <div className="relative inline-flex items-center justify-center mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-200/50 to-purple-200/50 rounded-full blur-xl"></div>
-                <div className="relative bg-white/80 backdrop-blur-sm rounded-full p-8 w-28 h-28 flex items-center justify-center border-2 border-gray-200/50 shadow-xl">
-                  <Calendar className="h-14 w-14 text-gray-400" />
+                <div className="relative bg-white rounded-full p-6 sm:p-8 w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center border-2 border-gray-200 shadow-lg">
+                  <Calendar className="h-12 w-12 sm:h-14 sm:w-14 text-gray-400" />
                 </div>
               </div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
@@ -416,47 +421,40 @@ const Programmid: React.FC = () => {
             return (
               <Card 
                 key={program.id} 
-                className={`group relative overflow-hidden bg-white/80 backdrop-blur-sm border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+                className={`group relative overflow-hidden bg-white border transition-all duration-300 hover:shadow-lg ${
                   status === 'completed' 
-                    ? 'border-yellow-300 ring-2 ring-yellow-200/50' 
+                    ? 'border-yellow-300' 
                     : status === 'active'
-                    ? 'border-green-300 ring-2 ring-green-200/50'
+                    ? 'border-green-300'
                     : status === 'paused'
-                    ? 'border-orange-300 ring-2 ring-orange-200/50'
-                    : 'border-gray-200/50 hover:border-blue-300'
+                    ? 'border-orange-300'
+                    : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <div className={`absolute inset-0 transition-all duration-300 ${
-                  status === 'completed' 
-                    ? 'bg-gradient-to-br from-yellow-500/0 to-yellow-500/0 group-hover:from-yellow-500/5 group-hover:to-yellow-500/5'
-                    : status === 'active'
-                    ? 'bg-gradient-to-br from-green-500/0 to-green-500/0 group-hover:from-green-500/5 group-hover:to-green-500/5'
-                    : 'bg-gradient-to-br from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:to-purple-500/5'
-                }`}></div>
-                <CardHeader className="relative pb-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl font-bold text-gray-900 mb-2 pr-2">
+                <CardHeader className="relative pb-3 sm:pb-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3 pr-2">
                         {program.title}
                       </CardTitle>
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <Badge className={`${getDifficultyColor(program.difficulty)} border`}>
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                        <Badge className={`${getDifficultyColor(program.difficulty)} text-xs sm:text-sm`}>
                           {getDifficultyText(program.difficulty)}
                         </Badge>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <Calendar className="h-4 w-4" />
-                          <span className="font-medium">{program.duration_days} päeva</span>
+                        <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-600">
+                          <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="font-medium whitespace-nowrap">{program.duration_days || 28} päeva</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                       {getStatusIcon(status)}
                       <Badge 
-                        className={`text-xs font-semibold ${
+                        className={`text-xs font-semibold whitespace-nowrap ${
                           status === 'active' ? 'bg-green-500 text-white border-0' :
                           status === 'paused' ? 'bg-orange-500 text-white border-0' :
                           status === 'completed' ? 'bg-yellow-500 text-white border-0' :
-                          status === 'needs_subscription' ? 'bg-blue-500 text-white border-0' :
+                          status === 'needs_subscription' ? 'bg-[#00B6E5] text-white border-0' :
                           status === 'coming_soon' ? 'bg-gray-400 text-white border-0' :
                           'bg-blue-100 text-blue-700 border-blue-300'
                         }`}
@@ -467,8 +465,8 @@ const Programmid: React.FC = () => {
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
-                  <CardDescription className="text-gray-600 line-clamp-3">
+                <CardContent className="space-y-3 sm:space-y-4">
+                  <CardDescription className="text-sm sm:text-base text-gray-600 line-clamp-3">
                     {program.description}
                   </CardDescription>
 
@@ -478,7 +476,7 @@ const Programmid: React.FC = () => {
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button 
-                            className="relative w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                            className="relative w-full bg-[#00B6E5] hover:bg-[#009BC7] text-white shadow-md hover:shadow-lg transition-all duration-200"
                             disabled={startingProgram === program.id}
                           >
                             {startingProgram === program.id ? (
@@ -523,7 +521,7 @@ const Programmid: React.FC = () => {
                                 setSelectedProgram(null);
                                 handleStartProgram(program.id);
                               }}
-                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                              className="w-full bg-[#00B6E5] hover:bg-[#009BC7] text-white"
                             >
                               <Play className="h-4 w-4 mr-2" />
                               Alusta programm
@@ -536,7 +534,7 @@ const Programmid: React.FC = () => {
                     {status === 'active' && (
                       <Button 
                         asChild
-                        className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transition-all"
+                        className="w-full bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all"
                       >
                         <Link to="/programm">
                           <Play className="h-4 w-4 mr-2" />
@@ -548,7 +546,7 @@ const Programmid: React.FC = () => {
                     {status === 'paused' && (
                       <Button 
                         onClick={() => handleStartProgram(program.id)}
-                        className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-md hover:shadow-lg transition-all"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white shadow-md hover:shadow-lg transition-all"
                         disabled={startingProgram === program.id}
                       >
                         {startingProgram === program.id ? (
@@ -609,7 +607,7 @@ const Programmid: React.FC = () => {
                             <div className="flex gap-2">
                               <Button 
                                 onClick={() => navigate('/pricing')}
-                                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                                className="flex-1 bg-[#00B6E5] hover:bg-[#009BC7] text-white"
                               >
                                 Vaata hindu
                               </Button>
@@ -688,17 +686,16 @@ const Programmid: React.FC = () => {
 
         {/* Coming Soon Notice - Only show if there are programs */}
         {programs.length > 0 && (
-          <div className="mt-12 text-center">
-            <div className="relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 backdrop-blur-sm rounded-xl border-2 border-blue-200/50 p-8 max-w-2xl mx-auto shadow-lg">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full blur-2xl -mr-16 -mt-16"></div>
+          <div className="mt-8 sm:mt-12 text-center px-4">
+            <div className="relative overflow-hidden bg-white rounded-lg border border-gray-200 p-6 sm:p-8 max-w-2xl mx-auto shadow-sm">
               <div className="relative">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mb-4">
-                  <Target className="h-6 w-6 text-white" />
+                <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-[#00B6E5] rounded-full mb-3 sm:mb-4">
+                  <Target className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                   Rohkem programme tulekul
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600">
                   Töötame pidevalt uute treeningprogrammide kallal, 
                   mis aitavad sul saavutada oma tervise- ja fitnesseesmärke.
                 </p>
