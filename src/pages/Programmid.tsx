@@ -132,32 +132,27 @@ const Programmid: React.FC = () => {
     
     // Admin has full access to all programs - bypass all restrictions
     if (isAdmin) {
-      // Admins can access all programs, even if marked as coming_soon
       return 'available';
     }
     
     // For non-admins, check static program access
     // Static access requires monthly subscription (self_guided/guided), trial, or transformation
     // One-time PT purchases do NOT grant static access
-    if (program.status === 'available') {
-      // Program is available - check if user has static access
-      if (canStatic) {
-        // User has monthly subscription, trial, or transformation
-        return 'available';
-      } else {
-        // User needs monthly subscription to access static programs
-        // One-time PT purchase does not grant static access
-        return 'needs_subscription';
-      }
-    }
-    
-    // Program is actually coming soon (not available yet)
+    // Note: All programs are currently 'available' (status column doesn't exist in database)
+    // This logic handles future 'coming_soon' programs if status column is added
     if (program.status === 'coming_soon') {
       return 'coming_soon';
     }
     
-    // Default: treat as available if program exists and user has static access
-    return program.status === 'available' ? (canStatic ? 'available' : 'needs_subscription') : 'coming_soon';
+    // Program is available - check if user has static access
+    if (canStatic) {
+      // User has monthly subscription, trial, or transformation
+      return 'available';
+    } else {
+      // User needs monthly subscription to access static programs
+      // One-time PT purchase does not grant static access
+      return 'needs_subscription';
+    }
   };
 
   const getStatusIcon = (status: string) => {
