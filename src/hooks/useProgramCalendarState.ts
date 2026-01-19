@@ -200,11 +200,6 @@ export const useProgramCalendarState = () => {
         } else if (staticStart?.start_monday) {
           // Convert the date string to a Date object (start_monday is a date, so it comes as a string)
           userStartDate = new Date(staticStart.start_monday + 'T00:00:00');
-          // #region agent log
-          if (typeof window !== 'undefined') {
-            console.log('[DEBUG useProgramCalendarState] User start date loaded', { userId: user.id, startMonday: staticStart.start_monday, userStartDate: userStartDate.toISOString() });
-          }
-          // #endregion
         }
       }
 
@@ -287,12 +282,6 @@ export const useProgramCalendarState = () => {
         // Use user's actual start date for accurate unlock calculation
         const isUnlocked = shouldUnlockDay(day.dayNumber, userStartDate, isCompleted);
         const isLocked = !isUnlocked && !day.isWeekend;
-        
-        // #region agent log
-        if (typeof window !== 'undefined' && day.dayNumber <= 6) {
-          console.log('[DEBUG useProgramCalendarState] Day unlock status calculated', { dayNumber: day.dayNumber, isCompleted, isUnlocked, isLocked, userStartDate: userStartDate?.toISOString(), isWeekend: day.isWeekend });
-        }
-        // #endregion
         
         return {
           ...day,
