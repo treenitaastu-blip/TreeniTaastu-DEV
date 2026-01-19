@@ -31,6 +31,7 @@ interface ProgramCalendarState {
 
 export const useProgramCalendarState = () => {
   const { user } = useAuth();
+  const [refreshKey, setRefreshKey] = useState(0); // Force refresh trigger
   const [state, setState] = useState<ProgramCalendarState>({
     program: null,
     days: [],
@@ -176,6 +177,9 @@ export const useProgramCalendarState = () => {
         }));
         return;
       }
+
+      // Program found - set hasActiveProgram to true immediately
+      console.log('[useProgramCalendarState] Active program found:', activeProgram.id);
 
       // Fetch user's actual start date from static_starts table
       // Only fetch if user actually has active program (prevent auto-start on browse)
@@ -332,8 +336,9 @@ export const useProgramCalendarState = () => {
     }
   }, [user, getActiveProgram, generateCalendarDays]);
 
-  // Refresh calendar
+  // Refresh calendar - increment refreshKey to force re-fetch
   const refreshCalendar = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
     loadProgramData();
   }, [loadProgramData]);
 
@@ -363,7 +368,7 @@ export const useProgramCalendarState = () => {
 
   useEffect(() => {
     loadProgramData();
-  }, [loadProgramData]);
+  }, [loadProgramData, refreshKey]); // Re-run when refreshKey changes
 
   return {
     ...state,

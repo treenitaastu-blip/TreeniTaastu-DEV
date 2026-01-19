@@ -379,21 +379,16 @@ export default function Programm() {
       // Clear starting state immediately so button shows normal state
       setStartingProgramId(null);
       
-      // Refresh calendar to show new program - wait for it to complete
+      // Force immediate calendar refresh - the refreshKey will trigger a re-fetch
       console.log('[handleStartFromEmptyState] Refreshing calendar...');
-      
-      // Call refreshCalendar and wait a bit for state to propagate
       refreshCalendar();
       
-      // Wait for state to update - poll hasActiveProgram from hook
-      // Give it time for the async loadProgramData to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Force another refresh to ensure state is updated
+      // Wait a moment for the database write to be visible, then refresh again
+      // This handles potential replication delay
+      await new Promise(resolve => setTimeout(resolve, 300));
       refreshCalendar();
       
-      console.log('[handleStartFromEmptyState] Calendar refresh initiated (state should update soon)');
-      // The component will automatically re-render when hasActiveProgram becomes true
+      console.log('[handleStartFromEmptyState] Calendar refresh complete - component will update when data loads');
     } catch (error: any) {
       console.error('[handleStartFromEmptyState] Error starting program:', error);
       const errorMsg = error?.message || 'Programmi alustamine ebaõnnestus. Palun proovi hiljem uuesti.';
