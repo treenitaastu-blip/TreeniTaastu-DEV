@@ -208,11 +208,9 @@ export const useProgramCalendarState = () => {
         }
       }
 
-      // Load completion data for Kontorikeha Reset program BEFORE generating calendar
-      // This allows us to fix the start date if it's wrong
+      // Load completion data for Kontorikeha Reset program
       let completedProgramDayIds: string[] = [];
       let uniqueCompletedDayNumbers = new Set<number>();
-      let earliestCompletionDate: Date | null = null;
       
       // Create a mapping of programday_id to day number for Kontorikeha Reset
       let programDayToDayNumber: Record<string, number> = {};
@@ -235,8 +233,7 @@ export const useProgramCalendarState = () => {
           .from('userprogress')
           .select('programday_id, completed_at, done')
           .eq('user_id', user.id)
-          .eq('done', true)
-          .order('completed_at', { ascending: true }); // Order by earliest first
+          .eq('done', true);
 
         if (progressError) {
           console.error('Error loading progress:', progressError);
@@ -250,15 +247,6 @@ export const useProgramCalendarState = () => {
               uniqueCompletedDayNumbers.add(dayNumber);
             }
           });
-          
-          // Find earliest completion date to calculate actual start date
-          if (progress && progress.length > 0) {
-            const earliest = progress[0].completed_at;
-            if (earliest) {
-              earliestCompletionDate = new Date(earliest);
-              earliestCompletionDate.setHours(0, 0, 0, 0);
-            }
-          }
         }
       }
       
@@ -267,60 +255,11 @@ export const useProgramCalendarState = () => {
         console.log('[DEBUG useProgramCalendarState] Progress loaded', { 
           completedCount: completedProgramDayIds.length,
           completedDayNumbers: Array.from(uniqueCompletedDayNumbers),
-          earliestCompletionDate: earliestCompletionDate?.toISOString(),
           hasUserStartDate: !!userStartDate,
           userStartDate: userStartDate?.toISOString()
         });
       }
       // #endregion
-
-      // If user has completed days but start date is in the future, calculate correct start date
-      // This happens when start_static_program creates a future date but user already has progress
-      if (userStartDate && uniqueCompletedDayNumbers.size > 0) {
-        const today = getTallinnDate();
-        today.setHours(0, 0, 0, 0);
-        const userStartDateOnly = new Date(userStartDate);
-        userStartDateOnly.setHours(0, 0, 0, 0);
-        
-        // Check if start date is in the future relative to today
-        if (userStartDateOnly > today) {
-          // Calculate correct start date: if they completed N days, start should be N weekdays ago from today
-          const maxCompletedDay = Math.max(...Array.from(uniqueCompletedDayNumbers));
-          
-          // Calculate how many weekdays back to go
-          // If they completed day 4, and today is the 5th weekday, start should be 4 weekdays ago
-          let calculatedStartDate = new Date(today);
-          let weekdaysToGoBack = maxCompletedDay;
-          
-          // Go back weekdays (skipping weekends)
-          while (weekdaysToGoBack > 0) {
-            calculatedStartDate.setDate(calculatedStartDate.getDate() - 1);
-            if (!isWeekend(calculatedStartDate)) {
-              weekdaysToGoBack--;
-            }
-          }
-          
-          // Ensure we're on a Monday (program always starts on Monday)
-          while (calculatedStartDate.getDay() !== 1) {
-            calculatedStartDate.setDate(calculatedStartDate.getDate() - 1);
-          }
-          
-          calculatedStartDate.setHours(0, 0, 0, 0);
-          
-          // #region agent log
-          if (typeof window !== 'undefined') {
-            console.log('[DEBUG useProgramCalendarState] Fixing future start date', {
-              originalStartDate: userStartDate.toISOString(),
-              calculatedStartDate: calculatedStartDate.toISOString(),
-              maxCompletedDay,
-              today: today.toISOString()
-            });
-          }
-          // #endregion
-          
-          userStartDate = calculatedStartDate;
-        }
-      }
 
       // #region agent log
       if (typeof window !== 'undefined') {
