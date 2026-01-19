@@ -59,7 +59,21 @@ export default function ProgrammAdaptive() {
       
     if (error) {
       console.error('programday load error', error);
-      toast({ title: 'Viga', description: 'Päeva laadimine ebaõnnestus', variant: 'destructive' });
+      // Provide more specific error messages based on error type
+      let errorMessage = 'Päeva laadimine ebaõnnestus. Palun proovi hiljem uuesti.';
+      
+      if (error.code === 'PGRST116') {
+        // No rows returned - program day doesn't exist
+        errorMessage = `Päev ${dayNum} ei leitud. Palun kontrolli, et see päev on programmis.`;
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        // Network error
+        errorMessage = 'Võrgue viga. Palun kontrolli internettiühendust ja proovi uuesti.';
+      } else if (error.message) {
+        // Use the actual error message if available
+        errorMessage = error.message;
+      }
+      
+      toast({ title: 'Viga', description: errorMessage, variant: 'destructive' });
       setActiveDayData(null);
       return;
     }

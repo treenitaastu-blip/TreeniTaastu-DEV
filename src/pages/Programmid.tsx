@@ -77,9 +77,9 @@ const Programmid: React.FC = () => {
       // Convert programs data: duration_weeks -> duration_days
       const convertedPrograms: Program[] = (programsData || []).map(p => {
         // Calculate duration_days from duration_weeks
-        // Special handling: "Kontorikeha Reset" is 20 days (4 weeks × 5 working days)
+        // Special handling: Kontorikeha Reset is 20 days (4 weeks × 5 working days)
         let days: number;
-        if (p.title === 'Kontorikeha Reset') {
+        if (p.id === KONTORIKEHA_RESET_PROGRAM_ID) {
           days = 20; // 4 weeks × 5 working days = 20 days
         } else {
           const weeks = p.duration_weeks || 4;
