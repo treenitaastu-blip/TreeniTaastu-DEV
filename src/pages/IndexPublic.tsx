@@ -186,21 +186,15 @@ export default function IndexPublic() {
       return;
     }
 
-    console.log('[IndexPublic] Starting checkout process', { planId, stripePriceId: plan.stripePriceId, hasSupabase: !!supabase });
     setCheckoutLoading(planId);
 
     try {
-      console.log('[IndexPublic] Invoking create-checkout function', { priceId: plan.stripePriceId });
-      
       // For non-logged-in users, no auth token needed
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { priceId: plan.stripePriceId }
       });
 
-      console.log('[IndexPublic] Function response received', { hasError: !!error, error, hasData: !!data, data });
-
       if (error) {
-        console.error('[IndexPublic] Function error', { error, message: error.message, status: error.status, context: error.context });
         
         // Try to get more details from the error response
         let errorDetails = error.message;
@@ -213,18 +207,14 @@ export default function IndexPublic() {
             // Clone the response before reading (in case it's already been read)
             const clonedResponse = response.clone ? response.clone() : response;
             errorResponseBody = await clonedResponse.text();
-            console.error('[IndexPublic] Function error response body (raw)', { errorResponseBody, status: response.status });
-            
             try {
               const errorJson = JSON.parse(errorResponseBody);
-              console.error('[IndexPublic] Function error response body (parsed)', { errorJson });
               errorDetails = errorJson.error || errorJson.message || errorResponseBody || error.message;
             } catch (parseError) {
               // If not JSON, use the raw text
               errorDetails = errorResponseBody || error.message;
             }
           } catch (readError) {
-            console.error('[IndexPublic] Could not read error response', { readError, responseStatus: response.status, responseType: response.type });
             // Fallback: check if error has message or other details
             if (error.message) {
               errorDetails = error.message;
@@ -232,26 +222,15 @@ export default function IndexPublic() {
           }
         }
         
-        // Log the full error object for debugging
-        console.error('[IndexPublic] Full error object', {
-          error,
-          errorString: String(error),
-          errorKeys: Object.keys(error),
-          context: error.context,
-          responseBody: errorResponseBody
-        });
-        
         // Create a more informative error
         const detailedError = new Error(errorDetails || error.message || 'Unknown error from checkout function');
         throw detailedError;
       }
 
       if (data?.url) {
-        console.log('[IndexPublic] Redirecting to Stripe', { url: data.url });
         // Redirect to Stripe checkout
         window.location.href = data.url;
       } else {
-        console.error('[IndexPublic] No URL in response', { data });
         throw new Error("Checkout URL not received");
       }
 
