@@ -347,19 +347,30 @@ export default function Programm() {
       let rpcFoundProgram = false;
       for (let attempt = 0; attempt < 5; attempt++) {
         await new Promise(resolve => setTimeout(resolve, 200));
-        const { data: rpcProgram } = await supabase.rpc('get_user_active_program', {
+        const { data: rpcProgram, error: rpcError } = await supabase.rpc('get_user_active_program', {
           p_user_id: user.id
+        });
+        
+        console.log(`[handleStartFromEmptyState] RPC attempt ${attempt + 1}:`, {
+          data: rpcProgram,
+          error: rpcError,
+          dataLength: rpcProgram?.length,
+          expectedProgramId: programId
         });
         
         if (rpcProgram && rpcProgram.length > 0 && rpcProgram[0].id === programId) {
           rpcFoundProgram = true;
-          console.log(`[handleStartFromEmptyState] RPC found program on attempt ${attempt + 1}`);
+          console.log(`[handleStartFromEmptyState] ✅ RPC found program on attempt ${attempt + 1}`);
           break;
+        } else if (rpcProgram && rpcProgram.length > 0) {
+          console.log(`[handleStartFromEmptyState] ⚠️ RPC returned different program:`, rpcProgram[0]);
+        } else {
+          console.log(`[handleStartFromEmptyState] ⚠️ RPC returned empty or null:`, rpcProgram);
         }
       }
       
       if (!rpcFoundProgram) {
-        console.warn('[handleStartFromEmptyState] RPC did not find program, but continuing anyway');
+        console.warn('[handleStartFromEmptyState] ❌ RPC did not find program after all retries, but continuing anyway');
       }
       
       toast({ title: 'Programm alustatud!', description: 'Sinu programm on nüüd aktiivne.' });
@@ -369,11 +380,19 @@ export default function Programm() {
       
       // Refresh calendar to show new program - wait for it to complete
       console.log('[handleStartFromEmptyState] Refreshing calendar...');
-      await refreshCalendar();
       
-      console.log('[handleStartFromEmptyState] Calendar refresh complete');
+      // Call refreshCalendar and wait a bit for state to propagate
+      refreshCalendar();
+      
+      // Wait for state to update - poll hasActiveProgram from hook
+      // Give it time for the async loadProgramData to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Force another refresh to ensure state is updated
+      refreshCalendar();
+      
+      console.log('[handleStartFromEmptyState] Calendar refresh initiated (state should update soon)');
       // The component will automatically re-render when hasActiveProgram becomes true
-      // React will re-render when the hook's state updates
     } catch (error: any) {
       console.error('[handleStartFromEmptyState] Error starting program:', error);
       const errorMsg = error?.message || 'Programmi alustamine ebaõnnestus. Palun proovi hiljem uuesti.';
