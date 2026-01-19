@@ -138,7 +138,7 @@ function TrialSignupCard() {
 }
 
 export default function IndexPublic() {
-  const { user } = useAuth();
+  const { user, status, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -150,6 +150,18 @@ export default function IndexPublic() {
       skeleton.style.display = 'none';
     }
   }, [user]);
+
+  // Show loading state while auth is being checked
+  if (loading || status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+          <p className="text-sm text-muted-foreground">Laen...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ✅ Redirect if already logged in
   if (user) return <Navigate to="/home" replace />;
