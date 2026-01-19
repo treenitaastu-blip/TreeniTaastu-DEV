@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,29 @@ interface PricingCardsProps {
 }
 
 export function PricingCards({ onSelectPlan, loading, currentPlan, showTrial = true }: PricingCardsProps) {
+  console.log('[PricingCards] Component rendering', { hasOnSelectPlan: typeof onSelectPlan === 'function', loading, currentPlan });
+  
+  useEffect(() => {
+    console.log('[PricingCards] Component mounted/updated', { 
+      hasOnSelectPlan: typeof onSelectPlan === 'function',
+      loading, 
+      currentPlan,
+      planCount: Object.values(SUBSCRIPTION_PLANS).length,
+      planIds: Object.keys(SUBSCRIPTION_PLANS)
+    });
+    
+    // Test: Try to find buttons after mount
+    setTimeout(() => {
+      const buttons = document.querySelectorAll('[data-testid^="pricing-button-"]');
+      console.log('[PricingCards] Found buttons in DOM', { count: buttons.length });
+      buttons.forEach((btn, idx) => {
+        const planId = btn.getAttribute('data-plan-id');
+        const disabled = btn.getAttribute('data-disabled') === 'true';
+        console.log(`[PricingCards] Button ${idx}`, { planId, disabled, element: btn });
+      });
+    }, 1000);
+  }, [onSelectPlan, loading, currentPlan]);
+  
   const plans = Object.values(SUBSCRIPTION_PLANS);
   
   const getIcon = (plan: SubscriptionPlan) => {
@@ -117,11 +140,55 @@ export function PricingCards({ onSelectPlan, loading, currentPlan, showTrial = t
               </div>
 
               {/* Action Button */}
+              {(() => {
+                const buttonDisabled = isLoading || isCurrentPlan;
+                console.log('[PricingCards] Button state', { planId: plan.id, isLoading, isCurrentPlan, buttonDisabled, hasOnSelectPlan: typeof onSelectPlan === 'function' });
+                if (buttonDisabled) {
+                  console.warn('[PricingCards] Button is DISABLED', { planId: plan.id, reason: isLoading ? 'loading' : 'currentPlan' });
+                }
+                return null;
+              })()}
               <Button 
                 className="w-full h-10 text-sm font-semibold"
                 variant={getButtonVariant(plan)}
-                onClick={() => onSelectPlan(plan.id)}
+                onMouseDown={(e) => {
+                  console.log('[PricingCards] onMouseDown FIRED', { planId: plan.id, planName: plan.name, disabled: isLoading || isCurrentPlan });
+                  alert('MOUSE DOWN: ' + plan.name + ' (disabled: ' + (isLoading || isCurrentPlan) + ')');
+                  e.preventDefault();
+                }}
+                onMouseEnter={() => {
+                  console.log('[PricingCards] Mouse entered button', { planId: plan.id });
+                }}
+                onClick={(e) => {
+                  console.log('[PricingCards] onClick FIRED', { planId: plan.id, planName: plan.name, isLoading, isCurrentPlan, hasOnSelectPlan: typeof onSelectPlan === 'function' });
+                  alert('CLICK FIRED: ' + plan.name + ' - Calling handler...');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (typeof onSelectPlan !== 'function') {
+                    console.error('[PricingCards] onSelectPlan is not a function!', { onSelectPlan, type: typeof onSelectPlan });
+                    alert('ERROR: onSelectPlan handler not found!');
+                    return;
+                  }
+                  try {
+                    console.log('[PricingCards] Calling onSelectPlan with', { planId: plan.id });
+                    onSelectPlan(plan.id);
+                    alert('Handler called successfully for: ' + plan.name);
+                  } catch (error) {
+                    console.error('[PricingCards] Error in onClick handler:', error);
+                    alert('ERROR calling onSelectPlan: ' + (error instanceof Error ? error.message : String(error)));
+                  }
+                }}
                 disabled={isLoading || isCurrentPlan}
+                type="button"
+                style={{ 
+                  pointerEvents: (isLoading || isCurrentPlan) ? 'none' : 'auto', 
+                  zIndex: 9999, 
+                  position: 'relative',
+                  cursor: (isLoading || isCurrentPlan) ? 'not-allowed' : 'pointer'
+                } as React.CSSProperties}
+                data-testid={`pricing-button-${plan.id}`}
+                data-plan-id={plan.id}
+                data-disabled={String(isLoading || isCurrentPlan)}
               >
                 {isCurrentPlan ? (
                   'Aktiivne plaan'
