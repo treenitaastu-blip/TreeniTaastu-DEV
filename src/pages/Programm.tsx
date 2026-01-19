@@ -545,9 +545,7 @@ export default function Programm() {
           <Target className="h-7 w-7 text-white" />
         </div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          {(() => {
-            return program?.title || 'Treeningprogramm';
-          })()}
+          {program?.title || 'Treeningprogramm'}
         </h1>
         <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
           {program?.description || 'Treeningprogramm, mis avaneb päev-päevalt'}
