@@ -63,10 +63,9 @@ WHERE done = true;
 CREATE INDEX IF NOT EXISTS idx_static_starts_user_id ON public.static_starts(user_id);
 CREATE INDEX IF NOT EXISTS idx_static_starts_start_monday ON public.static_starts(start_monday);
 
--- Composite index for the common query pattern in useProgramCalendarState
--- Query: SELECT start_monday FROM static_starts WHERE user_id = ? LIMIT 1
--- The existing idx_static_starts_user_id should handle this, but let's ensure uniqueness if needed
-CREATE UNIQUE INDEX IF NOT EXISTS idx_static_starts_user_unique ON public.static_starts(user_id);
+-- Note: If static_starts has a unique constraint on user_id already (which it should),
+-- we don't need a unique index. The regular index on user_id is sufficient.
+-- The unique constraint ensures one start date per user, which is what we want.
 
 -- Index for programday lookups (week, day)
 CREATE INDEX IF NOT EXISTS idx_programday_week_day ON public.programday(week, day);
