@@ -244,25 +244,8 @@ export const useProgramCalendarState = () => {
           });
         }
       }
-      
-      // #region agent log
-      if (typeof window !== 'undefined') {
-        console.log('[DEBUG useProgramCalendarState] Progress loaded', { 
-          completedCount: completedProgramDayIds.length,
-          completedDayNumbers: Array.from(uniqueCompletedDayNumbers),
-          hasUserStartDate: !!userStartDate,
-          userStartDate: userStartDate?.toISOString()
-        });
-      }
-      // #endregion
 
-      // #region agent log
-      if (typeof window !== 'undefined') {
-        console.log('[DEBUG useProgramCalendarState] Before generating calendar days', { hasUserStartDate: !!userStartDate, userStartDate: userStartDate?.toISOString(), programTitle: activeProgram.title });
-      }
-      // #endregion
-
-      // Generate calendar days with user's actual start date (possibly corrected)
+      // Generate calendar days with user's actual start date
       const days = generateCalendarDays(activeProgram, userStartDate);
       const today = getTallinnDate();
 
