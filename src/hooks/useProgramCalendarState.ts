@@ -69,7 +69,7 @@ export const useProgramCalendarState = () => {
       // Fetch the program details
       const { data: program, error: programError } = await supabase
         .from('programs')
-        .select('id, title, description, duration_weeks, difficulty, created_at')
+        .select('id, title, description, duration_weeks, created_at')
         .eq('id', userProgram.program_id)
         .maybeSingle();
 
