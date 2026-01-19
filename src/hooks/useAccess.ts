@@ -101,17 +101,29 @@ export default function useAccess(): UseAccess {
           return;
         }
 
-        // Check for active entitlements - includes both trial and paid users
+        // Check for active entitlements
+        // STATIC access is ONLY granted to:
+        // 1. Monthly subscriptions: product = "static" with status "active" (self_guided or guided)
+        // 2. Trial users: product = "static" with status "trialing"
+        // 3. Transformation package: product = "static" with source "stripe_transformation" (1 year access)
+        // 
+        // IMPORTANT: One-time PT purchases do NOT grant static access
         const now = new Date();
+        
+        // Static access: Only from static product (monthly subscriptions, trials, or transformation)
         const hasActiveStatic = entitlements?.some(e => 
           e.product === "static" && 
-          !e.paused && 
+          !e.paused &&
           (
+            // Monthly subscription or transformation (active status, not expired)
             (e.status === "active" && (e.expires_at === null || new Date(e.expires_at) > now)) ||
+            // Free trial (trialing status, trial not ended)
             (e.status === "trialing" && e.trial_ends_at && new Date(e.trial_ends_at) > now)
           )
         ) ?? false;
         
+        // PT access: Can be from monthly subscription (guided) or one-time purchase
+        // PT access does NOT grant static access unless part of monthly subscription
         const hasActivePT = entitlements?.some(e => 
           e.product === "pt" && 
           !e.paused && 

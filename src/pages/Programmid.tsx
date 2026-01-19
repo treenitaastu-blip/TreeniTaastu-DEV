@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import useAccess from '@/hooks/useAccess';
 
 interface Program {
   id: string;
@@ -42,6 +43,7 @@ const Programmid: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, canStatic, loading: accessLoading } = useAccess();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [userPrograms, setUserPrograms] = useState<UserProgram[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,14 +108,42 @@ const Programmid: React.FC = () => {
     }
   };
 
-  const getProgramStatus = (program: Program) => {
+  const getProgramStatus = (program: Program): 'completed' | 'active' | 'paused' | 'available' | 'coming_soon' | 'needs_subscription' => {
     const userProgram = userPrograms.find(up => up.program_id === program.id);
     
+    // Check user-specific program status first
     if (userProgram?.status === 'completed') return 'completed';
     if (userProgram?.status === 'active') return 'active';
     if (userProgram?.status === 'paused') return 'paused';
-    if (program.status === 'available') return 'available';
-    return 'coming_soon';
+    
+    // Admin has full access to all programs - bypass all restrictions
+    if (isAdmin) {
+      // Admins can access all programs, even if marked as coming_soon
+      return 'available';
+    }
+    
+    // For non-admins, check static program access
+    // Static access requires monthly subscription (self_guided/guided), trial, or transformation
+    // One-time PT purchases do NOT grant static access
+    if (program.status === 'available') {
+      // Program is available - check if user has static access
+      if (canStatic) {
+        // User has monthly subscription, trial, or transformation
+        return 'available';
+      } else {
+        // User needs monthly subscription to access static programs
+        // One-time PT purchase does not grant static access
+        return 'needs_subscription';
+      }
+    }
+    
+    // Program is actually coming soon (not available yet)
+    if (program.status === 'coming_soon') {
+      return 'coming_soon';
+    }
+    
+    // Default: treat as available if program exists and user has static access
+    return program.status === 'available' ? (canStatic ? 'available' : 'needs_subscription') : 'coming_soon';
   };
 
   const getStatusIcon = (status: string) => {
@@ -126,8 +156,12 @@ const Programmid: React.FC = () => {
         return <Clock className="h-5 w-5 text-orange-500" />;
       case 'available':
         return <CheckCircle className="h-5 w-5 text-blue-500" />;
-      default:
+      case 'needs_subscription':
+        return <Lock className="h-5 w-5 text-blue-500" />;
+      case 'coming_soon':
         return <Lock className="h-5 w-5 text-gray-400" />;
+      default:
+        return <CheckCircle className="h-5 w-5 text-blue-500" />;
     }
   };
 
@@ -141,8 +175,12 @@ const Programmid: React.FC = () => {
         return 'Peatatud';
       case 'available':
         return 'Saadaval';
-      default:
+      case 'needs_subscription':
+        return 'Vajab tellimust';
+      case 'coming_soon':
         return 'Tulekul';
+      default:
+        return 'Saadaval';
     }
   };
 
@@ -201,7 +239,7 @@ const Programmid: React.FC = () => {
             return;
           }
         } else {
-          toast.error('Programm ei leitud');
+            toast({ title: 'Viga', description: 'Programm ei leitud', variant: 'destructive' });
           return;
         }
       } else {
@@ -291,8 +329,8 @@ const Programmid: React.FC = () => {
       }, 100);
     } catch (error: any) {
       console.error('Error starting program:', error);
-      const errorMessage = error?.message || 'Programmi alustamine ebaõnnestus';
-      toast.error(errorMessage);
+      const errorMessage = error?.message || 'Programmi alustamine ebaõnnestus. Palun proovi hiljem uuesti.';
+      toast({ title: 'Viga', description: errorMessage, variant: 'destructive' });
       
       // Try to reload data to get current state
       try {
@@ -305,7 +343,7 @@ const Programmid: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || accessLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -371,6 +409,8 @@ const Programmid: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {programs.map((program) => {
             const status = getProgramStatus(program);
+            // Admins and users with subscription can access available programs
+            const canAccess = isAdmin || canStatic || status === 'active' || status === 'paused' || status === 'completed';
             const isAvailable = status === 'available' || status === 'active' || status === 'paused';
             
             return (
@@ -416,6 +456,8 @@ const Programmid: React.FC = () => {
                           status === 'active' ? 'bg-green-500 text-white border-0' :
                           status === 'paused' ? 'bg-orange-500 text-white border-0' :
                           status === 'completed' ? 'bg-yellow-500 text-white border-0' :
+                          status === 'needs_subscription' ? 'bg-blue-500 text-white border-0' :
+                          status === 'coming_soon' ? 'bg-gray-400 text-white border-0' :
                           'bg-blue-100 text-blue-700 border-blue-300'
                         }`}
                       >
@@ -431,7 +473,8 @@ const Programmid: React.FC = () => {
                   </CardDescription>
 
                   <div className="space-y-2">
-                    {status === 'available' && (
+                    {/* Available - User can start this program */}
+                    {(status === 'available' || (status === 'coming_soon' && isAdmin)) && (
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button 
@@ -470,12 +513,17 @@ const Programmid: React.FC = () => {
                               </div>
                             </div>
                             <p className="text-gray-600">{program.description}</p>
+                            {isAdmin && status === 'coming_soon' && (
+                              <p className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                                ⚠️ Admin: See programm on andmebaasis märgitud kui "coming_soon", kuid sul on ligipääs.
+                              </p>
+                            )}
                             <Button 
                               onClick={() => {
                                 setSelectedProgram(null);
                                 handleStartProgram(program.id);
                               }}
-                              className="w-full"
+                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
                             >
                               <Play className="h-4 w-4 mr-2" />
                               Alusta programm
@@ -524,6 +572,61 @@ const Programmid: React.FC = () => {
                       </div>
                     )}
 
+                    {/* Needs Subscription - Program is available but user needs monthly subscription */}
+                    {status === 'needs_subscription' && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline"
+                            className="w-full border-blue-300 hover:bg-blue-50"
+                          >
+                            <Lock className="h-4 w-4 mr-2" />
+                            Vajab tellimust
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>{program.title}</DialogTitle>
+                            <DialogDescription>
+                              Programm on saadaval kuutasustellimusele
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-gray-500" />
+                                <span>{program.duration_days} päeva</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-gray-500" />
+                                <span>{getDifficultyText(program.difficulty)}</span>
+                              </div>
+                            </div>
+                            <p className="text-gray-600">{program.description}</p>
+                            <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                              Selle programmi kasutamiseks on vaja kuutasustellimust (Iseseisev treening või Juhendatud treening). Tellimuse eest saad ligipääsu kõikidele staatilistele programmidele.
+                            </p>
+                            <div className="flex gap-2">
+                              <Button 
+                                onClick={() => navigate('/pricing')}
+                                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                              >
+                                Vaata hindu
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                onClick={() => setSelectedProgram(null)}
+                                className="flex-1"
+                              >
+                                Sulge
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+
+                    {/* Coming Soon - Program is actually in development */}
                     {status === 'coming_soon' && (
                       <Dialog>
                         <DialogTrigger asChild>
@@ -555,14 +658,19 @@ const Programmid: React.FC = () => {
                             </div>
                             <p className="text-gray-600">{program.description}</p>
                             <p className="text-sm text-gray-600">
-                              Saad alustada seda programmi pärast praeguse programmi lõpetamist, 
-                              tasuta tellijatele.
+                              See programm on praegu arendamisel ja saab peagi kättesaadavaks. Jälgi värskendusi!
                             </p>
+                            {isAdmin && (
+                              <p className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg font-medium">
+                                ⚠️ Admin: See programm on märgitud kui "coming_soon" andmebaasis. Vajadusel saad seda muuta.
+                              </p>
+                            )}
                             <div className="flex gap-2">
-                              <Button variant="outline" className="flex-1">
-                                Osta kohe juurdepääs
-                              </Button>
-                              <Button variant="ghost" className="flex-1">
+                              <Button 
+                                variant="ghost" 
+                                onClick={() => setSelectedProgram(null)}
+                                className="w-full"
+                              >
                                 Sulge
                               </Button>
                             </div>
