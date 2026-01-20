@@ -746,7 +746,8 @@ export default function ModernWorkoutSession() {
         }
 
         // Persist personalized weight default for this user (only for weight-based exercises)
-        // Calculate average weight from all completed sets to handle progressive overload
+        // BUT: Only update client_items.weight_kg if all sets used the same weight
+        // If sets have different weights, per-set preferences are being used and we shouldn't modify the default
         if (exercise.weight_kg !== null && exercise.weight_kg !== undefined && exercise.weight_kg > 0) {
           try {
             // Get all completed set weights for this exercise from current session
@@ -772,22 +773,31 @@ export default function ModernWorkoutSession() {
               }
             }
             
-            // If we have weight data from sets, persist it
+            // If we have weight data from sets, check if all sets used the same weight
             if (allSetWeights.length > 0) {
-              // Use average weight (more representative of actual training load)
-              // Round to 2 decimal places for cleaner storage
-              const averageWeight = allSetWeights.reduce((sum, w) => sum + w, 0) / allSetWeights.length;
-              const weightToPersist = Math.round(averageWeight * 100) / 100;
+              // Check if all sets have the same weight (within 0.01kg tolerance)
+              const firstWeight = allSetWeights[0];
+              const allSameWeight = allSetWeights.every(w => Math.abs(w - firstWeight) < 0.01);
               
-              // Only update if weight changed (avoid unnecessary DB writes)
-              if (Math.abs(weightToPersist - (exercise.weight_kg || 0)) > 0.01) {
-                await supabase
-                  .from('client_items')
-                  .update({ weight_kg: weightToPersist })
-                  .eq('id', exerciseId);
-                // Optimistically reflect in local state
-                setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, weight_kg: weightToPersist } : ex));
-                console.log(`Persisted weight for exercise ${exerciseId}: ${exercise.weight_kg}kg → ${weightToPersist}kg`);
+              if (allSameWeight) {
+                // All sets used the same weight - safe to update client_items.weight_kg
+                // Round to 2 decimal places for cleaner storage
+                const weightToPersist = Math.round(firstWeight * 100) / 100;
+                
+                // Only update if weight changed (avoid unnecessary DB writes)
+                if (Math.abs(weightToPersist - (exercise.weight_kg || 0)) > 0.01) {
+                  await supabase
+                    .from('client_items')
+                    .update({ weight_kg: weightToPersist })
+                    .eq('id', exerciseId);
+                  // Optimistically reflect in local state
+                  setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, weight_kg: weightToPersist } : ex));
+                  console.log(`Persisted weight for exercise ${exerciseId}: ${exercise.weight_kg}kg → ${weightToPersist}kg (all sets used same weight)`);
+                }
+              } else {
+                // Sets have different weights - per-set preferences are being used
+                // Don't update client_items.weight_kg as it would affect sets without preferences
+                console.log(`Exercise ${exerciseId} has per-set weights (${allSetWeights.map(w => `${w}kg`).join(', ')}), skipping client_items.weight_kg update`);
               }
             }
           } catch (persistWeightErr) {
