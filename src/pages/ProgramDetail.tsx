@@ -334,6 +334,8 @@ export default function ProgramDetail() {
         setNextUncompletedDayId(next ? next.id : null);
 
         // Check for completed weeks and trigger auto-progression
+        // Note: handleWeekCompletion is NOT in deps to avoid infinite loop
+        // (it depends on program, which is set here)
         const weeks = [];
         for (let i = 0; i < days.length; i += 7) {
           const weekDays = days.slice(i, i + 7);
@@ -341,7 +343,17 @@ export default function ProgramDetail() {
           const isCompleted = weekDays.every(day => completedSet.has(day.id));
           
           if (isCompleted) {
-            await handleWeekCompletion(weekNumber);
+            // Call auto-progression RPC directly to avoid circular dependency
+            try {
+              const { error } = await supabase.rpc('auto_progress_program', {
+                p_program_id: programData.id
+              });
+              if (error) {
+                console.error('Auto progression error:', error);
+              }
+            } catch (err) {
+              console.error('Failed to auto progress:', err);
+            }
           }
         }
         
@@ -356,7 +368,7 @@ export default function ProgramDetail() {
       } finally {
         setLoading(false);
       }
-    }, [user, programId, handleWeekCompletion]);
+    }, [user, programId]); // Removed handleWeekCompletion to break circular dependency
 
   useEffect(() => {
     loadProgram();
