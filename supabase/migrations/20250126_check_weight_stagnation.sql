@@ -18,6 +18,9 @@ DECLARE
   v_session_count INTEGER;
   v_sessions_with_high_rir INTEGER := 0;
   v_sessions_without_change INTEGER := 0;
+  v_most_recent_avg_weight NUMERIC;
+  v_most_recent_max_weight NUMERIC;
+  v_weight_increase_threshold NUMERIC;
 BEGIN
   -- Get current exercise weight
   SELECT weight_kg INTO v_current_weight
@@ -30,6 +33,47 @@ BEGIN
       'needs_recommendation', false,
       'reason', 'not_weight_based'
     );
+  END IF;
+
+  -- Calculate weight increase threshold (2.5% or 0.5kg, whichever is larger)
+  v_weight_increase_threshold := GREATEST(v_current_weight * 0.025, 0.5);
+
+  -- Check if weight has increased in most recent completed session
+  -- If user has already increased weight, no need to recommend
+  WITH most_recent_session AS (
+    SELECT 
+      AVG(sl.weight_kg_done) as avg_weight_used,
+      MAX(sl.weight_kg_done) as max_weight_used
+    FROM workout_sessions ws
+    INNER JOIN set_logs sl ON sl.session_id = ws.id
+    WHERE sl.client_item_id = p_client_item_id
+      AND ws.ended_at IS NOT NULL
+      AND sl.weight_kg_done IS NOT NULL
+    GROUP BY ws.id, ws.ended_at
+    ORDER BY ws.ended_at DESC
+    LIMIT 1
+  )
+  SELECT 
+    avg_weight_used,
+    max_weight_used
+  INTO v_most_recent_avg_weight, v_most_recent_max_weight
+  FROM most_recent_session;
+
+  -- If weight increased in most recent session, dismiss recommendation
+  -- Check both average and max weight to catch per-set weight increases
+  IF v_most_recent_avg_weight IS NOT NULL AND v_most_recent_max_weight IS NOT NULL THEN
+    IF v_most_recent_avg_weight > v_current_weight + v_weight_increase_threshold 
+       OR v_most_recent_max_weight > v_current_weight + v_weight_increase_threshold THEN
+      RETURN jsonb_build_object(
+        'needs_recommendation', false,
+        'reason', 'weight_increased_recently',
+        'current_weight', v_current_weight,
+        'recent_avg_weight', ROUND(v_most_recent_avg_weight, 2),
+        'recent_max_weight', ROUND(v_most_recent_max_weight, 2),
+        'threshold', v_weight_increase_threshold,
+        'increase', ROUND(GREATEST(v_most_recent_avg_weight - v_current_weight, v_most_recent_max_weight - v_current_weight), 2)
+      );
+    END IF;
   END IF;
 
   -- Check RIR data for this specific exercise in the last N weeks
@@ -143,6 +187,11 @@ CREATE INDEX IF NOT EXISTS idx_set_logs_client_item_weight
 ON set_logs(client_item_id, weight_kg_done)
 WHERE weight_kg_done IS NOT NULL;
 
+-- Create index for efficient weight increase detection query
+CREATE INDEX IF NOT EXISTS idx_set_logs_client_item_ended 
+ON set_logs(client_item_id, ended_at DESC)
+WHERE weight_kg_done IS NOT NULL;
+
 -- Add comment explaining the function
 COMMENT ON FUNCTION check_exercise_weight_stagnation IS 
-'Checks if an exercise needs weight progression recommendation based on RIR (Reps in Reserve) data. If RIR is 5+ in the last 2 weeks, recommends weight increase immediately. Falls back to weight stagnation detection if no RIR data available. Per-exercise basis.';
+'Checks if an exercise needs weight progression recommendation based on RIR (Reps in Reserve) data. If RIR is 5+ in the last 2 weeks, recommends weight increase immediately. Falls back to weight stagnation detection if no RIR data available. Recommendation disappears if user has increased weight in recent session (2.5% or 0.5kg threshold). Per-exercise basis.';
