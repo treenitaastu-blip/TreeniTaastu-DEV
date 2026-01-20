@@ -8,6 +8,10 @@ export interface ProgressionRecommendation {
   sessions_without_change: number;
   message: string;
   reason?: string;
+  avg_rir?: number;
+  max_rir?: number;
+  sessions_checked?: number;
+  weeks_checked?: number;
 }
 
 export interface ProgressionRecommendationsMap {
@@ -16,7 +20,8 @@ export interface ProgressionRecommendationsMap {
 
 /**
  * Hook to fetch progression recommendations for exercises in a program.
- * Checks if exercises have been using the same weight for 4+ sessions.
+ * Checks if exercises have RIR >= 5 in the last 2 weeks (meaning too easy, should increase weight).
+ * Falls back to weight stagnation detection if no RIR data is available.
  */
 export function useProgressionRecommendations(
   exerciseIds: string[],
@@ -37,10 +42,11 @@ export function useProgressionRecommendations(
 
     try {
       // Fetch recommendations for all exercises in parallel
+      // Check last 2 weeks for RIR data (RIR >= 5 means exercise is too easy)
       const recommendationPromises = exerciseIds.map(async (exerciseId) => {
         const { data, error: rpcError } = await supabase.rpc('check_exercise_weight_stagnation', {
           p_client_item_id: exerciseId,
-          p_min_sessions_without_change: 4
+          p_weeks_back: 2
         });
 
         if (rpcError) {

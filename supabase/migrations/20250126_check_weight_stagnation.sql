@@ -1,8 +1,9 @@
--- Function to check if an exercise has been using the same weight for N+ sessions
--- Returns recommendation data if weight hasn't changed for the specified number of sessions
+-- Function to check if an exercise needs weight progression recommendation based on RIR (Reps in Reserve)
+-- Returns recommendation data if RIR is 5+ in the last 2 weeks (meaning exercise is too easy)
+-- This is per-exercise basis, checking only this specific exercise's RIR data
 CREATE OR REPLACE FUNCTION check_exercise_weight_stagnation(
   p_client_item_id UUID,
-  p_min_sessions_without_change INTEGER DEFAULT 4
+  p_weeks_back INTEGER DEFAULT 2
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -12,10 +13,11 @@ SET search_path = public
 AS $$
 DECLARE
   v_current_weight NUMERIC;
+  v_avg_rir NUMERIC;
+  v_max_rir NUMERIC;
   v_session_count INTEGER;
-  v_sessions_with_same_weight INTEGER := 0;
-  v_last_changed_weight NUMERIC;
-  v_recent_sessions RECORD;
+  v_sessions_with_high_rir INTEGER := 0;
+  v_sessions_without_change INTEGER := 0;
 BEGIN
   -- Get current exercise weight
   SELECT weight_kg INTO v_current_weight
@@ -30,71 +32,117 @@ BEGIN
     );
   END IF;
 
-  -- Check if the last N sessions all used the same weight (within 0.01kg tolerance)
-  -- by looking at the average weight per session
-  WITH recent_sessions AS (
-    SELECT 
-      ws.id as session_id,
+  -- Check RIR data for this specific exercise in the last N weeks
+  -- RIR >= 5 means exercise is too easy and user should increase weight
+  WITH recent_sessions_with_rir AS (
+    SELECT DISTINCT
+      en.session_id,
       ws.ended_at,
-      AVG(sl.weight_kg_done) as avg_weight_used,
-      COUNT(*) as sets_completed
-    FROM workout_sessions ws
-    INNER JOIN set_logs sl ON sl.session_id = ws.id
-    WHERE sl.client_item_id = p_client_item_id
+      en.rir_done
+    FROM exercise_notes en
+    INNER JOIN workout_sessions ws ON ws.id = en.session_id
+    WHERE en.client_item_id = p_client_item_id
+      AND en.rir_done IS NOT NULL
       AND ws.ended_at IS NOT NULL
-      AND sl.weight_kg_done IS NOT NULL
-    GROUP BY ws.id, ws.ended_at
+      AND ws.ended_at >= NOW() - (p_weeks_back || ' weeks')::INTERVAL
     ORDER BY ws.ended_at DESC
-    LIMIT p_min_sessions_without_change
   )
   SELECT 
-    COUNT(*) as sessions_with_same_weight,
-    COUNT(*) as total_recent_sessions
-  INTO v_sessions_with_same_weight, v_session_count
-  FROM recent_sessions
-  WHERE ABS(avg_weight_used - v_current_weight) < 0.01;
+    COUNT(*) as total_sessions,
+    COUNT(*) FILTER (WHERE rir_done >= 5) as sessions_with_high_rir,
+    AVG(rir_done) as avg_rir,
+    MAX(rir_done) as max_rir
+  INTO v_session_count, v_sessions_with_high_rir, v_avg_rir, v_max_rir
+  FROM recent_sessions_with_rir;
 
-  -- If we don't have enough session data, don't recommend
-  IF v_session_count < p_min_sessions_without_change THEN
+  -- If no RIR data in the time window, check for weight stagnation as fallback
+  IF v_session_count = 0 OR v_session_count IS NULL THEN
+    -- Fallback: Check if weight has been the same for the last 2 weeks
+    WITH recent_sessions AS (
+      SELECT 
+        ws.id as session_id,
+        ws.ended_at,
+        AVG(sl.weight_kg_done) as avg_weight_used
+      FROM workout_sessions ws
+      INNER JOIN set_logs sl ON sl.session_id = ws.id
+      WHERE sl.client_item_id = p_client_item_id
+        AND ws.ended_at IS NOT NULL
+        AND ws.ended_at >= NOW() - (p_weeks_back || ' weeks')::INTERVAL
+        AND sl.weight_kg_done IS NOT NULL
+      GROUP BY ws.id, ws.ended_at
+      ORDER BY ws.ended_at DESC
+    )
+    SELECT 
+      COUNT(*) as sessions_with_same_weight
+    INTO v_sessions_without_change
+    FROM recent_sessions
+    WHERE ABS(avg_weight_used - v_current_weight) < 0.01;
+
+    -- If weight has been the same for 2 weeks, recommend
+    IF v_sessions_without_change >= 2 THEN
+      RETURN jsonb_build_object(
+        'needs_recommendation', true,
+        'current_weight', v_current_weight,
+        'sessions_without_change', v_sessions_without_change,
+        'reason', 'weight_stagnation',
+        'message', format(
+          'Kaal on olnud %s kg viimased %s nädalat. Soovitame kaalu suurendamist, et näha muutusi!',
+          v_current_weight,
+          p_weeks_back
+        )
+      );
+    END IF;
+
+    -- No data available
     RETURN jsonb_build_object(
       'needs_recommendation', false,
       'reason', 'insufficient_data',
-      'sessions_completed', v_session_count,
-      'required_sessions', p_min_sessions_without_change
+      'sessions_completed', COALESCE(v_sessions_without_change, 0),
+      'weeks_checked', p_weeks_back
     );
   END IF;
 
-  -- If all recent sessions used the same weight, recommend progression
-  IF v_sessions_with_same_weight >= p_min_sessions_without_change THEN
+  -- If RIR is 5+ (exercise is too easy), recommend weight increase immediately
+  -- Check if any recent session had RIR >= 5, or if average RIR is >= 5
+  IF v_max_rir >= 5 OR (v_avg_rir >= 5 AND v_session_count >= 1) THEN
     RETURN jsonb_build_object(
       'needs_recommendation', true,
       'current_weight', v_current_weight,
-      'sessions_without_change', v_sessions_with_same_weight,
-      'min_sessions_required', p_min_sessions_without_change,
+      'sessions_without_change', v_sessions_with_high_rir,
+      'avg_rir', ROUND(v_avg_rir, 1),
+      'max_rir', v_max_rir,
+      'reason', 'high_rir',
       'message', format(
-        'Kaal on olnud %s kg viimased %s treeningut. Soovitame kaalu suurendamist, et näha muutusi!',
-        v_current_weight,
-        v_sessions_with_same_weight
+        'RIR (kordustevaru) on viimase %s nädala jooksul olnud %s või rohkem. Harjutus on liiga kerge - soovitame kaalu suurendamist!',
+        p_weeks_back,
+        CASE WHEN v_max_rir >= 5 THEN v_max_rir::text ELSE ROUND(v_avg_rir, 1)::text END
       )
     );
   END IF;
 
-  -- Weight has changed recently, no recommendation needed
+  -- RIR is acceptable (< 5), no recommendation needed
   RETURN jsonb_build_object(
     'needs_recommendation', false,
-    'reason', 'weight_changed_recently',
-    'sessions_checked', v_sessions_with_same_weight,
+    'reason', 'rir_acceptable',
+    'avg_rir', ROUND(v_avg_rir, 1),
+    'max_rir', v_max_rir,
+    'sessions_checked', v_session_count,
     'current_weight', v_current_weight
   );
 
 END;
 $$;
 
--- Create an index to optimize the query performance
+-- Create an index to optimize the query performance for RIR-based queries
+CREATE INDEX IF NOT EXISTS idx_exercise_notes_client_item_rir 
+ON exercise_notes(client_item_id, rir_done, updated_at DESC)
+WHERE rir_done IS NOT NULL;
+
+-- Keep existing index for weight-based fallback
 CREATE INDEX IF NOT EXISTS idx_set_logs_client_item_weight 
 ON set_logs(client_item_id, weight_kg_done)
 WHERE weight_kg_done IS NOT NULL;
 
 -- Add comment explaining the function
 COMMENT ON FUNCTION check_exercise_weight_stagnation IS 
-'Checks if an exercise weight has been the same for N+ completed workout sessions. Returns recommendation data if weight stagnation is detected.';
+'Checks if an exercise needs weight progression recommendation based on RIR (Reps in Reserve) data. If RIR is 5+ in the last 2 weeks, recommends weight increase immediately. Falls back to weight stagnation detection if no RIR data available. Per-exercise basis.';
