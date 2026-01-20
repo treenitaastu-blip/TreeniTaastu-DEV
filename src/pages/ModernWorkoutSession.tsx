@@ -319,6 +319,84 @@ export default function ModernWorkoutSession() {
         }
         setOriginalExerciseNames(originals);
 
+        /**
+         * Per-Set Weight Memory System
+         * 
+         * This system allows each user to remember individual set weights across workout sessions.
+         * Example: If user changes Set 2 from 2kg to 4kg, only Set 2 will use 4kg in next workout.
+         * 
+         * Priority order (highest to lowest):
+         * 1. client_item_set_weights (persistent preferences per set)
+         * 2. Last completed session's set_logs (temporary fallback)
+         * 3. client_items.weight_kg (default weight for all sets)
+         * 
+         * This ensures:
+         * - Individual sets remember their weights independently
+         * - Works even if no previous completed session exists
+         * - Survives across multiple workout sessions
+         */
+        const exerciseIds = exerciseData.map(ex => ex.id);
+        let preferredWeights: Record<string, number> = {}; // Map: "exerciseId:setNumber" -> weight_kg
+        
+        try {
+          // Priority 1: Load user's preferred weights from client_item_set_weights
+          const { data: preferences, error: prefError } = await supabase
+            .from('client_item_set_weights')
+            .select('client_item_id, set_number, weight_kg')
+            .in('client_item_id', exerciseIds)
+            .eq('user_id', user.id);
+
+          if (prefError) {
+            console.warn('[loadWorkout] Failed to load weight preferences, using fallback:', prefError);
+          } else if (preferences && preferences.length > 0) {
+            // Map preferences: "exerciseId:setNumber" -> weight_kg
+            preferences.forEach(pref => {
+              const key = `${pref.client_item_id}:${pref.set_number}`;
+              preferredWeights[key] = Number(pref.weight_kg);
+            });
+            console.log(`[loadWorkout] Loaded ${preferences.length} weight preferences`);
+          }
+
+          // Priority 2: Fallback to last completed session's set_logs if no preferences
+          if (Object.keys(preferredWeights).length === 0) {
+            const { data: lastSession, error: lastSessionError } = await supabase
+              .from('workout_sessions')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('client_day_id', dayId)
+              .not('ended_at', 'is', null)
+              .order('ended_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (lastSessionError) {
+              console.warn('[loadWorkout] Failed to load last session for fallback:', lastSessionError);
+            } else if (lastSession) {
+              const { data: lastWeights, error: lastWeightsError } = await supabase
+                .from('set_logs')
+                .select('client_item_id, set_number, weight_kg_done')
+                .eq('session_id', lastSession.id)
+                .in('client_item_id', exerciseIds)
+                .not('weight_kg_done', 'is', null);
+
+              if (lastWeightsError) {
+                console.warn('[loadWorkout] Failed to load last session weights:', lastWeightsError);
+              } else if (lastWeights && lastWeights.length > 0) {
+                lastWeights.forEach(log => {
+                  const key = `${log.client_item_id}:${log.set_number}`;
+                  if (log.weight_kg_done) {
+                    preferredWeights[key] = Number(log.weight_kg_done);
+                  }
+                });
+                console.log(`[loadWorkout] Loaded ${lastWeights.length} weights from last completed session`);
+              }
+            }
+          }
+        } catch (prefLoadError) {
+          console.error('[loadWorkout] Error loading weight preferences, continuing with defaults:', prefLoadError);
+          // Continue without preferences - will use defaults
+        }
+
         // Find or create session
         let sessionData;
         const { data: existingSession } = await supabase
@@ -351,16 +429,16 @@ export default function ModernWorkoutSession() {
 
         setSession(sessionData);
 
-        // Load existing set logs
+        // Load existing set logs from current session
         const { data: logsData } = await supabase
           .from("set_logs")
           .select("*")
           .eq("session_id", sessionData.id);
 
+        const logsMap: Record<string, SetLog> = {};
+        const inputsMap: Record<string, Record<string, unknown>> = {};
+        
         if (logsData) {
-          const logsMap: Record<string, SetLog> = {};
-          const inputsMap: Record<string, Record<string, unknown>> = {};
-          
           logsData.forEach((log) => {
             const key = `${log.client_item_id}:${log.set_number}`;
             logsMap[key] = log;
@@ -370,10 +448,35 @@ export default function ModernWorkoutSession() {
               kg: log.weight_kg_done
             };
           });
-          
-          setSetLogs(logsMap);
-          setSetInputs(inputsMap);
         }
+
+        // Merge preferred weights with current session's set logs
+        // Priority: current session logs > preferences > last session > default
+        exerciseData.forEach(exercise => {
+          for (let setNum = 1; setNum <= exercise.sets; setNum++) {
+            const key = `${exercise.id}:${setNum}`;
+            
+            // Skip if already set from current session logs (they take priority)
+            if (inputsMap[key]?.kg !== undefined) {
+              continue;
+            }
+
+            // Use preferred weight if available, otherwise use default
+            const preferredWeight = preferredWeights[key];
+            const defaultWeight = exercise.weight_kg;
+            const initialWeight = preferredWeight ?? defaultWeight;
+
+            if (initialWeight !== null && initialWeight !== undefined) {
+              inputsMap[key] = {
+                ...inputsMap[key],
+                kg: Number(initialWeight)
+              };
+            }
+          }
+        });
+
+        setSetLogs(logsMap);
+        setSetInputs(inputsMap);
 
         // Load latest exercise notes for each exercise (not just current session)
         if (exerciseData && exerciseData.length > 0) {
@@ -741,12 +844,38 @@ export default function ModernWorkoutSession() {
     }
     
     try {
-      // Update the setInputs for this specific set
+      // Update the setInputs for this specific set (UI update)
       const key = `${exerciseId}:${setNumber}`;
       setSetInputs(prev => ({
         ...prev,
         [key]: { ...prev[key], kg: newWeight }
       }));
+      
+      // Persist preference to database (non-blocking, fire-and-forget)
+      // This ensures the weight is remembered for future workouts
+      supabase
+        .from('client_item_set_weights')
+        .upsert({
+          client_item_id: exerciseId,
+          user_id: user.id,
+          set_number: setNumber,
+          weight_kg: newWeight,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'client_item_id,set_number,user_id'
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error('[handleUpdateSingleSetWeight] Failed to save weight preference:', error);
+            // Don't throw - preference save failure shouldn't break workout flow
+          } else {
+            console.log(`[handleUpdateSingleSetWeight] Saved preference: ${exerciseId}:${setNumber} = ${newWeight}kg`);
+          }
+        })
+        .catch(error => {
+          console.error('[handleUpdateSingleSetWeight] Unexpected error saving preference:', error);
+          // Don't throw - continue workout normally
+        });
       
       console.log(`Updated single set weight: ${exerciseId}:${setNumber} = ${newWeight}kg for user ${user.id}`);
     } catch (error) {
@@ -794,7 +923,7 @@ export default function ModernWorkoutSession() {
           : ex
       ));
       
-      // Update the client_items table with the new weight preference
+      // Update the client_items table with the new weight preference (for default weight)
       // RLS policy ensures only the user who owns the exercise can update it
       const { error } = await supabase
         .from('client_items')
@@ -816,6 +945,37 @@ export default function ModernWorkoutSession() {
         // Log the rollback
         console.log(`Rolled back weight update for exercise ${exerciseId} due to database error`);
         return;
+      }
+
+      // Save preferences for ALL sets (user wants all sets to remember this weight)
+      // This ensures if user changes all sets to 4kg, all sets remember 4kg next time
+      try {
+        const preferenceUpserts = [];
+        for (let i = 1; i <= exercise.sets; i++) {
+          preferenceUpserts.push({
+            client_item_id: exerciseId,
+            user_id: user.id,
+            set_number: i,
+            weight_kg: newWeight,
+            updated_at: new Date().toISOString()
+          });
+        }
+
+        const { error: prefError } = await supabase
+          .from('client_item_set_weights')
+          .upsert(preferenceUpserts, {
+            onConflict: 'client_item_id,set_number,user_id'
+          });
+
+        if (prefError) {
+          console.warn('[handleUpdateAllSetsWeight] Failed to save preferences for all sets:', prefError);
+          // Don't fail - preferences are secondary to main weight update
+        } else {
+          console.log(`[handleUpdateAllSetsWeight] Saved preferences for all ${exercise.sets} sets: ${exerciseId} = ${newWeight}kg`);
+        }
+      } catch (prefSaveError) {
+        console.error('[handleUpdateAllSetsWeight] Unexpected error saving preferences:', prefSaveError);
+        // Don't throw - main update succeeded, preferences are non-critical
       }
       
       console.log(`Successfully updated all sets weight for exercise ${exerciseId} to ${newWeight}kg for user ${user.id}`);
