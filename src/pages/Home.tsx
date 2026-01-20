@@ -188,8 +188,16 @@ export default function Home() {
           </div>
           
           {/* Motivational Message */}
-          <p className="accent-handwriting text-[#00B6E5] text-lg md:text-xl text-center">
-            {motivationalMsg.toLowerCase()}
+          <p className="text-lg md:text-xl text-center">
+            {motivationalMsg.toLowerCase().includes("täna on hea päev") ? (
+              <>
+                <span className="text-black">täna on hea päev.</span>
+                <br />
+                <span className="accent-handwriting text-[#00B6E5]">Iga treening viib mind eesmärgile lähemale</span>
+              </>
+            ) : (
+              <span className="accent-handwriting text-[#00B6E5]">{motivationalMsg.toLowerCase()}</span>
+            )}
           </p>
         </div>
 
@@ -375,7 +383,7 @@ export default function Home() {
         </div>
 
         {/* Quick Actions - Märkmik, Analüütika, Teenused */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-12">
           <Button asChild className="h-16 flex-col space-y-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white/90 hover:shadow-lg transition-all duration-200 text-gray-900">
             <Link 
               to="/programs/journal"
