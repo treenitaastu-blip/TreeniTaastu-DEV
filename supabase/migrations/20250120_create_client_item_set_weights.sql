@@ -25,6 +25,9 @@ CREATE INDEX IF NOT EXISTS idx_set_weights_updated ON client_item_set_weights(up
 -- Enable Row Level Security
 ALTER TABLE client_item_set_weights ENABLE ROW LEVEL SECURITY;
 
+-- Grant permissions to authenticated role (required for RLS to work)
+GRANT SELECT, INSERT, UPDATE ON client_item_set_weights TO authenticated;
+
 -- RLS Policy: Users can view their own set weight preferences
 CREATE POLICY "Users can view their own set weights"
   ON client_item_set_weights FOR SELECT
