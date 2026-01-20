@@ -682,6 +682,35 @@ export default function ModernWorkoutSession() {
           weight_kg_done: actualWeight 
         } 
       }));
+
+      // Save weight preference when set is completed (if weight was used)
+      // This ensures the actual weight used is remembered, even if user typed it directly
+      // without using the weight update button
+      if (actualWeight !== null && actualWeight !== undefined && typeof actualWeight === 'number' && actualWeight > 0) {
+        supabase
+          .from('client_item_set_weights')
+          .upsert({
+            client_item_id: exerciseId,
+            user_id: user.id,
+            set_number: setNumber,
+            weight_kg: actualWeight,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'client_item_id,user_id,set_number'
+          })
+          .then(({ error }) => {
+            if (error) {
+              console.warn('[handleSetComplete] Failed to save weight preference:', error);
+              // Don't throw - preference save is non-critical
+            } else {
+              console.log(`[handleSetComplete] Saved weight preference: ${exerciseId}:${setNumber} = ${actualWeight}kg`);
+            }
+          })
+          .catch(error => {
+            console.warn('[handleSetComplete] Unexpected error saving weight preference:', error);
+            // Don't throw - continue normally
+          });
+      }
       
       toast.success("Seeria märgitud tehtuks!");
 
