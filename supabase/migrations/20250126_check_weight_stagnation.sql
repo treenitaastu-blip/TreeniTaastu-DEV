@@ -188,9 +188,11 @@ ON set_logs(client_item_id, weight_kg_done)
 WHERE weight_kg_done IS NOT NULL;
 
 -- Create index for efficient weight increase detection query
-CREATE INDEX IF NOT EXISTS idx_set_logs_client_item_ended 
-ON set_logs(client_item_id, ended_at DESC)
-WHERE weight_kg_done IS NOT NULL;
+-- Index on set_logs for client_item_id and weight_kg_done (already exists)
+-- Additional index on workout_sessions for ended_at lookups (for filtering completed sessions)
+CREATE INDEX IF NOT EXISTS idx_workout_sessions_ended_at 
+ON workout_sessions(ended_at DESC)
+WHERE ended_at IS NOT NULL;
 
 -- Add comment explaining the function
 COMMENT ON FUNCTION check_exercise_weight_stagnation IS 
