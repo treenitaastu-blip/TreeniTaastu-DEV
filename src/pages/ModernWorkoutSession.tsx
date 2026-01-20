@@ -891,7 +891,7 @@ export default function ModernWorkoutSession() {
           weight_kg: newWeight,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'client_item_id,set_number,user_id'
+          onConflict: 'client_item_id,user_id,set_number'
         })
         .then(({ error }) => {
           if (error) {
@@ -993,7 +993,7 @@ export default function ModernWorkoutSession() {
         const { error: prefError } = await supabase
           .from('client_item_set_weights')
           .upsert(preferenceUpserts, {
-            onConflict: 'client_item_id,set_number,user_id'
+            onConflict: 'client_item_id,user_id,set_number'
           });
 
         if (prefError) {
