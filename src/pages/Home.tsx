@@ -180,9 +180,9 @@ export default function Home() {
         {/* Welcome Header - Matching marketing site style */}
         <div className="text-center space-y-6 pt-8">
           <div className="space-y-4">
-            {user?.full_name && (
+            {user?.user_metadata?.full_name && (
               <h1 className="text-[40px] md:text-[52px] font-black uppercase text-black tracking-tight">
-                Tere, {user.full_name.split(' ')[0]}!
+                Tere, {String(user.user_metadata.full_name).split(' ')[0]}!
               </h1>
             )}
           </div>

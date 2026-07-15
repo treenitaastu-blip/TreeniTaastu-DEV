@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { logWorkoutError, ErrorCategory } from "@/utils/errorLogger";
 
 // Workout failure types
@@ -232,7 +233,7 @@ class WorkoutFailureTracker {
           stack_trace: failureEntry.stack_trace,
           retry_attempts: failureEntry.retry_attempts,
           resolved: failureEntry.resolved,
-          context: failureEntry.context
+          context: failureEntry.context as unknown as Json
         });
 
       if (error) {
@@ -337,7 +338,7 @@ class WorkoutFailureTracker {
         .limit(limit);
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as WorkoutFailureEntry[];
     } catch (error) {
       console.error('Failed to get recent failures:', error);
       return [];

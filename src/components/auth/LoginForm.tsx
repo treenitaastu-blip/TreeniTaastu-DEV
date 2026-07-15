@@ -80,23 +80,22 @@ export default function LoginForm({
 
   const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!email) {
-      setError("Sisesta e-post parooli lähtestamiseks.");
+    const validation = validateAndSanitize(loginSchema.shape.email, email);
+    if (!validation.success) {
+      setError(validation.errors?.join(", ") || "Palun sisesta kehtiv e-post.");
       return;
     }
     setLoading(true);
     setError(null);
     setInfo(null);
     try {
-      // Use our custom email function instead of Supabase's default
-      const { error } = await supabase.functions.invoke('auto-password-reset', {
-        body: { email }
+      const { error } = await supabase.auth.resetPasswordForEmail(validation.data, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      setInfo("Saatsime uue parooli sinu e-postile. Kontrolli postkasti (ka rämpsposti).");
-    } catch (err) {
-      const e = err as Error;
-      setError(e.message || "Parooli lähtestamine ebaõnnestus");
+      setInfo("Kui selle e-postiga konto on olemas, saatsime sinna taastamislingi. Kontrolli ka rämpsposti.");
+    } catch {
+      setError("Taastamislingi saatmine ebaõnnestus. Palun proovi mõne aja pärast uuesti.");
     } finally {
       setLoading(false);
     }
@@ -115,7 +114,7 @@ export default function LoginForm({
           <LogIn className="w-6 h-6 text-white" />
         </div>
         <CardTitle className="text-2xl">{isResetMode ? "Taasta parool" : heading}</CardTitle>
-        <CardDescription>{isResetMode ? "Sisesta oma e-post ja saadame sulle uue parooli" : description}</CardDescription>
+        <CardDescription>{isResetMode ? "Sisesta oma e-post ja saadame sulle turvalise taastamislingi" : description}</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -174,7 +173,7 @@ export default function LoginForm({
 
           <Button type="submit" className="w-full" variant="hero" size="lg" disabled={loading}>
             {isResetMode 
-              ? (loading ? "Saadan uut parooli..." : "Saada uus parool") 
+              ? (loading ? "Saadan taastamislinki..." : "Saada taastamislink")
               : (loading ? "Logime sisse..." : "Logi sisse")
             }
           </Button>

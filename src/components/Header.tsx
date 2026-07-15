@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import useAccess from "@/hooks/useAccess";
 import { useDropdownManager } from "@/contexts/DropdownManager";
 import { useTrialStatus } from "@/hooks/useTrialStatus";
+import "@/styles/public-auth.css";
 
 const HIDE_ON_PATHS = ["/login", "/signup"];
 
@@ -125,6 +126,18 @@ export default function Header() {
   const linkInactive = "text-foreground hover:text-primary hover:bg-muted/50";
 
   if (HIDE_ON_PATHS.includes(loc.pathname)) return null;
+
+  if (!user && loc.pathname === "/") {
+    return (
+      <header className="tt-public-nav">
+        <Link to="/" className="tt-public-nav__wordmark" aria-label="TreeniTaastu avaleht">
+          <span className="tt-public-nav__mark">T</span>
+          <span>TREENI &amp; TAASTU</span>
+        </Link>
+        <Link to="/login" className="tt-public-nav__action">Logi sisse</Link>
+      </header>
+    );
+  }
 
   return (
     <>

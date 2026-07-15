@@ -56,7 +56,7 @@ export function useProgressionRecommendations(
 
         return {
           exerciseId,
-          recommendation: data as ProgressionRecommendation
+          recommendation: data as unknown as ProgressionRecommendation
         };
       });
 

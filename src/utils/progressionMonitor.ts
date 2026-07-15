@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { logProgressionError, ErrorCategory } from "@/utils/errorLogger";
 
 // Progression analysis failure types
@@ -34,7 +35,7 @@ export interface ProgressionAnalysisContext {
     rpeData?: unknown[];
     rirData?: unknown[];
     previousProgression?: unknown;
-  };
+  } & Record<string, unknown>;
   retryAttempts?: number;
   additionalData?: Record<string, unknown>;
 }
@@ -281,10 +282,10 @@ class ProgressionMonitor {
           failure_type: analysisEntry.failure_type,
           error_message: analysisEntry.error_message,
           stack_trace: analysisEntry.stack_trace,
-          analysis_data: analysisEntry.analysis_data,
+          analysis_data: analysisEntry.analysis_data as unknown as Json,
           retry_attempts: analysisEntry.retry_attempts,
           resolved: analysisEntry.resolved,
-          context: analysisEntry.context
+          context: analysisEntry.context as unknown as Json
         });
 
       if (error) {
@@ -391,7 +392,7 @@ class ProgressionMonitor {
         .limit(limit);
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as ProgressionAnalysisEntry[];
     } catch (error) {
       console.error('Failed to get recent analysis failures:', error);
       return [];

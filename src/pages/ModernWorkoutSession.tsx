@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { getErrorMessage, getSeverityStyles, getActionButtonText } from '@/utils/errorMessages';
 import { useLoadingState, LOADING_KEYS, getLoadingMessage } from '@/hooks/useLoadingState';
 import { LoadingIndicator, LoadingOverlay } from '@/components/ui/LoadingIndicator';
-import { logWorkoutError, logProgressionError, logDatabaseError, ErrorCategory } from '@/utils/errorLogger';
+import { logWorkoutError, logProgressionError, logDatabaseError } from '@/utils/errorLogger';
 import { trackSessionEndFailure, trackProgressionFailure, trackDataSaveFailure, WorkoutFailureType } from '@/utils/workoutFailureTracker';
 import { trackFeatureUsage, trackTaskCompletion, trackMobileInteraction, trackAPIResponseTime } from '@/utils/uxMetricsTracker';
 
@@ -50,6 +50,16 @@ type ClientDay = {
 type ClientItem = {
   id: string;
   exercise_name: string;
+  base_exercise_name?: string | null;
+  exercise_alternatives?: Array<{
+    id: string;
+    alternative_name: string;
+    alternative_description?: string | null;
+    alternative_video_url?: string | null;
+    difficulty_level: 'easier' | 'same' | 'harder';
+    equipment_required?: string[] | null;
+    muscle_groups?: string[] | null;
+  }>;
   sets: number;
   reps: string;
   seconds?: number | null;
@@ -311,7 +321,7 @@ export default function ModernWorkoutSession() {
           throw new Error("Selles treeningu päevas pole harjutusi määratud. Palun võta ühendust toega.");
         }
 
-        setExercises(exerciseData);
+        setExercises(exerciseData as unknown as ClientItem[]);
         // Capture originals for toggle behavior
         const originals: Record<string, string> = {};
         for (const ex of exerciseData) {
@@ -705,8 +715,7 @@ export default function ModernWorkoutSession() {
             } else {
               console.log(`[handleSetComplete] Saved weight preference: ${exerciseId}:${setNumber} = ${actualWeight}kg`);
             }
-          })
-          .catch(error => {
+          }, error => {
             console.warn('[handleSetComplete] Unexpected error saving weight preference:', error);
             // Don't throw - continue normally
           });
@@ -910,8 +919,7 @@ export default function ModernWorkoutSession() {
           } else {
             console.log(`[handleUpdateSingleSetWeight] Saved preference: ${exerciseId}:${setNumber} = ${newWeight}kg`);
           }
-        })
-        .catch(error => {
+        }, error => {
           console.error('[handleUpdateSingleSetWeight] Unexpected error saving preference:', error);
           // Don't throw - continue workout normally
         });
@@ -1082,7 +1090,7 @@ export default function ModernWorkoutSession() {
       } catch (error) {
         // Bug #5 fix: Proper error handling instead of silent failure
         console.error('Failed to save exercise notes:', error);
-        logDatabaseError(error as Error, ErrorCategory.EXERCISE_NOTES_SAVE, {
+        logDatabaseError(error as Error, {
           exerciseId,
           sessionId: session.id,
           dayId: dayId,
@@ -1122,7 +1130,7 @@ export default function ModernWorkoutSession() {
     } catch (error) {
       // Bug #5 fix: Proper error handling instead of silent failure
       console.error('Failed to save RPE:', error);
-      logDatabaseError(error as Error, ErrorCategory.EXERCISE_RPE_SAVE, {
+      logDatabaseError(error as Error, {
         exerciseId,
         sessionId: session.id,
         dayId: dayId,
@@ -1225,10 +1233,10 @@ export default function ModernWorkoutSession() {
       // Fetch last two feedbacks for this exercise/user to gate recommendation
       const { data: lastTwo, error: lastErr } = await supabase
         .from('exercise_notes')
-        .select('id, created_at, exercise_feedback')
+        .select('id, inserted_at, exercise_feedback')
         .eq('user_id', user.id)
         .eq('client_item_id', exerciseId)
-        .order('created_at', { ascending: false })
+        .order('inserted_at', { ascending: false })
         .limit(2);
       if (!lastErr && Array.isArray(lastTwo) && lastTwo.length === 2) {
         const a = String(lastTwo[0]?.exercise_feedback || '');
@@ -1451,7 +1459,8 @@ export default function ModernWorkoutSession() {
 
           // Get current exercise parameters
           const currentWeight = exercise.weight_kg;
-          const currentReps = exercise.reps;
+          const currentReps = parseRepsToNumber(exercise.reps);
+          if (currentReps === null) continue;
           
           // Enhanced progression logic with safety checks
           let newWeight = currentWeight;
@@ -1472,17 +1481,17 @@ export default function ModernWorkoutSession() {
               newReps = currentReps + 1;
               progressionReason = 'Reps increased (RPE low)';
             }
-          } else if (rpe >= 9) {
-            // Hard - reduce reps (no weight change)
-            if (currentReps && currentReps > 5) {
-              newReps = currentReps - 1;
-              progressionReason = 'Reps decreased (RPE too high)';
-            }
           } else if (rpe >= 10) {
             // Very hard - reduce reps significantly (no weight change)
-            if (currentReps && currentReps > 3) {
+            if (currentReps > 3) {
               newReps = Math.max(3, currentReps - 2);
               progressionReason = 'Reps decreased significantly (RPE very high)';
+            }
+          } else if (rpe >= 9) {
+            // Hard - reduce reps (no weight change)
+            if (currentReps > 5) {
+              newReps = currentReps - 1;
+              progressionReason = 'Reps decreased (RPE too high)';
             }
           } else {
             // RPE 7-8 is perfect range - maintain current parameters
@@ -1490,11 +1499,11 @@ export default function ModernWorkoutSession() {
           }
 
           // Only update reps (weight progression disabled - clients control manually)
-          const repsChanged = newReps !== currentReps && newReps && currentReps;
+          const repsChanged = newReps !== currentReps;
           
           if (repsChanged) {
             const updateData: { reps?: string } = {};
-            if (repsChanged) updateData.reps = newReps;
+            if (repsChanged) updateData.reps = String(newReps);
             
             const { error: updateError } = await supabase
               .from("client_items")

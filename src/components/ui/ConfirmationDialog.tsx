@@ -7,7 +7,7 @@ export interface ConfirmationDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  description: string;
+  description: React.ReactNode;
   confirmText?: string;
   cancelText?: string;
   variant?: 'destructive' | 'warning' | 'info';
@@ -203,7 +203,7 @@ export function useConfirmationDialog() {
   const [dialog, setDialog] = React.useState<{
     isOpen: boolean;
     title: string;
-    description: string;
+    description: React.ReactNode;
     onConfirm: () => void;
     onClose: () => void;
     variant?: 'destructive' | 'warning' | 'info';
@@ -222,7 +222,7 @@ export function useConfirmationDialog() {
 
   const showDialog = React.useCallback((config: {
     title: string;
-    description: string;
+    description: React.ReactNode;
     onConfirm: () => void;
     onClose?: () => void;
     variant?: 'destructive' | 'warning' | 'info';

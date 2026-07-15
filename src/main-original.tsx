@@ -35,7 +35,6 @@ import App from "@/App";
 
 // Public pages
 import IndexPublic from "@/pages/IndexPublic";
-import { AdminAccessHelper } from "@/components/AdminAccessHelper";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import Join from "@/pages/Join";
@@ -143,7 +142,6 @@ if (container) {
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
               </Route>
-              <Route path="/admin-setup" element={<AdminAccessHelper />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
                       <Route path="/forgot-password" element={<ForgotPasswordPage />} />

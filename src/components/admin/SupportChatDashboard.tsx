@@ -8,9 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Send, User, Clock, RefreshCw, AlertCircle, Shield } from 'lucide-react';
+import { MessageCircle, Send, User, Clock, RefreshCw } from 'lucide-react';
 import { SupportMessage, SupportConversation } from '@/hooks/useSupportChat';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ConversationWithProfile {
   id: string;
@@ -35,9 +34,6 @@ export function SupportChatDashboard() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [settingUpAdmin, setSettingUpAdmin] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
   
   // Refs for auto-scroll and preventing stale closures
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -54,59 +50,6 @@ export function SupportChatDashboard() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
-
-  // Check authentication and admin status
-  const checkAuthStatus = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.rpc('debug_auth_status');
-      if (error) throw error;
-      setDebugInfo(data);
-      console.log('Auth status:', data);
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-    }
-  }, []);
-
-  // Setup current user as admin
-  const makeCurrentUserAdmin = useCallback(async () => {
-    setSettingUpAdmin(true);
-    try {
-      const { data, error } = await supabase.rpc('make_current_user_admin');
-      if (error) throw error;
-      
-      toast({
-        title: "Edu",
-        description: data || "Oled nüüd administraator"
-      });
-      
-      // Refresh auth status and conversations
-      await checkAuthStatus();
-      loadConversations();
-    } catch (error) {
-      console.error('Error setting up admin:', error);
-      toast({
-        title: "Viga", 
-        description: "Administraatori õiguste seadistamine ebaõnnestus. Kontrolli, et oled sisse logitud.",
-        variant: "destructive"
-      });
-    } finally {
-      setSettingUpAdmin(false);
-    }
-  }, [checkAuthStatus, toast]);
-
-  // Test data availability
-  const testDataAccess = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.rpc('test_admin_login', { 
-        test_email: 'kraavi.henri@gmail.com' 
-      });
-      if (error) throw error;
-      setTestResults(data);
-      console.log('Test results:', data);
-    } catch (error) {
-      console.error('Error testing data access:', error);
-    }
-  }, []);
 
   // Load all users for proactive messaging
   const loadConversations = useCallback(async () => {
@@ -455,12 +398,10 @@ export function SupportChatDashboard() {
     }
   }, [selectedConversationId, loadMessages]);
 
-  // Load conversations on mount and check auth
+  // Load conversations on mount
   useEffect(() => {
-    checkAuthStatus();
-    testDataAccess();
     loadConversations();
-  }, [checkAuthStatus, testDataAccess, loadConversations]);
+  }, [loadConversations]);
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleString('et-EE', {
@@ -475,68 +416,6 @@ export function SupportChatDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Debug Info - Remove in production */}
-      {debugInfo && (
-        <Alert className="border-info/50">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Debug Info:</strong> Auth: {debugInfo.auth_uid ? 'Yes' : 'No'} | 
-            Admin: {debugInfo.is_admin_no_param ? 'Yes' : 'No'} | 
-            Conversations: {debugInfo.conversations_count} | 
-            Messages: {debugInfo.messages_count}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Test Results */}
-      {testResults && (
-        <Alert className="border-blue-500/50">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Data Available:</strong> Conversations: {testResults.conversations} | 
-            Active: {testResults.active_conversations} | 
-            Messages: {testResults.messages} | 
-            Users: {testResults.profiles_count}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Authentication Status Alert */}
-      {debugInfo && !debugInfo.auth_uid && (
-        <Alert className="border-destructive/50 text-destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Pole sisse logitud:</strong> Pead sisse logima, et ligipääsu saada administraatori vestlusele.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {debugInfo && debugInfo.auth_uid && !debugInfo.is_admin_no_param && (
-        <Alert className="border-warning/50">
-          <Shield className="h-4 w-4" />
-          <AlertDescription className="flex items-center justify-between">
-            <span><strong>Pole administraator:</strong> Sul on vaja administraatori õigusi, et ligipääsu saada tugivestlusele.</span>
-            <Button
-              onClick={makeCurrentUserAdmin}
-              disabled={settingUpAdmin}
-              size="sm"
-              variant="outline"
-            >
-              {settingUpAdmin ? "Seadistan..." : "Tee mind administraatoriks"}
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {debugInfo?.auth_uid && debugInfo?.is_admin_no_param && (
-        <Alert className="border-success/50 text-success">
-          <Shield className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Administraatori ligipääs antud:</strong> Saad nüüd ligipääsu kõikidele tugivestluste.
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-h-[600px] lg:h-[calc(100vh-300px)]">
         {/* Conversations List */}
         <Card className="lg:col-span-1 flex flex-col">

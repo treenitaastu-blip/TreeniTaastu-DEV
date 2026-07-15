@@ -36,7 +36,6 @@ import App from "@/App";
 
 // Public pages
 import IndexPublic from "@/pages/IndexPublic";
-import { AdminAccessHelper } from "@/components/AdminAccessHelper";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import Join from "@/pages/Join";
@@ -44,6 +43,7 @@ import PaymentSuccess from "@/pages/PaymentSuccess";
 import Pricing from "@/pages/Pricing";
 import TrialExpired from "@/pages/TrialExpired";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import ChangePasswordPage from "@/pages/ChangePasswordPage";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
@@ -149,11 +149,11 @@ if (container) {
                 <Route path="/payment-success" element={<PaymentSuccess />} />
               </Route>
               
-              {/* ---------- AUTH SETUP ---------- */}
-              <Route path="/admin-setup" element={<AdminAccessHelper />} />
+              {/* ---------- AUTH ---------- */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* ---------- AUTH REQUIRED ROUTES ---------- */}
               <Route element={<RequireAuth />}>

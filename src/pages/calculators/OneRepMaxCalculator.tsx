@@ -11,6 +11,7 @@ export default function OneRepMaxCalculator() {
   const [oneRM, setOneRM] = useState<number | null>(null);
   const [percentages, setPercentages] = useState<{ percent: number; weight: number }[]>([]);
   const [errors, setErrors] = useState<{ weight?: string; reps?: string }>({});
+  const [copied, setCopied] = useState(false);
 
   const validateInputs = (): boolean => {
     const newErrors: { weight?: string; reps?: string } = {};

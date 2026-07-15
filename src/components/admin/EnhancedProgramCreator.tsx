@@ -475,8 +475,7 @@ export default function EnhancedProgramCreator({
       const { data: programId, error: copyError } = await supabase.rpc("assign_template_to_user_v2", {
         p_template_id: templateData.id,
         p_target_email: userData.email ?? "",
-        p_start_date: startDate,
-        p_assigned_by: userData.id
+        p_start_date: startDate
       });
 
       if (copyError) {

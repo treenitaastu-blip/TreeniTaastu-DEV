@@ -23,6 +23,7 @@ export interface ProgramProgress {
   weeks_elapsed: number | null;
   progress_percentage: number | null;
   is_due_for_completion: boolean | null;
+  workouts_completed?: number | null;
 }
 
 export interface ExerciseProgression {
@@ -48,6 +49,7 @@ export interface ExerciseProgression {
 
 export interface AutoProgressionResult {
   success: boolean;
+  reason?: string;
   program_id: string;
   updates_made: number;
   deload_exercises?: number;
@@ -93,7 +95,7 @@ export const useSmartProgression = (programId?: string, userId?: string) => {
         return;
       }
       
-      setProgramProgress(data);
+      setProgramProgress(data as ProgramProgress);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch program progress';
       setError(errorMessage);

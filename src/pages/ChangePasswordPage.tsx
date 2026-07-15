@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,13 +23,12 @@ export default function ChangePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [showGoogleSetup, setShowGoogleSetup] = useState(false);
 
-  // Redirect if not logged in
-  if (!user) {
-    navigate("/login", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (!user) navigate("/login", { replace: true });
+  }, [navigate, user]);
+
+  if (!user) return null;
 
   // Check if user signed up with Google (no password set initially)
   const isGoogleUser = user.app_metadata?.provider === 'google';
@@ -49,13 +48,17 @@ export default function ChangePasswordPage() {
       return;
     }
 
+    if (!isGoogleUser && !currentPassword) {
+      setError("Praegune parool on kohustuslik");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // For Google users or users changing password while logged in, allow direct password update
-      if (isGoogleUser || !currentPassword) {
-        // Direct password update (Google users don't need current password)
+      if (isGoogleUser) {
+        // OAuth users prove access through their active provider session.
         const { error } = await supabase.auth.updateUser({
           password: newPassword
         });
@@ -121,29 +124,6 @@ export default function ChangePasswordPage() {
     );
   }
 
-  // Show Google password setup for Google users who want to set a password
-  if (showGoogleSetup) {
-    return (
-      <div className="container mx-auto max-w-md px-4 py-8">
-        <div className="mb-4">
-          <Button
-            onClick={() => setShowGoogleSetup(false)}
-            variant="ghost"
-            size="sm"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Tagasi
-          </Button>
-        </div>
-        <GooglePasswordSetup 
-          onSuccess={() => setSuccess(true)}
-          onCancel={() => setShowGoogleSetup(false)}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto max-w-md px-4 py-8">
       <Card className="border-0 shadow-soft">
@@ -185,17 +165,10 @@ export default function ChangePasswordPage() {
             <div className="mb-6">
               <Alert className="border-blue-200 bg-blue-50">
                 <AlertDescription className="text-blue-900">
-                  Sa logisid sisse Google kaudu. Kui tahad seadistada parooli otseseks sisselogimiseks, 
-                  kliki allolevat nuppu.
+                  Sa logisid sisse Google kaudu. Aktiivne Google'i sessioon kinnitab sinu isiku,
+                  seega saad allpool seadistada ka parooliga sisselogimise.
                 </AlertDescription>
               </Alert>
-              <Button 
-                onClick={() => setShowGoogleSetup(true)}
-                variant="outline"
-                className="w-full mt-3"
-              >
-                Seadista parool Google kontole
-              </Button>
             </div>
           )}
 
@@ -282,7 +255,7 @@ export default function ChangePasswordPage() {
               className="w-full" 
               variant="hero" 
               size="lg" 
-              disabled={loading || isGoogleUser}
+              disabled={loading}
             >
               {loading ? "Muudan parooli..." : "Muuda parool"}
             </Button>

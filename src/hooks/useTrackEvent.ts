@@ -2,6 +2,7 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import type { Json } from '@/integrations/supabase/types';
 
 export type EventData = {
   button_name?: string;
@@ -25,7 +26,7 @@ export function useTrackEvent() {
       // Track in database using the function we created
       const { data, error } = await supabase.rpc('track_user_event', {
         p_event_type: eventType,
-        p_event_data: eventData,
+        p_event_data: eventData as Json,
         p_page_url: window.location.href,
         p_session_id: crypto.randomUUID()
       });

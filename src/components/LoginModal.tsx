@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LogIn, UserPlus } from "lucide-react";
+import { emailSchema, validateAndSanitize } from "@/lib/validations";
 
 type LoginModalProps = {
   open: boolean;
@@ -89,22 +90,22 @@ export default function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
   // RESET PASSWORD
   const handleReset = async () => {
-    if (!email) {
-      setErr("Sisesta e-post parooli taastamiseks.");
+    const validation = validateAndSanitize(emailSchema, email);
+    if (!validation.success) {
+      setErr(validation.errors?.join(", ") || "Palun sisesta kehtiv e-post.");
       return;
     }
     setLoading(true);
     setErr(null);
     setMsg(null);
     try {
-      // Use our auto password reset function instead of Supabase's reset flow
-      const { error } = await supabase.functions.invoke('auto-password-reset', {
-        body: { email }
+      const { error } = await supabase.auth.resetPasswordForEmail(validation.data, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      setMsg("Saatsime uue parooli sinu e-postile. Kontrolli postkasti (ka rämpsposti).");
-    } catch (e: unknown) {
-      setErr(getErrMessage(e, "Parooli lähtestamine ebaõnnestus."));
+      setMsg("Kui selle e-postiga konto on olemas, saatsime sinna taastamislingi. Kontrolli ka rämpsposti.");
+    } catch {
+      setErr("Taastamislingi saatmine ebaõnnestus. Palun proovi mõne aja pärast uuesti.");
     } finally {
       setLoading(false);
     }

@@ -58,6 +58,7 @@ type ProgramRow = {
   title_override: string | null;
   start_date: string | null;
   assigned_to: string;
+  is_active: boolean | null;
 };
 
 export default function ProgramDetail() {
@@ -233,7 +234,7 @@ export default function ProgramDetail() {
           }
 
           const itemsData =
-            (itemsRaw as Array<{
+            (itemsRaw as unknown as Array<{
               id: string;
               client_day_id: string;
               exercise_name: string;

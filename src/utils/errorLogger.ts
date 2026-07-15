@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 // Error severity levels
 export enum ErrorSeverity {
@@ -31,7 +32,9 @@ export interface ErrorContext {
   userId?: string;
   sessionId?: string;
   programId?: string;
+  dayId?: string;
   exerciseId?: string;
+  rpe?: number;
   action?: string;
   component?: string;
   route?: string;
@@ -185,7 +188,7 @@ class ErrorLogger {
           category: errorEntry.category,
           message: errorEntry.message,
           stack: errorEntry.stack,
-          context: errorEntry.context,
+          context: errorEntry.context as unknown as Json,
           resolved: errorEntry.resolved
         });
 
@@ -311,7 +314,7 @@ class ErrorLogger {
         .limit(limit);
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as ErrorLogEntry[];
     } catch (error) {
       console.error('Failed to get recent errors:', error);
       return [];

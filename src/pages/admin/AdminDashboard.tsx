@@ -59,14 +59,6 @@ export default function AdminDashboard() {
         isActive: (pathname: string) => pathname.startsWith("/admin/programs"),
         renderHere: false,
       },
-      {
-        key: "admin-setup" as const,
-        label: "Admin Setup",
-        icon: Users,
-        path: "/admin-setup",
-        isActive: (pathname: string) => pathname.startsWith("/admin-setup"),
-        renderHere: false,
-      },
     ],
     []
   );

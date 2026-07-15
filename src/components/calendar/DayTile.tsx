@@ -11,10 +11,12 @@ import {
 
 export interface CalendarDay {
   dayNumber: number;
+  date?: Date;
   isWeekend: boolean;
   isUnlocked: boolean;
   isCompleted: boolean;
   isLocked: boolean;
+  isStarted?: boolean;
   unlockTime?: string;
   quote?: {
     text: string;

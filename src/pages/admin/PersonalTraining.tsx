@@ -398,8 +398,8 @@ export default function PersonalTraining() {
         template_title: templateTitle
       });
 
-      console.log("Calling admin_delete_template RPC", { p_template_id: templateId });
-      const { data, error } = await supabase.rpc("admin_delete_template", {
+      console.log("Calling admin_delete_template_cascade RPC", { p_template_id: templateId });
+      const { data, error } = await supabase.rpc("admin_delete_template_cascade", {
         p_template_id: templateId,
       });
 

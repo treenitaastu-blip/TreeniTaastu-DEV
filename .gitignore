@@ -43,6 +43,12 @@ pids/
 coverage/
 *.lcov
 
+# Playwright end-to-end test artifacts
+playwright-report/
+test-results/
+blob-report/
+e2e/.auth/
+
 # nyc test coverage
 .nyc_output/
 
