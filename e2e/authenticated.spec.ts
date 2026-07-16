@@ -20,7 +20,9 @@ test.describe("Autenditud kliendi põhivood @desktop-only", () => {
 
   test("kasutaja jõuab pärast sisselogimist avalehele", async ({ page }) => {
     await expect(page.getByText(/täna on hea päev/i)).toBeVisible();
-    await expect(page.getByText("Programmid", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Sinu teekond", exact: true }),
+    ).toBeVisible();
   });
 
   test("tavakasutaja ei pääse admini", async ({ page }) => {
