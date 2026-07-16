@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
-import { handleProgramAccessError, handleTemplateAccessError, isPermissionError } from "@/utils/errorHandling";
+import { handleTemplateAccessError, isPermissionError } from "@/utils/errorHandling";
 import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
-import { MobileOptimizedCard, MobileStatsCard, MobileFilterBar } from "@/components/admin/MobileOptimizedCard";
+import { MobileStatsCard, MobileFilterBar } from "@/components/admin/MobileOptimizedCard";
 import { 
   getClientProgramsOptimized, 
   getTemplatesOptimized, 
@@ -16,15 +16,11 @@ import {
   Users, 
   TrendingUp, 
   Activity,
-  Plus,
-  Search,
-  Filter,
   MoreHorizontal,
   Edit,
   Trash2,
   UserCheck,
   Send,
-  Eye,
   UserPlus,
   UserMinus,
   Target,
@@ -55,7 +51,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import EnhancedProgramCreator from "@/components/admin/EnhancedProgramCreator";
+import EnhancedProgramCreator, {
+  PROGRAM_DRAFT_STORAGE_KEY,
+} from "@/components/admin/EnhancedProgramCreator";
 import PTAccessValidator from "@/components/PTAccessValidator";
 
 type UUID = string;
@@ -84,6 +82,7 @@ type Template = {
   title: string;
   goal: string | null;
   is_active: boolean | null;
+  inserted_at: string | null;
 };
 
 export default function PersonalTraining() {
@@ -100,7 +99,7 @@ export default function PersonalTraining() {
   });
   const [programs, setPrograms] = useState<ClientProgram[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [users, setUsers] = useState<{id: string, email: string, full_name: string}[]>([]);
+  const [users, setUsers] = useState<{id: string, email: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
@@ -112,13 +111,11 @@ export default function PersonalTraining() {
   const [assignDate, setAssignDate] = useState(new Date().toISOString().slice(0, 10));
   const [assigning, setAssigning] = useState(false);
 
-  // New template form
-  const [showNewTemplate, setShowNewTemplate] = useState(false);
-  const [newTemplate, setNewTemplate] = useState({ title: "", goal: "" });
-  const [creating, setCreating] = useState(false);
-
   // Enhanced program creator
-  const [showEnhancedCreator, setShowEnhancedCreator] = useState(false);
+  const [showEnhancedCreator, setShowEnhancedCreator] = useState(() =>
+    typeof window !== "undefined" &&
+    Boolean(window.localStorage.getItem(PROGRAM_DRAFT_STORAGE_KEY)),
+  );
 
   // Inline title editing
   const [editingTitleId, setEditingTitleId] = useState<UUID | null>(null);
@@ -326,58 +323,6 @@ export default function PersonalTraining() {
     }
   };
 
-  // Keep performDeleteProgram for potential future "permanently delete" option
-  const performDeleteProgram = async (programId: string, programName: string) => {
-    try {
-      // Track deletion attempt
-      trackFeatureUsage('program_deletion', 'attempted', {
-        program_id: programId
-      });
-      
-      const { data, error } = await supabase.rpc("admin_delete_client_program_cascade", {
-        p_program_id: programId,
-      });
-
-      if (error) throw error;
-
-      // Track successful deletion
-      trackFeatureUsage('program_deletion', 'completed', {
-        program_id: programId
-      });
-
-      toast({
-        title: "Programm kustutatud",
-        description: "Programm ja seotud andmed on edukalt kustutatud",
-      });
-      
-      // Reload data to update the list
-      await loadData();
-    } catch (error: unknown) {
-      console.error("Error deleting program:", error);
-      
-      // Check if it's a permission error and handle accordingly
-      if (isPermissionError(error)) {
-        handleProgramAccessError(error, programId);
-      } else {
-        // Handle other types of errors
-        const errorMessage = (error as Error).message || "Programmi kustutamine ebaõnnestus";
-        
-        toast({
-          title: "Viga",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      }
-      
-      // Track deletion failure
-      trackFeatureUsage('program_deletion', 'failed', {
-        program_id: programId,
-        error_message: (error as Error).message,
-        error_type: isPermissionError(error) ? 'permission_error' : 'general_error'
-      });
-    }
-  };
-
   const handleDeleteTemplate = async (templateId: string, templateTitle: string) => {
     console.log("handleDeleteTemplate called", { templateId, templateTitle });
     
@@ -432,62 +377,6 @@ export default function PersonalTraining() {
         variant: "destructive",
       });
       hideDialog();
-    }
-  };
-
-  const handleCreateTemplate = async () => {
-    if (!newTemplate.title.trim()) return;
-
-    setCreating(true);
-    try {
-      // Track template creation attempt
-      trackFeatureUsage('template_creation', 'attempted', {
-        template_title: newTemplate.title,
-        template_goal: newTemplate.goal
-      });
-
-      const { data, error } = await supabase
-        .from("workout_templates")
-        .insert({
-          title: newTemplate.title.trim(),
-          goal: newTemplate.goal.trim() || null,
-          is_active: true,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Track successful template creation
-      trackFeatureUsage('template_creation', 'completed', {
-        template_id: data.id,
-        template_title: newTemplate.title,
-        template_goal: newTemplate.goal
-      });
-
-      toast({
-        title: "Mall loodud",
-        description: `Mall "${newTemplate.title}" on edukalt loodud`,
-      });
-
-      setShowNewTemplate(false);
-      setNewTemplate({ title: "", goal: "" });
-      loadData();
-    } catch (error: unknown) {
-      // Track template creation failure
-      trackFeatureUsage('template_creation', 'failed', {
-        template_title: newTemplate.title,
-        template_goal: newTemplate.goal,
-        error_message: (error as Error).message
-      });
-
-      toast({
-        title: "Viga",
-        description: (error as Error).message || "Malli loomine ebaõnnestus",
-        variant: "destructive",
-      });
-    } finally {
-      setCreating(false);
     }
   };
 
@@ -608,7 +497,7 @@ export default function PersonalTraining() {
                         <option value="">Vali klient...</option>
                         {users.map(user => (
                           <option key={user.id} value={user.id}>
-                            {user.email} {user.full_name ? `(${user.full_name})` : ''}
+                            {user.email}
                           </option>
                         ))}
                       </select>
@@ -663,7 +552,10 @@ export default function PersonalTraining() {
         <EnhancedProgramCreator
           isOpen={showEnhancedCreator}
           onOpenChange={setShowEnhancedCreator}
-          onSuccess={loadData}
+          onSuccess={() => {
+            clearPTCache();
+            void loadData();
+          }}
         />
 
 
@@ -736,7 +628,11 @@ export default function PersonalTraining() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Loodud: {new Date(template.inserted_at).toLocaleDateString('et-EE')}</span>
+                      <span>
+                        Loodud: {template.inserted_at
+                          ? new Date(template.inserted_at).toLocaleDateString('et-EE')
+                          : "kuupäev teadmata"}
+                      </span>
                       <div className="flex gap-1">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

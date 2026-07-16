@@ -60,20 +60,19 @@ interface ClientItem {
   is_unilateral?: boolean;
   reps_per_side?: number | null;
   total_reps?: number | null;
+  exercise_type?: string | null;
 }
 
 interface ProgramContentEditorProps {
   programId: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
 }
 
 export default function ProgramContentEditor({
   programId,
   isOpen,
-  onOpenChange,
-  onSuccess
+  onOpenChange
 }: ProgramContentEditorProps) {
   const { toast } = useToast();
   const { showDialog, hideDialog, dialog } = useConfirmationDialog();
@@ -163,7 +162,8 @@ export default function ProgramContentEditor({
             order_in_day,
             is_unilateral,
             reps_per_side,
-            total_reps
+            total_reps,
+            exercise_type
           `)
           .eq("client_day_id", day.id)
           .order("order_in_day", { ascending: true });
@@ -214,12 +214,17 @@ export default function ProgramContentEditor({
       // Process the exercise input for unilateral exercises
       const processedExercise = processExerciseInput(newExercise);
       
-      const { data: itemId, error } = await supabase.rpc("add_exercise_to_program_day", {
+      const exerciseType = getExerciseType(processedExercise);
+      const { error } = await supabase.rpc("admin_add_program_exercise", {
         p_program_id: programId,
         p_day_id: dayId,
         p_exercise_name: processedExercise.exercise_name.trim(),
+        p_exercise_type: exerciseType === "bodyweight" || exerciseType === "time"
+          ? "bodyweight"
+          : "isolation",
         p_sets: processedExercise.sets,
         p_reps: processedExercise.reps,
+        p_seconds: processedExercise.seconds,
         p_weight_kg: processedExercise.weight_kg,
         p_rest_seconds: processedExercise.rest_seconds,
         p_coach_notes: processedExercise.coach_notes || null,
@@ -329,27 +334,14 @@ export default function ProgramContentEditor({
 
     setSaving(true);
     try {
-      // Swap order_in_day values
       const currentItem = items[currentIndex];
-      const targetItem = items[targetIndex];
-      
-      const currentOrder = currentItem.order_in_day;
-      const targetOrder = targetItem.order_in_day;
+      const { error } = await supabase.rpc("admin_move_program_exercise", {
+        p_program_id: programId,
+        p_item_id: currentItem.id,
+        p_direction: direction === "up" ? -1 : 1,
+      });
 
-      // Update both items
-      const { error: error1 } = await supabase
-        .from("client_items")
-        .update({ order_in_day: targetOrder })
-        .eq("id", currentItem.id);
-
-      if (error1) throw error1;
-
-      const { error: error2 } = await supabase
-        .from("client_items")
-        .update({ order_in_day: currentOrder })
-        .eq("id", targetItem.id);
-
-      if (error2) throw error2;
+      if (error) throw error;
 
       // Reload content to show new order
       await loadProgramContent();
@@ -426,7 +418,7 @@ export default function ProgramContentEditor({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="fixed left-0 top-0 z-[100] h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 overflow-y-auto p-4 sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[92vh] sm:w-[min(96vw,1024px)] sm:max-w-5xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:p-6">
         <DialogHeader>
           <DialogTitle>Programmi sisu redigeerimine</DialogTitle>
           <DialogDescription>

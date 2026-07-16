@@ -2607,6 +2607,55 @@ export type Database = {
       }
     }
     Functions: {
+      admin_add_program_exercise: {
+        Args: {
+          p_coach_notes: string | null
+          p_day_id: string
+          p_exercise_name: string
+          p_exercise_type: string
+          p_is_unilateral: boolean
+          p_program_id: string
+          p_reps: string
+          p_reps_per_side: number | null
+          p_rest_seconds: number | null
+          p_seconds: number | null
+          p_sets: number
+          p_total_reps: number | null
+          p_video_url: string | null
+          p_weight_kg: number | null
+        }
+        Returns: string
+      }
+      admin_move_program_exercise: {
+        Args: {
+          p_direction: number
+          p_item_id: string
+          p_program_id: string
+        }
+        Returns: boolean
+      }
+      batch_update_exercises: {
+        Args: { updates: Json }
+        Returns: boolean
+      }
+      remove_exercise_from_program_day: {
+        Args: {
+          p_item_id: string
+          p_program_id: string
+        }
+        Returns: boolean
+      }
+      create_personal_program: {
+        Args: {
+          p_auto_progression_enabled: boolean
+          p_duration_weeks: number
+          p_start_date: string
+          p_target_user_id: string
+          p_title: string
+          p_training_days: Json
+        }
+        Returns: string
+      }
       is_admin_unified: {
         Args: Record<PropertyKey, never>
         Returns: boolean

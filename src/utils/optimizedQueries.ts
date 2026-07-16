@@ -16,6 +16,38 @@ const CACHE_TTL = {
   LONG: 60 * 60 * 1000,    // 1 hour
 };
 
+export type OptimizedClientProgram = {
+  id: string | null;
+  title_override: string | null;
+  start_date: string | null;
+  is_active: boolean | null;
+  assigned_to: string | null;
+  user_email: string | null;
+  template_title: string | null;
+  template_id: string | null;
+  inserted_at: string | null;
+};
+
+export type OptimizedTemplate = {
+  id: string;
+  title: string;
+  goal: string | null;
+  is_active: boolean | null;
+  inserted_at: string | null;
+};
+
+export type OptimizedUser = {
+  id: string;
+  email: string;
+};
+
+export type OptimizedProgramStats = {
+  totalPrograms: number;
+  activePrograms: number;
+  totalClients: number;
+  completedSessions: number;
+};
+
 /**
  * Generic cache function
  */
@@ -53,14 +85,14 @@ export function clearCache(key?: string): void {
 /**
  * Get all client programs with template info and user emails in a single query
  */
-export async function getClientProgramsOptimized() {
+export async function getClientProgramsOptimized(): Promise<OptimizedClientProgram[]> {
   const cacheKey = 'client_programs_optimized';
-  const cached = getCachedData(cacheKey);
+  const cached = getCachedData<OptimizedClientProgram[]>(cacheKey);
   if (cached) return cached;
 
   try {
     const { data, error } = await supabase
-      .from("client_programs")
+      .from("v_client_programs_admin")
       .select(`
         id,
         title_override,
@@ -69,16 +101,8 @@ export async function getClientProgramsOptimized() {
         assigned_to,
         template_id,
         inserted_at,
-        templates:template_id (
-          id,
-          title,
-          goal
-        ),
-        profiles:assigned_to (
-          id,
-          email,
-          full_name
-        )
+        assigned_to_email,
+        template_title
       `)
       .order("inserted_at", { ascending: false });
 
@@ -87,8 +111,8 @@ export async function getClientProgramsOptimized() {
     // Transform data to include user_email for backward compatibility
     const transformedData = data?.map(program => ({
       ...program,
-      user_email: program.profiles?.email || 'Unknown User',
-      template_title: program.templates?.title || 'Unknown Template'
+      user_email: program.assigned_to_email || 'Tundmatu kasutaja',
+      template_title: program.template_title || 'Nimetu mall'
     })) || [];
 
     setCachedData(cacheKey, transformedData, CACHE_TTL.MEDIUM);
@@ -102,9 +126,9 @@ export async function getClientProgramsOptimized() {
 /**
  * Get all templates with basic info
  */
-export async function getTemplatesOptimized() {
+export async function getTemplatesOptimized(): Promise<OptimizedTemplate[]> {
   const cacheKey = 'templates_optimized';
-  const cached = getCachedData(cacheKey);
+  const cached = getCachedData<OptimizedTemplate[]>(cacheKey);
   if (cached) return cached;
 
   try {
@@ -122,8 +146,9 @@ export async function getTemplatesOptimized() {
 
     if (error) throw error;
 
-    setCachedData(cacheKey, data, CACHE_TTL.LONG);
-    return data;
+    const templates = data ?? [];
+    setCachedData(cacheKey, templates, CACHE_TTL.LONG);
+    return templates;
   } catch (error) {
     console.error('Error fetching templates:', error);
     throw error;
@@ -133,9 +158,9 @@ export async function getTemplatesOptimized() {
 /**
  * Get all users with basic info
  */
-export async function getUsersOptimized() {
+export async function getUsersOptimized(): Promise<OptimizedUser[]> {
   const cacheKey = 'users_optimized';
-  const cached = getCachedData(cacheKey);
+  const cached = getCachedData<OptimizedUser[]>(cacheKey);
   if (cached) return cached;
 
   try {
@@ -144,8 +169,7 @@ export async function getUsersOptimized() {
       .from("profiles")
       .select(`
         id,
-        email,
-        full_name
+        email
       `)
       .order("email");
 
@@ -154,9 +178,11 @@ export async function getUsersOptimized() {
       throw error;
     }
 
-    console.log('getUsersOptimized: Loaded', data?.length, 'users');
-    setCachedData(cacheKey, data, CACHE_TTL.LONG);
-    return data;
+    const users = (data ?? []).filter(
+      (user): user is OptimizedUser => Boolean(user.email),
+    );
+    setCachedData(cacheKey, users, CACHE_TTL.LONG);
+    return users;
   } catch (error) {
     console.error('Error fetching users:', error);
     throw error;
@@ -166,9 +192,9 @@ export async function getUsersOptimized() {
 /**
  * Get PT system statistics in a single optimized query
  */
-export async function getPTStatsOptimized() {
+export async function getPTStatsOptimized(): Promise<OptimizedProgramStats> {
   const cacheKey = 'pt_stats_optimized';
-  const cached = getCachedData(cacheKey);
+  const cached = getCachedData<OptimizedProgramStats>(cacheKey);
   if (cached) return cached;
 
   try {
