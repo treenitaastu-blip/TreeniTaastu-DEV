@@ -91,6 +91,7 @@ export default function ModernWorkoutSession() {
   const [setInputs, setSetInputs] = useState<Record<string, { reps?: number; seconds?: number; kg?: number }>>({});
   const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
   const [exerciseRPE, setExerciseRPE] = useState<Record<string, number>>({});
+  const [currentRIR, setCurrentRIR] = useState<Record<string, number>>({});
   const [previousRIR, setPreviousRIR] = useState<Record<string, number>>({}); // Last session's RIR per exercise
   
   // Track completed exercises for RPE/RIR collection
@@ -331,6 +332,7 @@ export default function ModernWorkoutSession() {
          */
         const exerciseIds = exerciseData.map(ex => ex.id);
         const preferredWeights: Record<string, number> = {}; // Map: "exerciseId:setNumber" -> weight_kg
+        const previousSetValues: Record<string, { reps?: number; seconds?: number; kg?: number }> = {};
         
         try {
           // Priority 1: Load user's preferred weights from client_item_set_weights
@@ -351,39 +353,40 @@ export default function ModernWorkoutSession() {
             console.log(`[loadWorkout] Loaded ${preferences.length} weight preferences`);
           }
 
-          // Priority 2: Fallback to last completed session's set_logs if no preferences
-          if (Object.keys(preferredWeights).length === 0) {
-            const { data: lastSession, error: lastSessionError } = await supabase
-              .from('workout_sessions')
-              .select('id')
-              .eq('user_id', user.id)
-              .eq('client_day_id', dayId)
-              .not('ended_at', 'is', null)
-              .order('ended_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
+          // Always load the most recent completed workout. Reps and time do not
+          // have a separate preference table, so their last actual values are
+          // the source of truth for the next session. Weight preferences still
+          // take priority on a per-set basis.
+          const { data: lastSession, error: lastSessionError } = await supabase
+            .from("workout_sessions")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("client_day_id", dayId)
+            .not("ended_at", "is", null)
+            .order("ended_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-            if (lastSessionError) {
-              console.warn('[loadWorkout] Failed to load last session for fallback:', lastSessionError);
-            } else if (lastSession) {
-              const { data: lastWeights, error: lastWeightsError } = await supabase
-                .from('set_logs')
-                .select('client_item_id, set_number, weight_kg_done')
-                .eq('session_id', lastSession.id)
-                .in('client_item_id', exerciseIds)
-                .not('weight_kg_done', 'is', null);
+          if (lastSessionError) {
+            console.warn("[loadWorkout] Failed to load last completed session:", lastSessionError);
+          } else if (lastSession) {
+            const { data: lastSetLogs, error: lastSetLogsError } = await supabase
+              .from("set_logs")
+              .select("client_item_id, set_number, reps_done, seconds_done, weight_kg_done")
+              .eq("session_id", lastSession.id)
+              .in("client_item_id", exerciseIds);
 
-              if (lastWeightsError) {
-                console.warn('[loadWorkout] Failed to load last session weights:', lastWeightsError);
-              } else if (lastWeights && lastWeights.length > 0) {
-                lastWeights.forEach(log => {
-                  const key = `${log.client_item_id}:${log.set_number}`;
-                  if (log.weight_kg_done) {
-                    preferredWeights[key] = Number(log.weight_kg_done);
-                  }
-                });
-                console.log(`[loadWorkout] Loaded ${lastWeights.length} weights from last completed session`);
-              }
+            if (lastSetLogsError) {
+              console.warn("[loadWorkout] Failed to load previous set values:", lastSetLogsError);
+            } else {
+              lastSetLogs?.forEach((log) => {
+                const key = `${log.client_item_id}:${log.set_number}`;
+                previousSetValues[key] = {
+                  reps: log.reps_done ?? undefined,
+                  seconds: log.seconds_done ?? undefined,
+                  kg: log.weight_kg_done ?? undefined,
+                };
+              });
             }
           }
         } catch (prefLoadError) {
@@ -444,28 +447,23 @@ export default function ModernWorkoutSession() {
           });
         }
 
-        // Merge preferred weights with current session's set logs
-        // Priority: current session logs > preferences > last session > default
+        // Priority: current session > per-set weight preference > previous
+        // completed session > coach defaults.
         exerciseData.forEach(exercise => {
           for (let setNum = 1; setNum <= exercise.sets; setNum++) {
             const key = `${exercise.id}:${setNum}`;
-            
-            // Skip if already set from current session logs (they take priority)
-            if (inputsMap[key]?.kg !== undefined) {
-              continue;
-            }
+            if (logsMap[key]) continue;
 
-            // Use preferred weight if available, otherwise use default
+            const previousValues = previousSetValues[key] || {};
             const preferredWeight = preferredWeights[key];
             const defaultWeight = exercise.weight_kg;
-            const initialWeight = preferredWeight ?? defaultWeight;
+            const initialWeight = preferredWeight ?? previousValues.kg ?? defaultWeight ?? undefined;
 
-            if (initialWeight !== null && initialWeight !== undefined) {
-              inputsMap[key] = {
-                ...inputsMap[key],
-                kg: Number(initialWeight)
-              };
-            }
+            inputsMap[key] = {
+              ...(previousValues.reps !== undefined ? { reps: previousValues.reps } : {}),
+              ...(previousValues.seconds !== undefined ? { seconds: previousValues.seconds } : {}),
+              ...(initialWeight !== undefined ? { kg: Number(initialWeight) } : {}),
+            };
           }
         });
 
@@ -484,6 +482,7 @@ export default function ModernWorkoutSession() {
           if (notesData) {
             const notesMap: Record<string, string> = {};
             const rpeMap: Record<string, number> = {};
+            const currentRIRMap: Record<string, number> = {};
             const rirMap: Record<string, number> = {};
             
             // Group by client_item_id and take the latest note for each exercise
@@ -525,9 +524,20 @@ export default function ModernWorkoutSession() {
                 rirMap[note.client_item_id] = note.rir_done;
               }
             });
+
+            notesData.forEach((note: ExerciseNote) => {
+              if (
+                note.session_id === currentSessionId
+                && note.rir_done !== null
+                && note.rir_done !== undefined
+              ) {
+                currentRIRMap[note.client_item_id] = note.rir_done;
+              }
+            });
             
             setExerciseNotes(notesMap);
             setExerciseRPE(rpeMap);
+            setCurrentRIR(currentRIRMap);
             setPreviousRIR(rirMap);
           }
         }
@@ -1129,30 +1139,38 @@ export default function ModernWorkoutSession() {
   }, [session, user, dayId, programId]);
 
   const handleRIRSave = useCallback(async (exerciseId: string, rir: number) => {
-    if (!session || !user) return;
-    
-    // Save RIR to database
+    if (!session || !user || !dayId || !programId) {
+      throw new Error("Treeningu sessioon puudub");
+    }
+
     try {
-      const { error } = await supabase.from("exercise_notes").upsert({
-        session_id: session.id,
-        client_day_id: dayId!,
-        client_item_id: exerciseId,
-        program_id: programId!,
-        user_id: user.id,
-        rir_done: rir
-      }, {
-        onConflict: "session_id,client_item_id"
-      });
-      
-      if (error) throw error;
-      
-      // Close dialog
-      setRirDialogState({ isOpen: false, exerciseId: null, exerciseName: "" });
-      
-      toast.success("RIR salvestatud!");
+      const { data: savedRIR, error } = await supabase
+        .from("exercise_notes")
+        .upsert({
+          session_id: session.id,
+          client_day_id: dayId,
+          client_item_id: exerciseId,
+          program_id: programId,
+          user_id: user.id,
+          rir_done: rir,
+        }, {
+          onConflict: "session_id,client_item_id",
+        })
+        .select("id, rir_done")
+        .single();
+
+      if (error || savedRIR?.rir_done === null || savedRIR?.rir_done === undefined) {
+        throw error || new Error("RIR salvestamist ei kinnitatud");
+      }
+
+      setCurrentRIR((current) => ({ ...current, [exerciseId]: savedRIR.rir_done! }));
+      toast.success("RIR salvestatud");
     } catch (error) {
-      console.error('Failed to save RIR:', error);
-      toast.error("RIR salvestamine ebaõnnestus");
+      console.error("RIR salvestamine ebaõnnestus", error);
+      toast.error("RIR ei salvestunud", {
+        description: "Kontrolli ühendust ja proovi uuesti.",
+      });
+      throw error;
     }
   }, [session, user, dayId, programId]);
 
@@ -1760,6 +1778,7 @@ export default function ModernWorkoutSession() {
               onNotesChange={(notes) => handleNotesChange(exercise.id, notes)}
               rpe={exerciseRPE[exercise.id]}
               onRPEChange={(rpe) => handleRPEChange(exercise.id, rpe)}
+              currentRIR={currentRIR[exercise.id]}
               previousRIR={previousRIR[exercise.id]}
               onSwitchToAlternative={switchToAlternative}
               showAlternatives={openAlternativesFor[exercise.id] || false}
@@ -1872,6 +1891,7 @@ export default function ModernWorkoutSession() {
             onClose={() => setRirDialogState({ isOpen: false, exerciseId: null, exerciseName: "" })}
             onSave={(rir) => handleRIRSave(rirDialogState.exerciseId!, rir)}
             exerciseName={rirDialogState.exerciseName}
+            initialValue={currentRIR[rirDialogState.exerciseId]}
           />
         )}
 

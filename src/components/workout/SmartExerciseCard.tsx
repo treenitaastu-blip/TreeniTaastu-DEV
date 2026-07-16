@@ -50,6 +50,7 @@ interface SmartExerciseCardProps {
   onRPEChange?: (rpe: number) => void;
   rir?: number;
   onRIRChange?: (rir: number) => void;
+  currentRIR?: number;
   previousRIR?: number; // Previous session's RIR for reference
   progressionSuggestion?: {
     type: 'weight' | 'reps';
@@ -95,6 +96,7 @@ export default function SmartExerciseCard({
   onRPEChange: _onRPEChange,
   rir: _rir,
   onRIRChange: _onRIRChange,
+  currentRIR,
   previousRIR,
   progressionSuggestion,
   onSwitchToAlternative,
@@ -614,15 +616,13 @@ export default function SmartExerciseCard({
           </div>
         </dl>
         
-        {/* Previous RIR display - show only if available */}
-        {previousRIR !== undefined && previousRIR !== null && (
-          <div className="mt-3 pt-3 border-t border-muted/30">
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Target className="h-3.5 w-3.5" />
-              <span>Eelmine RIR: <span className="font-semibold text-foreground">{previousRIR}</span></span>
-            </div>
+        {(currentRIR !== undefined || previousRIR !== undefined) ? (
+          <div className="tt-workout-exercise__rir">
+            <Target size={15} aria-hidden="true" />
+            {currentRIR !== undefined ? <span>Tänane RIR: <strong>{currentRIR === 5 ? "5+" : currentRIR}</strong></span> : null}
+            {previousRIR !== undefined ? <span>Eelmine: <strong>{previousRIR === 5 ? "5+" : previousRIR}</strong></span> : null}
           </div>
-        )}
+        ) : null}
         
         {/* Minimal progress bar */}
         <div className="tt-workout-exercise__progress" role="progressbar" aria-label={`${exercise.exercise_name} edenemine`} aria-valuemin={0} aria-valuemax={exercise.sets} aria-valuenow={completedSets}>

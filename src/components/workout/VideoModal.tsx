@@ -1,6 +1,5 @@
-// src/components/workout/VideoModal.tsx
+import { useEffect } from "react";
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { VideoPlayer } from "./VideoPlayer";
 
 interface VideoModalProps {
@@ -9,43 +8,65 @@ interface VideoModalProps {
   onClose: () => void;
 }
 
-// Detect if URL is a YouTube Short
 function isYouTubeShort(url: string): boolean {
-  return url.includes('youtube.com/shorts/') || url.includes('/shorts/');
+  return url.includes("youtube.com/shorts/") || url.includes("/shorts/");
 }
 
 export function VideoModal({ src, title, onClose }: VideoModalProps) {
   const isShort = isYouTubeShort(src);
-  
-  // For shorts: use 9:16 aspect ratio, narrower max-width
-  // For regular videos: use 16:9 aspect ratio, wider max-width
-  const maxWidth = isShort ? 'max-w-md' : 'max-w-6xl lg:max-w-7xl';
-  const aspectClass = isShort ? 'aspect-[9/16]' : 'aspect-video';
-  
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-      <div className={`bg-background rounded-2xl shadow-2xl ${maxWidth} w-full max-h-[95vh] overflow-hidden flex flex-col`}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-2 sm:p-3 border-b flex-shrink-0">
-          <h3 className="font-semibold text-sm sm:text-base truncate">
-            {title || "Harjutuse video"}
-          </h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
 
-        {/* Video Content - Optimized for shorts (9:16) or regular (16:9) */}
-        <div className={`${isShort ? 'p-2' : 'p-2 sm:p-4'} flex-1 flex items-center justify-center min-h-0`}>
-          <div className="w-full max-w-full h-full flex items-center justify-center">
-            <VideoPlayer 
-              src={src} 
-              title={title}
-              className={`${aspectClass} w-full ${isShort ? 'max-h-[85vh]' : ''}`}
-            />
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="tt-video-overlay"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className={`tt-video-dialog${isShort ? " tt-video-dialog--short" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="workout-video-title"
+      >
+        <header className="tt-video-dialog__head">
+          <div>
+            <p className="tt-app-eyebrow">Harjutuse juhend</p>
+            <h2 id="workout-video-title">{title || "Harjutuse video"}</h2>
           </div>
+          <button
+            type="button"
+            className="tt-video-dialog__close"
+            onClick={onClose}
+            aria-label="Sulge video"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </header>
+
+        <div className="tt-video-dialog__content">
+          <VideoPlayer
+            src={src}
+            title={title}
+            className={`${isShort ? "aspect-[9/16]" : "aspect-video"} w-full`}
+          />
         </div>
-      </div>
+      </section>
     </div>
   );
 }
