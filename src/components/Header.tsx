@@ -146,7 +146,7 @@ export default function Header() {
         <div className="tt-app-header__safe" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
         
         {/* Desktop Header */}
-        <header className="tt-app-header__desktop overflow-visible hidden md:block">
+        <header className="tt-app-header__desktop overflow-visible hidden lg:block">
           <div className="tt-app-header__inner overflow-visible">
             {/* Logo → goes to /home if logged in, else / */}
             <Link
@@ -163,7 +163,7 @@ export default function Header() {
             </Link>
 
             {/* Desktop nav */}
-            <nav className="tt-app-navlinks hidden md:flex overflow-visible" aria-label="Põhinavigatsioon" style={{ position: 'static' }}>
+            <nav className="tt-app-navlinks hidden lg:flex overflow-visible" aria-label="Põhinavigatsioon" style={{ position: 'static' }}>
               {nav.map((n) => (
                 <NavLink
                   key={n.to}
@@ -238,7 +238,7 @@ export default function Header() {
             </nav>
 
             {/* Right cluster */}
-            <div className="hidden items-center gap-2 md:flex overflow-visible">
+            <div className="hidden items-center gap-2 lg:flex overflow-visible">
               {/* Grace Period Badge (Desktop) */}
               {user && trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (
                 <Link
@@ -296,7 +296,7 @@ export default function Header() {
         </header>
 
         {/* Mobile Header - Minimal Design */}
-        <div className={`tt-app-header__mobile md:hidden transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+        <div className={`tt-app-header__mobile lg:hidden transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="tt-app-header__mobile-row">
             {/* Left: Account Icon (replaces logo) */}
             {user ? (
@@ -336,7 +336,7 @@ export default function Header() {
 
         {/* Mobile drawer */}
         {open && (
-          <div id="mobile-nav" className="tt-app-drawer md:hidden">
+          <div id="mobile-nav" className="tt-app-drawer lg:hidden">
             <nav className="tt-app-drawer__nav" aria-label="Mobiilne navigatsioon">
                 {/* Grace Period Badge (Mobile) */}
                 {user && trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (

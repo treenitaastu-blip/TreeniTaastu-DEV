@@ -1425,6 +1425,12 @@
   }
 }
 
+@media (max-width: 1023px) {
+  .tt-app-header-spacer {
+    height: calc(env(safe-area-inset-top, 0px) + 4rem);
+  }
+}
+
 @media (max-width: 767px) {
   .tt-app-header-spacer {
     height: calc(env(safe-area-inset-top, 0px) + 4rem);
