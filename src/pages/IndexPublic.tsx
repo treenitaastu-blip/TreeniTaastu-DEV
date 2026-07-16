@@ -96,7 +96,7 @@ function TrialSignupCard() {
         <div className="tt-trial-card__head">
           <h3>7-päevane tasuta proov</h3>
           <p>
-            Loo konto ja saa ligipääs programmidele
+            Loo konto ja saa ligipääs staatilistele ning PT treeningkavadele
           </p>
         </div>
         <form onSubmit={handleTrialSignup} className="tt-form-stack">
@@ -138,7 +138,7 @@ function TrialSignupCard() {
             {loading ? "Konto loomine..." : "Alusta tasuta proovi"}
           </Button>
           <p className="tt-trial-card__note">
-            Sisaldab täieliku ligipääsu programmidele 7 päeva jooksul
+            Mõlemad treeningkavatüübid on avatud 7 päeva. Krediitkaarti pole vaja.
           </p>
         </form>
       </CardContent>

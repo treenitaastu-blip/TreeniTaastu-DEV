@@ -118,7 +118,7 @@ export default function Home() {
               !trialStatus.isWarningPeriod && (
                 <TrialStatusBanner
                   trialEndsAt={trialStatus.trialEndsAt}
-                  product={trialStatus.product || "Static"}
+                  product={trialStatus.product || "staatilistele ja PT"}
                 />
               )}
           </div>

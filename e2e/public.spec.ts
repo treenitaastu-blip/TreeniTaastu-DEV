@@ -19,6 +19,9 @@ test.describe("Avalikud põhivood", () => {
     await expect(
       page.getByRole("heading", { name: "Tasuta proov", exact: true }),
     ).toBeVisible();
+    await expect(
+      page.getByText("Proovi staatilisi ja PT treeningkavasid tasuta 7 päeva"),
+    ).toBeVisible();
   });
 
   test("sisselogimise ja konto loomise vaated on omavahel ühendatud", async ({

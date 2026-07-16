@@ -60,14 +60,18 @@ export function useTrialStatus(): TrialStatus {
           .select("status, trial_ends_at, product")
           .eq("user_id", user.id)
           .eq("status", "trialing")
-          .maybeSingle();
+          .not("trial_ends_at", "is", null)
+          .order("trial_ends_at", { ascending: false });
 
         if (error) {
           console.error("Trial status error:", error);
           throw error;
         }
 
-        if (!data || !data.trial_ends_at) {
+        const trialEntitlements = data ?? [];
+        const latestTrial = trialEntitlements[0];
+
+        if (!latestTrial?.trial_ends_at) {
           // Not on trial
           setStatus({
             loading: false,
@@ -85,10 +89,16 @@ export function useTrialStatus(): TrialStatus {
           return;
         }
 
-        const endDate = new Date(data.trial_ends_at);
+        const endDate = new Date(latestTrial.trial_ends_at);
         const today = new Date();
         const daysRemaining = differenceInDays(endDate, today);
         const isExpired = daysRemaining < 0;
+        const products = new Set(trialEntitlements.map(({ product }) => product));
+        const product = products.has("static") && products.has("pt")
+          ? "staatilistele ja PT"
+          : products.has("pt")
+            ? "PT"
+            : "staatilistele";
         
         // Grace period: 48 hours after trial ends
         const GRACE_PERIOD_HOURS = 48;
@@ -102,8 +112,8 @@ export function useTrialStatus(): TrialStatus {
           loading: false,
           isOnTrial: !isExpired,
           daysRemaining: Math.max(0, daysRemaining),
-          trialEndsAt: data.trial_ends_at,
-          product: data.product,
+          trialEndsAt: latestTrial.trial_ends_at,
+          product,
           isExpired,
           isWarningPeriod: daysRemaining <= 3 && daysRemaining >= 0,
           isUrgent: daysRemaining <= 1 && daysRemaining >= 0,
@@ -134,4 +144,3 @@ export function useTrialStatus(): TrialStatus {
 
   return status;
 }
-
