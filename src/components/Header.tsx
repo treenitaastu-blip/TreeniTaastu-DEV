@@ -27,6 +27,10 @@ import "@/styles/public-auth.css";
 
 const HIDE_ON_PATHS = ["/login", "/signup"];
 
+function shouldHideAppHeader(pathname: string) {
+  return HIDE_ON_PATHS.includes(pathname) || pathname.startsWith("/workout");
+}
+
 type NavItem = { to: string; label: string; show?: boolean };
 
 export default function Header() {
@@ -124,7 +128,9 @@ export default function Header() {
   const linkActive = "is-active";
   const linkInactive = "";
 
-  if (HIDE_ON_PATHS.includes(loc.pathname)) return null;
+  // Active workouts own the top chrome (ModernWorkoutHeader). Hiding the app
+  // header also removes the spacer so the workout bar can sit at the viewport top.
+  if (shouldHideAppHeader(loc.pathname)) return null;
 
   if (!user && loc.pathname === "/") {
     return (

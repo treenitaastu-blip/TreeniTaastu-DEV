@@ -1,4 +1,5 @@
 // src/components/workout/ModernWorkoutHeader.tsx
+import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle, Clock3, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -38,11 +39,17 @@ export default function ModernWorkoutHeader({
   completedSets,
   totalSets
 }: WorkoutHeaderProps) {
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const elapsedMinutes = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
   const progressPercentage = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
   const dayLabel = dayOrder && !dayTitle.toLocaleLowerCase("et-EE").startsWith("päev")
     ? `Päev ${dayOrder} · ${dayTitle}`
     : dayTitle;
+  const isPartial = completedSets < totalSets;
+
+  useEffect(() => {
+    if (isFinished) setFinishDialogOpen(false);
+  }, [isFinished]);
 
   return (
     <header className="tt-workout-header">
@@ -69,7 +76,13 @@ export default function ModernWorkoutHeader({
               {elapsedMinutes} min
             </span>
             {!isFinished && (
-              <AlertDialog>
+              <AlertDialog
+                open={finishDialogOpen}
+                onOpenChange={(open) => {
+                  if (isFinishing) return;
+                  setFinishDialogOpen(open);
+                }}
+              >
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="ghost"
@@ -85,19 +98,27 @@ export default function ModernWorkoutHeader({
                   <AlertDialogHeader className="tt-workout-finish-dialog__head">
                     <p className="tt-app-eyebrow">Treeningu lõpetamine</p>
                     <AlertDialogTitle>Kas oled kindel?</AlertDialogTitle>
+                    {/* Description must stay a single <p>; nested blocks break Radix/DOM. */}
                     <AlertDialogDescription>
-                      <p>Lõpetamisel salvestame tehtud seeriad ja küsime lühikest tagasisidet.</p>
-                      {completedSets < totalSets && (
-                        <p className="tt-workout-finish-dialog__notice">
-                          Tehtud on {completedSets}/{totalSets} seeriat. Treening jääb lõpetamisel osaliseks.
-                        </p>
-                      )}
+                      Lõpetamisel salvestame tehtud seeriad ja küsime lühikest tagasisidet.
                     </AlertDialogDescription>
+                    {isPartial && (
+                      <div className="tt-workout-finish-dialog__notice" role="status">
+                        Tehtud on {completedSets}/{totalSets} seeriat. Treening jääb lõpetamisel osaliseks.
+                      </div>
+                    )}
                   </AlertDialogHeader>
                   <AlertDialogFooter className="tt-workout-finish-dialog__actions">
-                    <AlertDialogCancel className="tt-workout-finish-dialog__cancel">Jätka treeningut</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={onFinish}
+                    <AlertDialogCancel className="tt-workout-finish-dialog__cancel" disabled={isFinishing}>
+                      Jätka treeningut
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(event) => {
+                        // Keep dialog open while async finish runs so
+                        // isFinishing stays visible and failed retries work.
+                        event.preventDefault();
+                        onFinish?.();
+                      }}
                       className="tt-workout-finish-dialog__confirm"
                       disabled={isFinishing}
                     >

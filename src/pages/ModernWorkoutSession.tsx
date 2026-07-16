@@ -1487,6 +1487,9 @@ export default function ModernWorkoutSession() {
         const rpe = exerciseRPE[exercise.id];
 
         if (notes || rpe) {
+          // notes is NOT NULL. Omit empty notes so RPE-only upserts do not wipe
+          // existing text; DB default '' covers brand-new rows.
+          const trimmedNotes = notes?.trim() || "";
           const { error: noteError } = await supabase
             .from("exercise_notes")
             .upsert({
@@ -1495,7 +1498,7 @@ export default function ModernWorkoutSession() {
               client_item_id: exercise.id,
               program_id: programId,
               user_id: user.id,
-              notes: notes?.trim() || null,
+              ...(trimmedNotes ? { notes: trimmedNotes } : {}),
               rpe: rpe ?? null,
             }, {
               onConflict: "session_id,client_item_id",
