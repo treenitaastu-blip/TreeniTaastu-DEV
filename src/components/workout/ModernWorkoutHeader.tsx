@@ -20,6 +20,7 @@ interface WorkoutHeaderProps {
   onBack: () => void;
   startedAt: string;
   isFinished: boolean;
+  isFinishing?: boolean;
   onFinish?: () => void;
   completedSets: number;
   totalSets: number;
@@ -32,6 +33,7 @@ export default function ModernWorkoutHeader({
   onBack,
   startedAt,
   isFinished,
+  isFinishing = false,
   onFinish,
   completedSets,
   totalSets
@@ -74,30 +76,32 @@ export default function ModernWorkoutHeader({
                     size="sm"
                     className="tt-workout-header__finish-icon"
                     aria-label="Lõpeta treening"
+                    disabled={isFinishing}
                   >
                     <XCircle size={19} aria-hidden="true" />
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
+                <AlertDialogContent className="tt-workout-finish-dialog">
+                  <AlertDialogHeader className="tt-workout-finish-dialog__head">
+                    <p className="tt-app-eyebrow">Treeningu lõpetamine</p>
                     <AlertDialogTitle>Kas oled kindel?</AlertDialogTitle>
-                    <AlertDialogDescription className="space-y-2">
-                      <p>Kas soovid treeningu lõpetada?</p>
+                    <AlertDialogDescription>
+                      <p>Lõpetamisel salvestame tehtud seeriad ja küsime lühikest tagasisidet.</p>
                       {completedSets < totalSets && (
-                        <p className="text-black font-bold">
-                          Oled teinud {completedSets}/{totalSets} seeriat. 
-                          Kui lõpetad nüüd, siis märgitakse treening poolikuks.
+                        <p className="tt-workout-finish-dialog__notice">
+                          Tehtud on {completedSets}/{totalSets} seeriat. Treening jääb lõpetamisel osaliseks.
                         </p>
                       )}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Tühista</AlertDialogCancel>
+                  <AlertDialogFooter className="tt-workout-finish-dialog__actions">
+                    <AlertDialogCancel className="tt-workout-finish-dialog__cancel">Jätka treeningut</AlertDialogCancel>
                     <AlertDialogAction 
                       onClick={onFinish}
-                      className="bg-red-600 text-white hover:bg-red-700 h-12 px-6 text-base font-medium"
+                      className="tt-workout-finish-dialog__confirm"
+                      disabled={isFinishing}
                     >
-                      Jah, lõpeta treening
+                      {isFinishing ? "Salvestan…" : "Lõpeta treening"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -125,9 +129,9 @@ export default function ModernWorkoutHeader({
         </div>
 
         {progressPercentage >= 100 && !isFinished && (
-          <Button onClick={onFinish} size="sm" className="tt-workout-header__complete">
+          <Button onClick={onFinish} size="sm" className="tt-workout-header__complete" disabled={isFinishing}>
             <CheckCircle size={16} aria-hidden="true" />
-            Lõpeta treening
+            {isFinishing ? "Salvestan…" : "Lõpeta treening"}
           </Button>
         )}
       </div>
