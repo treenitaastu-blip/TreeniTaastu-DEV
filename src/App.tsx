@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
 // import { trackPageView, trackLoadTime, uxMetricsTracker } from "@/utils/uxMetricsTracker";
-import { useEffect } from "react";
+import "@/styles/authenticated-app.css";
 
 export default function App({ children }: { children?: React.ReactNode }) {
   const { user } = useAuth();
@@ -85,7 +85,7 @@ export default function App({ children }: { children?: React.ReactNode }) {
       <PullToRefresh onRefresh={handleRefresh}>
         <div 
           id="root" 
-          className="min-h-screen bg-background text-foreground"
+          className={user ? "tt-app-root" : "min-h-screen bg-background text-foreground"}
         >
           <Header />
           <main className="w-full">
