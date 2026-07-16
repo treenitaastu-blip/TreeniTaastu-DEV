@@ -6,13 +6,13 @@ import { useAuth } from '@/hooks/useAuth';
 interface LogoutProps {
   className?: string;
   variant?: 'default' | 'outline' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'default' | 'lg';
 }
 
 export default function Logout({ 
   className, 
   variant = 'outline', 
-  size = 'md' 
+  size = 'default'
 }: LogoutProps) {
   const { signOut } = useAuth();
 

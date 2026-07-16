@@ -79,6 +79,6 @@ export default function RequirePTOrShowPurchasePrompt() {
     );
   }
 
-  // If user is not on trial, allow access (they have PT access)
-  return <Outlet />;
+  // A signed-in user without PT access must never reach the protected routes.
+  return <Navigate to="/pricing" state={{ from: loc }} replace />;
 }

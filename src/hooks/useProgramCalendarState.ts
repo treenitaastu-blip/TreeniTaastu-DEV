@@ -89,7 +89,7 @@ export const useProgramCalendarState = () => {
         title: program.title,
         description: program.description,
         duration_days: (program.duration_weeks * 7),
-        difficulty: program.difficulty || 'alustaja',
+        difficulty: 'alustaja',
         status: 'available',
         created_at: program.created_at
       };

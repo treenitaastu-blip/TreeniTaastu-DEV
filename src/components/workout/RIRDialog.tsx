@@ -1,86 +1,112 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Target } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, Loader2, Target } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface RIRDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (rir: number) => void;
+  onSave: (rir: number) => Promise<void> | void;
   exerciseName: string;
+  initialValue?: number;
 }
 
 export default function RIRDialog({
   isOpen,
   onClose,
   onSave,
-  exerciseName
+  exerciseName,
+  initialValue,
 }: RIRDialogProps) {
-  const [rir, setRir] = useState<number | null>(null);
+  const [rir, setRir] = useState<number | null>(initialValue ?? null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const handleSave = () => {
-    if (rir !== null) {
-      onSave(rir);
-      setRir(null);
+  useEffect(() => {
+    if (isOpen) {
+      setRir(initialValue ?? null);
+      setSaveError(null);
+    }
+  }, [isOpen, initialValue]);
+
+  const handleSave = async () => {
+    if (rir === null || isSaving) return;
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await onSave(rir);
+      setIsSaving(false);
+      onClose();
+    } catch {
+      setSaveError("RIR ei salvestunud. Proovi uuesti.");
+      setIsSaving(false);
     }
   };
 
-  const handleSkip = () => {
-    setRir(null);
-    onClose();
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-center flex items-center justify-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            {exerciseName}
-          </DialogTitle>
-          <DialogDescription className="text-center">
-            Mitu kordust varusse jäi?
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !isSaving) onClose();
+      }}
+    >
+      <DialogContent className="tt-rir-dialog">
+        <DialogHeader className="tt-rir-dialog__head">
+          <span className="tt-rir-dialog__mark" aria-hidden="true">
+            <Target size={22} />
+          </span>
+          <p className="tt-app-eyebrow">Harjutuse tagasiside</p>
+          <DialogTitle>{exerciseName}</DialogTitle>
+          <DialogDescription>
+            Mitu korrektset kordust oleksid suutnud veel teha?
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="flex gap-2 justify-center flex-wrap">
-            {[0, 1, 2, 3, 4, 5].map(value => (
-              <Button
+        <div className="tt-rir-dialog__body">
+          <div className="tt-rir-options" role="group" aria-label="Varusse jäänud kordused">
+            {[0, 1, 2, 3, 4, 5].map((value) => (
+              <button
                 key={value}
-                variant={rir === value ? "default" : "outline"}
-                size="lg"
-                className="w-16 h-16 text-lg font-semibold"
+                type="button"
+                className={rir === value ? "is-selected" : undefined}
                 onClick={() => setRir(value)}
+                aria-pressed={rir === value}
+                disabled={isSaving}
               >
                 {value === 5 ? "5+" : value}
-              </Button>
+              </button>
             ))}
           </div>
-          
-          <div className="text-xs text-muted-foreground text-center space-y-1">
-            <div>0 = Enam ei saanud</div>
-            <div>2-3 = Ideaalne vahemik</div>
-            <div>5+ = Liiga kerge</div>
+
+          <div className="tt-rir-dialog__scale">
+            <span><strong>0</strong> Rohkem ei oleks saanud</span>
+            <span><strong>2–3</strong> Hea töövahemik</span>
+            <span><strong>5+</strong> Raskust jäi palju varuks</span>
+          </div>
+
+          {saveError ? (
+            <p className="tt-feedback-error" role="alert">
+              <AlertCircle size={17} aria-hidden="true" />
+              {saveError}
+            </p>
+          ) : null}
+
+          <div className="tt-rir-dialog__actions">
+            <button type="button" className="tt-feedback-skip" onClick={onClose} disabled={isSaving}>
+              Jäta vahele
+            </button>
+            <button
+              type="button"
+              className="tt-app-button"
+              onClick={handleSave}
+              disabled={rir === null || isSaving}
+            >
+              {isSaving ? <Loader2 className="animate-spin" size={17} aria-hidden="true" /> : null}
+              {isSaving ? "Salvestan…" : "Salvesta RIR"}
+            </button>
           </div>
         </div>
-
-        <DialogFooter className="gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleSkip}
-            className="flex-1"
-          >
-            Jäta vahele
-          </Button>
-          <Button 
-            onClick={handleSave}
-            disabled={rir === null}
-            className="flex-1"
-          >
-            Salvesta
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

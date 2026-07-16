@@ -74,7 +74,7 @@ export default function ModernExerciseCard({
   const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
   const stepReps = useCallback((setNumber: number, delta: number) => {
-    const current = (setInputs[setNumber]?.reps ?? parseInt(exercise.reps.replace(/[^0-9]/g, ''), 10) || 0);
+    const current = setInputs[setNumber]?.reps ?? (parseInt(exercise.reps.replace(/[^0-9]/g, ''), 10) || 0);
     const next = clamp(current + delta, 0, 1000);
     onSetInputChange(setNumber, 'reps', next);
   }, [setInputs, exercise.reps, onSetInputChange]);

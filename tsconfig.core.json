@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.app.json",
+  "include": [
+    "src/vite-env.d.ts",
+    "src/pages/LoginPage.tsx",
+    "src/pages/ForgotPasswordPage.tsx",
+    "src/pages/ResetPasswordPage.tsx",
+    "src/pages/ChangePasswordPage.tsx",
+    "src/pages/Home.tsx",
+    "src/pages/ProgramsList.tsx",
+    "src/pages/ProgramDetail.tsx",
+    "src/pages/ModernWorkoutSession.tsx",
+    "src/pages/WorkoutSession.tsx"
+  ]
+}

@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
-import { handleProgramAccessError, handleTemplateAccessError, isPermissionError } from "@/utils/errorHandling";
+import { handleTemplateAccessError, isPermissionError } from "@/utils/errorHandling";
 import { useConfirmationDialog, ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
-import { MobileOptimizedCard, MobileStatsCard, MobileFilterBar } from "@/components/admin/MobileOptimizedCard";
 import { 
   getClientProgramsOptimized, 
   getTemplatesOptimized, 
@@ -16,15 +15,11 @@ import {
   Users, 
   TrendingUp, 
   Activity,
-  Plus,
-  Search,
-  Filter,
   MoreHorizontal,
   Edit,
   Trash2,
   UserCheck,
   Send,
-  Eye,
   UserPlus,
   UserMinus,
   Target,
@@ -40,7 +35,6 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,7 +49,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import EnhancedProgramCreator from "@/components/admin/EnhancedProgramCreator";
+import EnhancedProgramCreator, {
+  PROGRAM_DRAFT_STORAGE_KEY,
+} from "@/components/admin/EnhancedProgramCreator";
 import PTAccessValidator from "@/components/PTAccessValidator";
 
 type UUID = string;
@@ -84,6 +80,7 @@ type Template = {
   title: string;
   goal: string | null;
   is_active: boolean | null;
+  inserted_at: string | null;
 };
 
 export default function PersonalTraining() {
@@ -100,7 +97,7 @@ export default function PersonalTraining() {
   });
   const [programs, setPrograms] = useState<ClientProgram[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [users, setUsers] = useState<{id: string, email: string, full_name: string}[]>([]);
+  const [users, setUsers] = useState<{id: string, email: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
@@ -112,13 +109,11 @@ export default function PersonalTraining() {
   const [assignDate, setAssignDate] = useState(new Date().toISOString().slice(0, 10));
   const [assigning, setAssigning] = useState(false);
 
-  // New template form
-  const [showNewTemplate, setShowNewTemplate] = useState(false);
-  const [newTemplate, setNewTemplate] = useState({ title: "", goal: "" });
-  const [creating, setCreating] = useState(false);
-
   // Enhanced program creator
-  const [showEnhancedCreator, setShowEnhancedCreator] = useState(false);
+  const [showEnhancedCreator, setShowEnhancedCreator] = useState(() =>
+    typeof window !== "undefined" &&
+    Boolean(window.localStorage.getItem(PROGRAM_DRAFT_STORAGE_KEY)),
+  );
 
   // Inline title editing
   const [editingTitleId, setEditingTitleId] = useState<UUID | null>(null);
@@ -326,58 +321,6 @@ export default function PersonalTraining() {
     }
   };
 
-  // Keep performDeleteProgram for potential future "permanently delete" option
-  const performDeleteProgram = async (programId: string, programName: string) => {
-    try {
-      // Track deletion attempt
-      trackFeatureUsage('program_deletion', 'attempted', {
-        program_id: programId
-      });
-      
-      const { data, error } = await supabase.rpc("admin_delete_client_program_cascade", {
-        p_program_id: programId,
-      });
-
-      if (error) throw error;
-
-      // Track successful deletion
-      trackFeatureUsage('program_deletion', 'completed', {
-        program_id: programId
-      });
-
-      toast({
-        title: "Programm kustutatud",
-        description: "Programm ja seotud andmed on edukalt kustutatud",
-      });
-      
-      // Reload data to update the list
-      await loadData();
-    } catch (error: unknown) {
-      console.error("Error deleting program:", error);
-      
-      // Check if it's a permission error and handle accordingly
-      if (isPermissionError(error)) {
-        handleProgramAccessError(error, programId);
-      } else {
-        // Handle other types of errors
-        const errorMessage = (error as Error).message || "Programmi kustutamine ebaõnnestus";
-        
-        toast({
-          title: "Viga",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      }
-      
-      // Track deletion failure
-      trackFeatureUsage('program_deletion', 'failed', {
-        program_id: programId,
-        error_message: (error as Error).message,
-        error_type: isPermissionError(error) ? 'permission_error' : 'general_error'
-      });
-    }
-  };
-
   const handleDeleteTemplate = async (templateId: string, templateTitle: string) => {
     console.log("handleDeleteTemplate called", { templateId, templateTitle });
     
@@ -398,8 +341,8 @@ export default function PersonalTraining() {
         template_title: templateTitle
       });
 
-      console.log("Calling admin_delete_template RPC", { p_template_id: templateId });
-      const { data, error } = await supabase.rpc("admin_delete_template", {
+      console.log("Calling admin_delete_template_cascade RPC", { p_template_id: templateId });
+      const { data, error } = await supabase.rpc("admin_delete_template_cascade", {
         p_template_id: templateId,
       });
 
@@ -435,62 +378,6 @@ export default function PersonalTraining() {
     }
   };
 
-  const handleCreateTemplate = async () => {
-    if (!newTemplate.title.trim()) return;
-
-    setCreating(true);
-    try {
-      // Track template creation attempt
-      trackFeatureUsage('template_creation', 'attempted', {
-        template_title: newTemplate.title,
-        template_goal: newTemplate.goal
-      });
-
-      const { data, error } = await supabase
-        .from("workout_templates")
-        .insert({
-          title: newTemplate.title.trim(),
-          goal: newTemplate.goal.trim() || null,
-          is_active: true,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Track successful template creation
-      trackFeatureUsage('template_creation', 'completed', {
-        template_id: data.id,
-        template_title: newTemplate.title,
-        template_goal: newTemplate.goal
-      });
-
-      toast({
-        title: "Mall loodud",
-        description: `Mall "${newTemplate.title}" on edukalt loodud`,
-      });
-
-      setShowNewTemplate(false);
-      setNewTemplate({ title: "", goal: "" });
-      loadData();
-    } catch (error: unknown) {
-      // Track template creation failure
-      trackFeatureUsage('template_creation', 'failed', {
-        template_title: newTemplate.title,
-        template_goal: newTemplate.goal,
-        error_message: (error as Error).message
-      });
-
-      toast({
-        title: "Viga",
-        description: (error as Error).message || "Malli loomine ebaõnnestus",
-        variant: "destructive",
-      });
-    } finally {
-      setCreating(false);
-    }
-  };
-
   const filteredPrograms = programs.filter(program => {
     const matchesSearch = !searchQuery || 
       program.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -518,17 +405,10 @@ export default function PersonalTraining() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 w-64 rounded-lg bg-muted"></div>
-            <div className="grid gap-6 md:grid-cols-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 rounded-2xl bg-muted"></div>
-              ))}
-            </div>
-            <div className="h-96 rounded-2xl bg-muted"></div>
-          </div>
+      <div className="tt-app-loading">
+        <div className="tt-app-loading__inner" role="status" aria-live="polite">
+          <div className="tt-app-loading__mark" aria-hidden="true" />
+          <p className="tt-app-loading__copy">Laen personaaltreeningu haldust…</p>
         </div>
       </div>
     );
@@ -536,470 +416,444 @@ export default function PersonalTraining() {
 
   return (
     <PTAccessValidator requireAdmin={true}>
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
-        <div className="container mx-auto px-4 py-8">
-          {/* Header - Mobile optimized */}
-          <div className="mb-6 sm:mb-8">
-            <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Personaaltreeningu Haldus
-                </h1>
-                <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
-                  Halda malle, määra programme ja jälgi klientide progressi
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 sm:gap-3">
-                <Button
-                onClick={() => {
-                  trackButtonClick('smart_program_creator', 'smart_program', 'admin_dashboard');
-                  setShowEnhancedCreator(true);
-                }}
-                size="sm"
-                className="flex-1 sm:flex-initial bg-gradient-to-r from-primary to-accent"
-              >
-                <Target className="mr-2 h-4 w-4" />
-                <span className="hidden xs:inline">Smart </span>Program
-              </Button>
-              
+      <div className="tt-app-home tt-admin-programs">
+        <div className="tt-app-shell">
+          <section className="tt-app-hero tt-admin-hero" aria-labelledby="admin-programs-title">
+            <div>
+              <p className="tt-app-kicker">Admin · Personaaltreening</p>
+              <h1 id="admin-programs-title" className="tt-app-hero__title">
+                Programmid.
+              </h1>
+            </div>
+            <div className="tt-admin-hero__aside">
+              <p className="tt-app-hero__note">
+                Koosta klientidele kavasid, halda malle ja hoia aktiivsed programmid ühes selges töövaates.
+              </p>
+              <div className="tt-admin-hero__actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackButtonClick('smart_program_creator', 'smart_program', 'admin_dashboard');
+                    setShowEnhancedCreator(true);
+                  }}
+                  className="tt-app-button tt-admin-hero__button"
+                >
+                  <Target size={17} aria-hidden="true" />
+                  Loo uus programm
+                </button>
 
-              <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 sm:flex-initial"
-                    onClick={() => trackButtonClick('assign_template_modal', 'program_assignment', 'admin_dashboard')}
-                  >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    <span className="hidden xs:inline">Määra </span>mall
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Määra programm kliendile</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Vali mall</label>
-                      <select
-                        value={selectedTemplate?.id || ""}
-                        onChange={(e) => {
-                          const template = templates.find(t => t.id === e.target.value);
-                          setSelectedTemplate(template || null);
-                        }}
-                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      >
-                        <option value="">Vali mall...</option>
-                        {templates.map(template => (
-                          <option key={template.id} value={template.id}>
-                            {template.title}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Vali klient</label>
-                      <select
-                        value={selectedUserId}
-                        onChange={(e) => setSelectedUserId(e.target.value)}
-                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      >
-                        <option value="">Vali klient...</option>
-                        {users.map(user => (
-                          <option key={user.id} value={user.id}>
-                            {user.email} {user.full_name ? `(${user.full_name})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Alguskuupäev</label>
-                      <input
-                        type="date"
-                        value={assignDate}
-                        onChange={(e) => setAssignDate(e.target.value)}
-                        className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      {(!selectedTemplate || !selectedUserId) && (
-                        <p className="text-xs text-destructive">
-                          {!selectedTemplate && !selectedUserId && "Palun vali nii mall kui ka klient"}
-                          {!selectedTemplate && selectedUserId && "Palun vali mall"}
-                          {selectedTemplate && !selectedUserId && "Palun vali klient"}
-                        </p>
-                      )}
-                      <div className="flex gap-3 pt-2">
-                        <Button 
-                          onClick={() => {
-                            trackButtonClick('cancel_program_assignment', 'program_assignment', 'admin_dashboard');
-                            setShowAssignModal(false);
-                          }} 
-                          variant="outline" 
-                          className="flex-1"
-                        >
-                          Tühista
-                        </Button>
-                        <Button 
-                          onClick={() => {
-                            trackButtonClick('assign_program', 'program_assignment', 'admin_dashboard');
-                            handleQuickAssign();
+                <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
+                  <DialogTrigger asChild>
+                    <button
+                      type="button"
+                      className="tt-app-button tt-app-button--secondary tt-admin-hero__button"
+                      onClick={() => trackButtonClick('assign_template_modal', 'program_assignment', 'admin_dashboard')}
+                    >
+                      <UserPlus size={17} aria-hidden="true" />
+                      Määra mall
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Määra programm kliendile</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Vali mall</label>
+                        <select
+                          value={selectedTemplate?.id || ""}
+                          onChange={(e) => {
+                            const template = templates.find(t => t.id === e.target.value);
+                            setSelectedTemplate(template || null);
                           }}
-                          disabled={assigning || !selectedTemplate || !selectedUserId}
-                          className="flex-1"
+                          className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                         >
-                          {assigning ? "Määran..." : "Määra programm"}
-                        </Button>
+                          <option value="">Vali mall...</option>
+                          {templates.map(template => (
+                            <option key={template.id} value={template.id}>
+                              {template.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Vali klient</label>
+                        <select
+                          value={selectedUserId}
+                          onChange={(e) => setSelectedUserId(e.target.value)}
+                          className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                        >
+                          <option value="">Vali klient...</option>
+                          {users.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.email}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Alguskuupäev</label>
+                        <input
+                          type="date"
+                          value={assignDate}
+                          onChange={(e) => setAssignDate(e.target.value)}
+                          className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        {(!selectedTemplate || !selectedUserId) && (
+                          <p className="text-xs text-destructive">
+                            {!selectedTemplate && !selectedUserId && "Palun vali nii mall kui ka klient"}
+                            {!selectedTemplate && selectedUserId && "Palun vali mall"}
+                            {selectedTemplate && !selectedUserId && "Palun vali klient"}
+                          </p>
+                        )}
+                        <div className="flex gap-3 pt-2">
+                          <Button
+                            onClick={() => {
+                              trackButtonClick('cancel_program_assignment', 'program_assignment', 'admin_dashboard');
+                              setShowAssignModal(false);
+                            }}
+                            variant="outline"
+                            className="flex-1"
+                          >
+                            Tühista
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              trackButtonClick('assign_program', 'program_assignment', 'admin_dashboard');
+                              handleQuickAssign();
+                            }}
+                            disabled={assigning || !selectedTemplate || !selectedUserId}
+                            className="flex-1"
+                          >
+                            {assigning ? "Määran..." : "Määra programm"}
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </DialogContent>
-               </Dialog>
-             </div>
-           </div>
-
-           {/* Enhanced Program Creator */}
-        <EnhancedProgramCreator
-          isOpen={showEnhancedCreator}
-          onOpenChange={setShowEnhancedCreator}
-          onSuccess={loadData}
-        />
-
-
-        {/* Stats Cards - Mobile Optimized */}
-        <div className="grid gap-3 mb-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <MobileStatsCard
-            title="Kokku Programme"
-            value={stats.totalPrograms}
-            icon={<Target className="h-5 w-5 lg:h-6 lg:w-6 text-purple-600" />}
-            className="bg-gradient-to-br from-purple-500/10 to-purple-600/5"
-          />
-          <MobileStatsCard
-            title="Aktiivsed Programme"
-            value={stats.activePrograms}
-            icon={<Activity className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />}
-            className="bg-gradient-to-br from-green-500/10 to-green-600/5"
-          />
-          <MobileStatsCard
-            title="Aktiivsed Kliendid"
-            value={stats.totalClients}
-            icon={<Users className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />}
-            className="bg-gradient-to-br from-primary/10 to-primary/5"
-          />
-          <MobileStatsCard
-            title="Lõpetatud Sessioone"
-            value={stats.completedSessions}
-            icon={<TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />}
-            className="bg-gradient-to-br from-blue-500/10 to-blue-600/5"
-          />
-        </div>
-
-        {/* Template Management Section */}
-        <Card className="border-0 shadow-soft bg-card/50 backdrop-blur-sm mb-6">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="text-lg font-semibold">Mallide Haldus</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Halda treeningmalle ja vaata nende kasutamist
-                </p>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
+          </section>
+
+          <EnhancedProgramCreator
+            isOpen={showEnhancedCreator}
+            onOpenChange={setShowEnhancedCreator}
+            onSuccess={() => {
+              clearPTCache();
+              void loadData();
+            }}
+          />
+
+          <section className="tt-admin-metrics" aria-label="Personaaltreeningu statistika">
+            <article className="tt-admin-metric tt-admin-metric--accent">
+              <span className="tt-admin-metric__icon"><Target size={19} /></span>
+              <span className="tt-admin-metric__label">Kõik programmid</span>
+              <strong className="tt-admin-metric__value">{stats.totalPrograms}</strong>
+            </article>
+            <article className="tt-admin-metric">
+              <span className="tt-admin-metric__icon"><Activity size={19} /></span>
+              <span className="tt-admin-metric__label">Aktiivsed</span>
+              <strong className="tt-admin-metric__value">{stats.activePrograms}</strong>
+            </article>
+            <article className="tt-admin-metric">
+              <span className="tt-admin-metric__icon"><Users size={19} /></span>
+              <span className="tt-admin-metric__label">Kliendid</span>
+              <strong className="tt-admin-metric__value">{stats.totalClients}</strong>
+            </article>
+            <article className="tt-admin-metric">
+              <span className="tt-admin-metric__icon"><TrendingUp size={19} /></span>
+              <span className="tt-admin-metric__label">Lõpetatud sessioonid</span>
+              <strong className="tt-admin-metric__value">{stats.completedSessions}</strong>
+            </article>
+          </section>
+
+          <section className="tt-admin-section" aria-labelledby="templates-title">
+            <header className="tt-admin-section__head">
+              <div>
+                <p className="tt-app-eyebrow">Korduvkasutatavad põhjad</p>
+                <h2 id="templates-title" className="tt-admin-section__title">Treeningmallid</h2>
+                <p className="tt-admin-section__description">
+                  Halda valmis kavasid ja määra need kiiresti sobivale kliendile.
+                </p>
+              </div>
+              <span className="tt-admin-section__count">{templates.length} {templates.length === 1 ? "mall" : "malli"}</span>
+            </header>
+
             {templates.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">Malle pole veel loodud</p>
-                <p className="text-sm">Loo esimene mall, et hakata määrama programme klientidele</p>
+              <div className="tt-admin-empty">
+                <span className="tt-admin-empty__icon" aria-hidden="true"><Target size={22} /></span>
+                <div>
+                  <h3 className="tt-admin-empty__title">Malle pole veel loodud</h3>
+                  <p className="tt-admin-empty__copy">
+                    Kui lood korduvkasutatava malli, saad selle uuele kliendile määrata mõne hetkega.
+                  </p>
+                </div>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="tt-admin-template-grid">
                 {templates.map((template) => (
-                  <div key={template.id} className="p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-base mb-1">{template.title}</h3>
-                        <p className="text-sm text-muted-foreground">{template.goal || "Eesmärk määramata"}</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {template.is_active ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Aktiivne
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Mitteaktiivne
-                          </span>
-                        )}
-                      </div>
+                  <article key={template.id} className="tt-admin-template">
+                    <div className="tt-admin-template__topline">
+                      <span className={`tt-admin-status ${template.is_active ? "is-active" : "is-inactive"}`}>
+                        {template.is_active ? "Aktiivne" : "Mitteaktiivne"}
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button type="button" className="tt-admin-icon-button" aria-label={`Halda malli ${template.title}`}>
+                            <MoreHorizontal size={18} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/admin/templates/${template.id}`)}>
+                            <Edit className="h-3 w-3 mr-2" />
+                            Muuda malli
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteTemplate(template.id, template.title)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3 mr-2" />
+                            Kustuta mall
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Loodud: {new Date(template.inserted_at).toLocaleDateString('et-EE')}</span>
-                      <div className="flex gap-1">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 px-2 text-xs"
-                            >
-                              <MoreHorizontal className="h-3 w-3 mr-1" />
-                              Muuda
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                // Navigate to template editing page
-                                navigate(`/admin/templates/${template.id}`);
-                              }}
-                            >
-                              <Edit className="h-3 w-3 mr-2" />
-                              Muuda malli
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                // Delete template
-                                handleDeleteTemplate(template.id, template.title);
-                              }}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-3 w-3 mr-2" />
-                              Kustuta mall
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 px-2 text-xs"
-                          onClick={() => {
-                            // Open template assignment modal
-                            setSelectedTemplate(template);
-                            setShowAssignModal(true);
-                          }}
-                        >
-                          <UserPlus className="h-3 w-3 mr-1" />
-                          Määra
-                        </Button>
-                      </div>
+                    <div className="tt-admin-template__body">
+                      <h3 className="tt-admin-template__title">{template.title}</h3>
+                      <p className="tt-admin-template__goal">{template.goal || "Eesmärk määramata"}</p>
                     </div>
-                  </div>
+                    <footer className="tt-admin-template__footer">
+                      <span>
+                        {template.inserted_at
+                          ? `Loodud ${new Date(template.inserted_at).toLocaleDateString('et-EE')}`
+                          : "Loomise kuupäev teadmata"}
+                      </span>
+                      <button
+                        type="button"
+                        className="tt-admin-text-button"
+                        onClick={() => {
+                          setSelectedTemplate(template);
+                          setShowAssignModal(true);
+                        }}
+                      >
+                        <UserPlus size={15} />
+                        Määra kliendile
+                      </button>
+                    </footer>
+                  </article>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </section>
 
-        {/* Programs List - Cleaner Interface */}
-        <Card className="border-0 shadow-soft bg-card/50 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <section className="tt-admin-section tt-admin-section--programs" aria-labelledby="client-programs-title">
+            <header className="tt-admin-section__head tt-admin-section__head--programs">
               <div>
-                <CardTitle className="text-lg font-semibold">Klientide Programmid</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Halda määratud programme ja jälgi klientide arengut
+                <p className="tt-app-eyebrow">Klienditöö</p>
+                <h2 id="client-programs-title" className="tt-admin-section__title">Klientide programmid</h2>
+                <p className="tt-admin-section__description">
+                  Vaata määratud kavasid, muuda sisu ja halda aktiivsust.
                 </p>
               </div>
-              
-              {/* Mobile Optimized Filters */}
-              <MobileFilterBar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                filterStatus={filterStatus}
-                onFilterChange={(status) => setFilterStatus(status as "all" | "active" | "inactive")}
-                totalItems={programs.length}
-                filteredItems={filteredPrograms.length}
-              />
-            </div>
-          </CardHeader>
 
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <div className="min-w-full">
-                {clientEmails.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      {searchQuery || filterStatus !== "all" ? "Otsingu tulemusi ei leitud" : "Programme pole veel määratud"}
+              <div className="tt-admin-filters" aria-label="Programmide filtrid">
+                <label className="tt-admin-search">
+                  <span className="sr-only">Otsi klienti või programmi</span>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                  </svg>
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Otsi klienti või programmi"
+                  />
+                </label>
+                <div className="tt-admin-filter-pills">
+                  {([
+                    ["all", "Kõik"],
+                    ["active", "Aktiivsed"],
+                    ["inactive", "Mitteaktiivsed"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={filterStatus === value ? "is-active" : undefined}
+                      onClick={() => setFilterStatus(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <span className="tt-admin-filter-count">{filteredPrograms.length} / {programs.length}</span>
+              </div>
+            </header>
+
+            <div className="tt-admin-program-list">
+              {clientEmails.length === 0 ? (
+                <div className="tt-admin-empty tt-admin-empty--programs">
+                  <span className="tt-admin-empty__icon" aria-hidden="true"><Users size={22} /></span>
+                  <div>
+                    <h3 className="tt-admin-empty__title">
+                      {searchQuery || filterStatus !== "all" ? "Sobivaid programme ei leitud" : "Programme pole veel määratud"}
+                    </h3>
+                    <p className="tt-admin-empty__copy">
+                      {searchQuery || filterStatus !== "all"
+                        ? "Muuda otsingut või vali teine aktiivsuse filter."
+                        : "Loo kliendile esimene personaalne programm või määra olemasolev mall."}
                     </p>
                   </div>
-                ) : (
-                  <Accordion type="single" collapsible className="w-full">
-                    {clientEmails.map((email) => {
-                      const clientPrograms = programsByClient[email];
-                      return (
-                        <AccordionItem key={email} value={email} className="border-b px-4">
-                          <AccordionTrigger className="hover:no-underline py-4">
-                            <div className="flex items-center gap-3 flex-1 text-left">
-                              <UserCheck className="h-4 w-4 text-primary flex-shrink-0" />
-                              <span className="font-medium text-base">{email}</span>
-                              <span className="text-sm text-muted-foreground">
-                                ({clientPrograms.length} {clientPrograms.length === 1 ? 'programm' : 'programmi'})
-                              </span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="pt-2 pb-4 space-y-3">
-                              {clientPrograms.map((program) => (
-                                <div key={program.id} className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                    {/* Program Info */}
-                                    <div className="flex-1 min-w-0 space-y-2">
-                                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                                        {editingTitleId === program.id ? (
-                                          <div className="flex items-center gap-2 flex-1">
-                                            <Input
-                                              value={editingTitle}
-                                              onChange={(e) => setEditingTitle(e.target.value)}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  handleSaveTitle(program.id!, editingTitle);
-                                                } else if (e.key === 'Escape') {
-                                                  setEditingTitleId(null);
-                                                  setEditingTitle("");
-                                                }
-                                              }}
-                                              autoFocus
-                                              className="h-8 text-sm"
-                                              placeholder={program.template_title || "Nimetu programm"}
-                                            />
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={() => handleSaveTitle(program.id!, editingTitle)}
-                                              className="h-8 w-8 p-0"
-                                            >
-                                              <Check className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={() => {
-                                                setEditingTitleId(null);
-                                                setEditingTitle("");
-                                              }}
-                                              className="h-8 w-8 p-0"
-                                            >
-                                              <X className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        ) : (
-                                          <div className="flex items-center gap-2 group">
-                                            <h3 
-                                              className="font-medium text-sm lg:text-base truncate cursor-pointer hover:text-primary transition-colors"
-                                              onClick={() => {
-                                                setEditingTitleId(program.id);
-                                                setEditingTitle(program.title_override || "");
-                                              }}
-                                            >
-                                              {program.title_override || program.template_title || "Nimetu programm"}
-                                            </h3>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={() => {
-                                                setEditingTitleId(program.id);
-                                                setEditingTitle(program.title_override || "");
-                                              }}
-                                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                              <Edit className="h-3 w-3" />
-                                            </Button>
-                                          </div>
-                                        )}
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                                            program.is_active !== false
-                                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                                          }`}>
-                                            {program.is_active !== false ? 'Aktiivne' : 'Mitteaktiivne'}
-                                          </span>
-                                        </div>
-                                      </div>
-                                      
-                                      {program.start_date && (
-                                        <div className="flex items-center gap-1 text-xs lg:text-sm text-muted-foreground">
-                                          <Send className="h-3 w-3 flex-shrink-0" />
-                                          <span>Algas: {new Date(program.start_date).toLocaleDateString('et-EE')}</span>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className="flex items-center justify-end gap-2 flex-shrink-0">
-                                      <Button
-                                        onClick={() => {
-                                          trackButtonClick('view_program', `/admin/programs/${program.id}/edit`, 'admin_dashboard');
-                                          navigate(`/admin/programs/${program.id}/edit`);
+                </div>
+              ) : (
+                <Accordion type="single" collapsible className="tt-admin-clients">
+                  {clientEmails.map((email) => {
+                    const clientPrograms = programsByClient[email];
+                    return (
+                      <AccordionItem key={email} value={email} className="tt-admin-client">
+                        <AccordionTrigger className="tt-admin-client__trigger hover:no-underline">
+                          <div className="tt-admin-client__identity">
+                            <span className="tt-admin-client__avatar" aria-hidden="true">
+                              <UserCheck size={18} />
+                            </span>
+                            <span className="tt-admin-client__copy">
+                              <strong>{email}</strong>
+                              <small>{clientPrograms.length} {clientPrograms.length === 1 ? 'programm' : 'programmi'}</small>
+                            </span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="tt-admin-client__content">
+                          <div className="tt-admin-client__programs">
+                            {clientPrograms.map((program) => (
+                              <article key={program.id} className="tt-admin-client-program">
+                                <div className="tt-admin-client-program__main">
+                                  {editingTitleId === program.id ? (
+                                    <div className="tt-admin-title-edit">
+                                      <Input
+                                        value={editingTitle}
+                                        onChange={(e) => setEditingTitle(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            handleSaveTitle(program.id!, editingTitle);
+                                          } else if (e.key === 'Escape') {
+                                            setEditingTitleId(null);
+                                            setEditingTitle("");
+                                          }
                                         }}
+                                        autoFocus
+                                        className="h-10 text-sm"
+                                        placeholder={program.template_title || "Nimetu programm"}
+                                      />
+                                      <Button
                                         size="sm"
-                                        variant="outline"
-                                        className="h-8 text-xs"
+                                        variant="ghost"
+                                        onClick={() => handleSaveTitle(program.id!, editingTitle)}
+                                        className="h-10 w-10 p-0"
+                                        aria-label="Salvesta programmi nimi"
                                       >
-                                        <Edit className="h-3 w-3 mr-1" />
-                                        <span className="hidden sm:inline">Muuda</span>
+                                        <Check className="h-4 w-4" />
                                       </Button>
-                                      
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-48">
-                                          <DropdownMenuItem
-                                            onClick={() => {
-                                              trackButtonClick('unassign_program_from_menu', 'program_unassignment', 'admin_dashboard');
-                                              handleUnassignProgram(
-                                                program.id!,
-                                                program.title_override || program.template_title || "Programm"
-                                              );
-                                            }}
-                                            className="text-orange-600 focus:text-orange-600"
-                                          >
-                                            <UserMinus className="mr-2 h-4 w-4" />
-                                            Eemalda kliendilt
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setEditingTitleId(null);
+                                          setEditingTitle("");
+                                        }}
+                                        className="h-10 w-10 p-0"
+                                        aria-label="Tühista nime muutmine"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
                                     </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="tt-admin-client-program__title"
+                                      onClick={() => {
+                                        setEditingTitleId(program.id);
+                                        setEditingTitle(program.title_override || "");
+                                      }}
+                                    >
+                                      {program.title_override || program.template_title || "Nimetu programm"}
+                                      <Edit size={14} aria-hidden="true" />
+                                    </button>
+                                  )}
+
+                                  <div className="tt-admin-client-program__meta">
+                                    <span className={`tt-admin-status ${program.is_active !== false ? "is-active" : "is-inactive"}`}>
+                                      {program.is_active !== false ? 'Aktiivne' : 'Mitteaktiivne'}
+                                    </span>
+                                    {program.start_date && (
+                                      <span><Send size={13} /> Algas {new Date(program.start_date).toLocaleDateString('et-EE')}</span>
+                                    )}
                                   </div>
                                 </div>
-                              ))}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      );
-                    })}
-                  </Accordion>
-                )}
-              </div>
-            </div>
-          </CardContent>
-         </Card>
 
-         </div>
-         </div>
-       </div>
-       
-       {/* Confirmation Dialog */}
-       <ConfirmationDialog
-         isOpen={dialog.isOpen}
-         onClose={hideDialog}
-         onConfirm={dialog.onConfirm}
-         title={dialog.title}
-         description={dialog.description}
-         variant={dialog.variant}
-         confirmText={dialog.confirmText}
-         cancelText={dialog.cancelText}
-         isLoading={dialog.isLoading}
-         loadingText={dialog.loadingText}
-         icon={dialog.icon}
-       />
-     </PTAccessValidator>
-   );
- }
+                                <div className="tt-admin-client-program__actions">
+                                  <button
+                                    type="button"
+                                    className="tt-admin-text-button tt-admin-text-button--strong"
+                                    onClick={() => {
+                                      trackButtonClick('view_program', `/admin/programs/${program.id}/edit`, 'admin_dashboard');
+                                      navigate(`/admin/programs/${program.id}/edit`);
+                                    }}
+                                  >
+                                    <Edit size={15} />
+                                    Muuda kava
+                                  </button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <button type="button" className="tt-admin-icon-button" aria-label="Programmi lisavalikud">
+                                        <MoreHorizontal size={18} />
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48">
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          trackButtonClick('unassign_program_from_menu', 'program_unassignment', 'admin_dashboard');
+                                          handleUnassignProgram(
+                                            program.id!,
+                                            program.title_override || program.template_title || "Programm"
+                                          );
+                                        }}
+                                        className="text-orange-600 focus:text-orange-600"
+                                      >
+                                        <UserMinus className="mr-2 h-4 w-4" />
+                                        Eemalda kliendilt
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <ConfirmationDialog
+        isOpen={dialog.isOpen}
+        onClose={hideDialog}
+        onConfirm={dialog.onConfirm}
+        title={dialog.title}
+        description={dialog.description}
+        variant={dialog.variant}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        isLoading={dialog.isLoading}
+        loadingText={dialog.loadingText}
+        icon={dialog.icon}
+      />
+    </PTAccessValidator>
+  );
+}

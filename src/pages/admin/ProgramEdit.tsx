@@ -53,10 +53,7 @@ export default function ProgramEdit() {
   // Smart progression hook
   const { 
     programProgress, 
-    loading: progressLoading, 
-    autoProgressProgram, 
     completeDuePrograms,
-    updateProgramSettings 
   } = useSmartProgression(id);
 
   const loadProgram = async () => {
@@ -556,11 +553,6 @@ export default function ProgramEdit() {
           programId={id}
           isOpen={showContentEditor}
           onOpenChange={setShowContentEditor}
-          onSuccess={() => {
-            setShowContentEditor(false);
-            // Optionally reload program data
-            loadProgram();
-          }}
         />
       )}
 

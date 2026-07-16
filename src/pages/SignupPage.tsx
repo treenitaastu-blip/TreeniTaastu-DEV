@@ -87,7 +87,7 @@ export default function SignupPage() {
                   🎁 7-päevane tasuta proov sisaldub
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Täielik ligipääs Self-Guided programmidele • Tühista igal ajal
+                  Ligipääs staatilistele ja PT treeningkavadele • Krediitkaarti pole vaja
                 </p>
               </div>
             </CardHeader>

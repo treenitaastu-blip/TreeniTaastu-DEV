@@ -10,7 +10,9 @@ interface PullToRefreshProps {
 
 export const PullToRefresh = ({ children, onRefresh, disabled = false }: PullToRefreshProps) => {
   const { isRefreshing, pullDistance, isTriggered } = usePullToRefresh({
-    onRefresh,
+    onRefresh: async () => {
+      await onRefresh();
+    },
     disabled
   });
 

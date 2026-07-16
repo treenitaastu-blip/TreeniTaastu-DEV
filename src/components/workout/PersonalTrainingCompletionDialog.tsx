@@ -1,28 +1,33 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart3, BookOpen, CheckCircle, Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import { ArrowRight, BarChart3, CheckCircle2, Home } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 
 interface PersonalTrainingCompletionDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  programId?: string;
+  workoutSummary?: {
+    setsCompleted: number;
+    duration: number;
+  };
 }
 
 export default function PersonalTrainingCompletionDialog({
   isOpen,
-  onClose
+  onClose,
+  programId,
+  workoutSummary,
 }: PersonalTrainingCompletionDialogProps) {
   const navigate = useNavigate();
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
-  // Handle navigation after dialog closes
   useEffect(() => {
     if (!isOpen && pendingNavigation) {
       navigate(pendingNavigation);
@@ -30,66 +35,70 @@ export default function PersonalTrainingCompletionDialog({
     }
   }, [isOpen, pendingNavigation, navigate]);
 
-  const handleViewStats = () => {
-    setPendingNavigation("/programs/stats");
-    onClose();
-  };
-
-  const handleAddNote = () => {
-    setPendingNavigation("/programs/journal");
-    onClose();
-  };
-
-  const handleGoHome = () => {
-    setPendingNavigation("/home");
+  const closeAndNavigate = (path: string) => {
+    setPendingNavigation(path);
     onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm bg-card border-border text-card-foreground shadow-lg">
-        <DialogHeader className="text-center pb-4">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <CheckCircle className="h-8 w-8 text-primary" />
-          </div>
-          <DialogTitle className="text-xl font-semibold text-foreground">
-            Treening lõpetatud!
-          </DialogTitle>
-          <DialogDescription className="text-base text-muted-foreground">
-            Hästi tehtud!
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="tt-completion-dialog">
+        <DialogHeader className="tt-completion-dialog__head">
+          <span className="tt-completion-dialog__mark" aria-hidden="true">
+            <CheckCircle2 size={30} />
+          </span>
+          <p className="tt-app-eyebrow">Tänane treening</p>
+          <DialogTitle>Tehtud. Hea töö.</DialogTitle>
+          <DialogDescription>
+            Treening on salvestatud. Järgmisel korral saad jätkata oma kavast.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 pb-4">
-          <Button 
-            onClick={handleViewStats}
-            className="w-full h-12 text-base"
-            variant="default"
-            size="lg"
-          >
-            <BarChart3 className="mr-2 h-5 w-5" />
-            Statistika
-          </Button>
+        {workoutSummary ? (
+          <dl className="tt-completion-dialog__summary" aria-label="Lõpetatud treeningu kokkuvõte">
+            <div>
+              <dt>Seeriaid</dt>
+              <dd>{workoutSummary.setsCompleted}</dd>
+            </div>
+            <div>
+              <dt>Kestus</dt>
+              <dd>{workoutSummary.duration} min</dd>
+            </div>
+          </dl>
+        ) : null}
 
-          <Button 
-            onClick={handleAddNote}
-            className="w-full h-12 text-base"
-            variant="outline"
-            size="lg"
+        <div className="tt-completion-dialog__actions">
+          {programId ? (
+            <button
+              type="button"
+              className="tt-app-button tt-app-button--wide"
+              onClick={() => closeAndNavigate(`/programs/${programId}`)}
+            >
+              Tagasi treeningkavasse
+              <ArrowRight size={17} aria-hidden="true" />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="tt-completion-dialog__link"
+            onClick={() => closeAndNavigate("/programs/stats")}
           >
-            <BookOpen className="mr-2 h-5 w-5" />
-            Märkmik
-          </Button>
-
-          <Button 
-            onClick={handleGoHome}
-            className="w-full h-12 text-base"
-            variant="outline"
-            size="lg"
+            <BarChart3 size={17} aria-hidden="true" />
+            Vaata statistikat
+          </button>
+          <button
+            type="button"
+            className="tt-completion-dialog__link"
+            onClick={() => closeAndNavigate("/home")}
           >
-            <Home className="mr-2 h-5 w-5" />
-            Avaleht
-          </Button>
+            <Home size={17} aria-hidden="true" />
+            Avalehele
+          </button>
         </div>
       </DialogContent>
     </Dialog>

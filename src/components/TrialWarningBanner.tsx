@@ -76,7 +76,7 @@ export function TrialWarningBanner({
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0 hover:bg-yellow-100 dark:hover:bg-yellow-900"
-                onClick={handleDismiss}
+                onClick={() => handleDismiss('close')}
                 aria-label="Sulge teade"
               >
                 <X className="h-4 w-4" />
@@ -144,5 +144,4 @@ export function TrialWarningBanner({
     </Alert>
   );
 }
-
 

@@ -95,7 +95,7 @@ function TrialSignupCard() {
       <CardHeader className="text-center">
         <CardTitle className="text-lg">7-päevane tasuta proov</CardTitle>
         <CardDescription>
-          Loo konto ja saa ligipääs programmidele
+          Loo konto ja saa ligipääs staatilistele ning PT treeningkavadele
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -127,7 +127,7 @@ function TrialSignupCard() {
             {loading ? "Konto loomine..." : "Alusta tasuta proovi"}
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            Sisaldab täieliku ligipääsu programmidele 7 päeva jooksul
+            Mõlemad treeningkavatüübid on avatud 7 päeva. Krediitkaarti pole vaja.
           </p>
         </form>
       </CardContent>

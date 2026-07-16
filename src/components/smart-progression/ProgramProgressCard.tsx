@@ -2,18 +2,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, CheckCircle } from "lucide-react";
+import { Calendar, Clock, CheckCircle, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { ProgramProgress } from "@/hooks/useSmartProgression";
 
 interface ProgramProgressCardProps {
   programProgress: ProgramProgress;
   onComplete?: () => void;
+  onAutoProgress?: () => void;
+  isAutoProgressing?: boolean;
 }
 
 export const ProgramProgressCard = ({
   programProgress,
   onComplete,
+  onAutoProgress,
+  isAutoProgressing = false,
 }: ProgramProgressCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -122,6 +126,17 @@ export const ProgramProgressCard = ({
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
+          {programProgress.status === 'active' && onAutoProgress && (
+            <Button
+              onClick={onAutoProgress}
+              variant="outline"
+              disabled={isAutoProgressing}
+              className="flex-1"
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              {isAutoProgressing ? 'Analyzing…' : 'Analyze progression'}
+            </Button>
+          )}
           {(programProgress.is_due_for_completion ?? false) && programProgress.status === 'active' && onComplete && (
             <Button
               onClick={onComplete}

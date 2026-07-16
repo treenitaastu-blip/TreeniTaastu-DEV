@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SessionProgress from "@/components/workout/SessionProgress";
-import RestTimer from "@/components/workout/RestTimer";
+import ModernRestTimer from "@/components/workout/ModernRestTimer";
 import { VideoPlayer } from "@/components/workout/VideoPlayer";
 
 /** --------------------------
@@ -185,6 +185,17 @@ export default function WorkoutSessionPage() {
     () => Object.keys(loggedSets).reduce((acc, k) => (loggedSets[k] ? acc + 1 : acc), 0),
     [loggedSets]
   );
+  const completedExercises = useMemo(
+    () => orderedItems.filter((item) => {
+      const targetSets = Math.max(1, Number(item.sets || 0));
+      const completedForItem = Array.from(
+        { length: targetSets },
+        (_, index) => loggedSets[`${item.id}:${index + 1}`]
+      ).filter(Boolean).length;
+      return completedForItem >= targetSets;
+    }).length,
+    [orderedItems, loggedSets]
+  );
 
   /** Bootstrap: auth → day (via secure join) → program (ownership) → items (via secure join) → session → hydrate logs/notes */
   useEffect(() => {
@@ -309,7 +320,7 @@ export default function WorkoutSessionPage() {
         if (!alive) return;
 
         const mappedItems: ClientItem[] =
-          (itemsRaw as Array<{
+          (itemsRaw as unknown as Array<{
             id: string;
             client_day_id: string;
             exercise_name: string;
@@ -803,10 +814,11 @@ export default function WorkoutSessionPage() {
         {/* Enhanced session progress */}
         <div className="sticky top-4 z-10">
           <SessionProgress
-            startedAt={session.started_at}
+            totalExercises={orderedItems.length}
+            completedExercises={completedExercises}
             totalSets={totalSets}
             completedSets={completedSets}
-            onFinish={finishSession}
+            sessionDuration={minutesBetween(session.started_at, nowIso())}
           />
         </div>
 
@@ -1032,7 +1044,7 @@ export default function WorkoutSessionPage() {
                                       ...m,
                                       [key]: {
                                         ...m[key],
-                                        reps: Math.max(0, (m[key]?.reps ?? parseInt(String(it.reps).replace(/[^0-9]/g, ''), 10) || 0) - 1),
+                                        reps: Math.max(0, (m[key]?.reps ?? (parseInt(String(it.reps).replace(/[^0-9]/g, ''), 10) || 0)) - 1),
                                       },
                                     }))}
                                     disabled={!!programInactive}
@@ -1046,7 +1058,7 @@ export default function WorkoutSessionPage() {
                                       ...m,
                                       [key]: {
                                         ...m[key],
-                                        reps: Math.min(1000, (m[key]?.reps ?? parseInt(String(it.reps).replace(/[^0-9]/g, ''), 10) || 0) + 1),
+                                        reps: Math.min(1000, (m[key]?.reps ?? (parseInt(String(it.reps).replace(/[^0-9]/g, ''), 10) || 0)) + 1),
                                       },
                                     }))}
                                     disabled={!!programInactive}
@@ -1227,13 +1239,11 @@ export default function WorkoutSessionPage() {
         </div>
 
         {/* Rest timer overlay */}
-        <RestTimer
+        <ModernRestTimer
           isOpen={restOpen}
           initialSeconds={restSeconds}
-          label={restLabel}
+          exerciseName={restLabel}
           onClose={() => setRestOpen(false)}
-          onAddSeconds={(s) => setRestSeconds((v) => v + s)}
-          onReset={(s) => setRestSeconds(s)}
         />
       </div>
     </div>

@@ -5,7 +5,6 @@ import {
   Menu,
   X,
   LogOut,
-  Settings as SettingsIcon,
   User as UserIcon,
   Shield,
   ChevronDown,
@@ -24,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import useAccess from "@/hooks/useAccess";
 import { useDropdownManager } from "@/contexts/DropdownManager";
 import { useTrialStatus } from "@/hooks/useTrialStatus";
+import "@/styles/public-auth.css";
 
 const HIDE_ON_PATHS = ["/login", "/signup"];
 
@@ -31,7 +31,7 @@ type NavItem = { to: string; label: string; show?: boolean };
 
 export default function Header() {
   const { user } = useAuth();
-  const { loading: accessLoading, isAdmin, canStatic, canPT } = useAccess();
+  const { loading: accessLoading, isAdmin, canStatic } = useAccess();
   const { closeAllDropdowns } = useDropdownManager();
   const trialStatus = useTrialStatus();
 
@@ -120,38 +120,50 @@ export default function Header() {
       : []),
   ].filter((n) => n.show !== false);
 
-  const linkBase = "px-3 py-2 rounded-lg text-sm font-medium transition-smooth";
-  const linkActive = "bg-primary/10 text-primary border border-primary/20";
-  const linkInactive = "text-foreground hover:text-primary hover:bg-muted/50";
+  const linkBase = "tt-app-navlink";
+  const linkActive = "is-active";
+  const linkInactive = "";
 
   if (HIDE_ON_PATHS.includes(loc.pathname)) return null;
+
+  if (!user && loc.pathname === "/") {
+    return (
+      <header className="tt-public-nav">
+        <Link to="/" className="tt-public-nav__wordmark" aria-label="TreeniTaastu avaleht">
+          <span className="tt-public-nav__mark">T</span>
+          <span>TREENI &amp; TAASTU</span>
+        </Link>
+        <Link to="/login" className="tt-public-nav__action">Logi sisse</Link>
+      </header>
+    );
+  }
 
   return (
     <>
       {/* Header Container - starts at very top of viewport */}
-      <div className="fixed top-0 left-0 right-0 z-50">
+      <div className="tt-app-header">
         {/* Safe area background to prevent content bleeding */}
-        <div className="bg-card/95 backdrop-blur-xl" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
+        <div className="tt-app-header__safe" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
         
         {/* Desktop Header */}
-        <header className="bg-card/95 backdrop-blur-xl border-b shadow-soft overflow-visible hidden md:block">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 overflow-visible">
+        <header className="tt-app-header__desktop overflow-visible hidden lg:block">
+          <div className="tt-app-header__inner overflow-visible">
             {/* Logo → goes to /home if logged in, else / */}
             <Link
               to={user ? "/home" : "/"}
-              className="flex items-center gap-2 font-extrabold tracking-tight"
+              className="tt-app-brand"
               aria-label="Avaleht"
             >
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-primary text-white shadow-soft">
+              <span className="tt-app-brand__mark">
                 T
-              </div>
-              <span className="hidden sm:inline bg-gradient-primary bg-clip-text text-transparent">
-                Treenitaastu
+              </span>
+              <span className="hidden sm:inline">
+                TREENI &amp; TAASTU
               </span>
             </Link>
 
             {/* Desktop nav */}
-            <nav className="hidden items-center gap-1 md:flex overflow-visible" aria-label="Põhinavigatsioon" style={{ position: 'static' }}>
+            <nav className="tt-app-navlinks hidden lg:flex overflow-visible" aria-label="Põhinavigatsioon" style={{ position: 'static' }}>
               {nav.map((n) => (
                 <NavLink
                   key={n.to}
@@ -179,7 +191,7 @@ export default function Header() {
                   {ptMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 mt-2 w-56 rounded-xl border bg-card p-1 shadow-medium backdrop-blur-xl"
+                      className="tt-app-menu"
                       style={{ 
                         position: 'absolute', 
                         top: '100%', 
@@ -210,7 +222,7 @@ export default function Header() {
                   {adminMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 mt-2 w-56 rounded-xl border bg-card p-1 shadow-medium backdrop-blur-xl"
+                      className="tt-app-menu"
                       style={{ 
                         position: 'absolute', 
                         top: '100%', 
@@ -226,7 +238,7 @@ export default function Header() {
             </nav>
 
             {/* Right cluster */}
-            <div className="hidden items-center gap-2 md:flex overflow-visible">
+            <div className="hidden items-center gap-2 lg:flex overflow-visible">
               {/* Grace Period Badge (Desktop) */}
               {user && trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (
                 <Link
@@ -284,8 +296,8 @@ export default function Header() {
         </header>
 
         {/* Mobile Header - Minimal Design */}
-        <div className={`md:hidden transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-          <div className="flex items-center justify-between px-4 py-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}>
+        <div className={`tt-app-header__mobile lg:hidden transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+          <div className="tt-app-header__mobile-row">
             {/* Left: Account Icon (replaces logo) */}
             {user ? (
               <UserMenu mobileMinimal />
@@ -301,13 +313,11 @@ export default function Header() {
 
             {/* Center: TREENI & TAASTU Logo */}
             <Link
-              to="/"
-              className="flex-1 flex justify-center items-center"
+              to={user ? "/home" : "/"}
+              className="tt-app-header__mobile-brand"
               onClick={() => closeAllDropdowns()}
             >
-              <h1 className="text-lg font-bold text-black italic" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-                TREENI & TAASTU
-              </h1>
+              <span>TREENI &amp; TAASTU</span>
             </Link>
 
             {/* Right: Burger Menu */}
@@ -316,7 +326,7 @@ export default function Header() {
               aria-expanded={open}
               aria-controls="mobile-nav"
               onClick={() => setOpen((v) => !v)}
-              className="grid h-10 w-10 place-items-center rounded-lg border transition-colors hover:bg-muted/50"
+              className="tt-app-icon-button"
             >
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -326,8 +336,8 @@ export default function Header() {
 
         {/* Mobile drawer */}
         {open && (
-          <div id="mobile-nav" className="border-t bg-card/95 shadow-soft backdrop-blur-xl md:hidden">
-            <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3" aria-label="Mobiilne navigatsioon">
+          <div id="mobile-nav" className="tt-app-drawer lg:hidden">
+            <nav className="tt-app-drawer__nav" aria-label="Mobiilne navigatsioon">
                 {/* Grace Period Badge (Mobile) */}
                 {user && trialStatus.isInGracePeriod && trialStatus.hoursRemainingInGrace !== null && (
                   <Link
@@ -475,8 +485,7 @@ export default function Header() {
       </div>
       
       {/* Spacer for fixed header */}
-      <div className="hidden md:block h-16" style={{ marginTop: 'calc(env(safe-area-inset-top, 0px) + 4rem)' }} />
-      <div className="md:hidden h-12" style={{ marginTop: 'calc(env(safe-area-inset-top, 0px) + 3rem)' }} />
+      <div className="tt-app-header-spacer" />
     </>
   );
 }
@@ -494,7 +503,7 @@ function PTMenuItems({ onItem }: { onItem?: () => void }) {
     <Link
       to={to}
       onClick={onItem}
-      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-smooth hover:bg-muted/50"
+      className="tt-app-menu__item"
     >
       <Icon className="h-4 w-4" />
       {children}
@@ -526,7 +535,7 @@ function AdminMenuItems({ onItem }: { onItem?: () => void }) {
     <Link
       to={to}
       onClick={onItem}
-      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-smooth hover:bg-muted/50"
+      className="tt-app-menu__item"
     >
       <Icon className="h-4 w-4" />
       {children}
@@ -563,12 +572,6 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
   const popRef = useRef<HTMLDivElement | null>(null);
   const email = user?.email ?? "Kasutaja";
 
-  const handleOpenSupportChat = () => {
-    localStorage.setItem('supportChatOpen', 'true');
-    window.dispatchEvent(new Event('openSupportChat'));
-    setOpen(false);
-  };
-
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -596,8 +599,7 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
     };
   }, [mobile, open]);
 
-  const itemBase =
-    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 transition-smooth";
+  const itemBase = "tt-app-menu__item";
 
   if (mobile) {
     return (
@@ -627,14 +629,14 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
           aria-haspopup="menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="tt-app-icon-button"
         >
           <UserIcon className="h-5 w-5" />
         </button>
         {open && (
           <div
             role="menu"
-            className="absolute left-0 mt-2 w-48 rounded-xl border bg-card p-1 backdrop-blur-xl shadow-medium"
+            className="tt-app-menu"
             style={{ 
               position: 'absolute', 
               top: '100%', 
@@ -662,9 +664,9 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors shadow-soft hover:bg-muted/50"
+        className="tt-app-user-button"
       >
-        <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-primary text-white">
+        <div className="tt-app-user-button__icon">
           <UserIcon className="h-4 w-4" />
         </div>
         <span className="hidden max-w-[180px] truncate text-sm sm:inline">
@@ -674,7 +676,7 @@ function UserMenu({ mobile = false, mobileMinimal = false }: { mobile?: boolean;
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-48 rounded-xl border bg-card p-1 backdrop-blur-xl shadow-medium"
+          className="tt-app-menu"
           style={{ 
             position: 'absolute', 
             top: '100%', 

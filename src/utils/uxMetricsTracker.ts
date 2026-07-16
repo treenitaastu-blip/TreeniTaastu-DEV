@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 // DISABLE UX METRICS TRACKING TEMPORARILY
 const UX_METRICS_ENABLED = false;
@@ -79,6 +80,10 @@ export enum UXMetricType {
 export interface UXMetricContext {
   userId?: string;
   sessionId?: string;
+  programId?: string;
+  dayId?: string;
+  exerciseId?: string;
+  alternativeName?: string;
   pageUrl?: string;
   userAgent?: string;
   screenResolution?: string;
@@ -390,7 +395,7 @@ class UXMetricsTracker {
           metric_type: metricEntry.metric_type,
           metric_value: metricEntry.metric_value,
           metric_unit: metricEntry.metric_unit,
-          context: metricEntry.context
+          context: metricEntry.context as unknown as Json
         });
 
       if (error) {
@@ -571,7 +576,7 @@ class UXMetricsTracker {
         .limit(limit);
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as UXMetricEntry[];
     } catch (error) {
       console.error('Failed to get recent UX metrics:', error);
       return [];

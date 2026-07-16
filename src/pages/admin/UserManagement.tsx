@@ -1,7 +1,6 @@
 // src/pages/admin/UserManagement.tsx
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { getAdminClient } from "@/utils/adminClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
 import { Users, Plus, Pause, Play, Trash2, Search, Mail, BarChart3 } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -53,6 +52,21 @@ export default function UserManagement() {
     days: 30,
     note: ""
   });
+
+  const resetGrantForm = useCallback(() => {
+    setSelectedUser(null);
+    setGrantForm({ product: "static", status: "active", days: 30, note: "" });
+  }, []);
+
+  const handleGrantModalChange = useCallback((open: boolean) => {
+    setGrantModalOpen(open);
+    if (!open) resetGrantForm();
+  }, [resetGrantForm]);
+
+  const openGrantModal = useCallback((user: UserProfile) => {
+    setSelectedUser(user);
+    setGrantModalOpen(true);
+  }, []);
 
          // Load entitlements and access matrix data
          useEffect(() => {
@@ -129,9 +143,7 @@ export default function UserManagement() {
         description: `Ligipääs edukalt määratud kasutajale ${selectedUser.email || 'tundmatu kasutaja'}`
       });
 
-      setGrantModalOpen(false);
-      setSelectedUser(null);
-      setGrantForm({ product: "static", status: "active", days: 30, note: "" });
+      handleGrantModalChange(false);
       await refetch();
     } catch (error) {
       console.error("Error granting access:", error);
@@ -220,13 +232,13 @@ export default function UserManagement() {
     return accessMatrix.find(a => a.user_id === userId);
   };
 
-  // Filter users based on search (including full_name if available)
+  // Search the Auth-backed directory by email, name, or user id.
   const filteredUsers = users.filter(user => {
-    const searchLower = searchTerm.toLowerCase();
+    const searchLower = searchTerm.trim().toLowerCase();
     return (
       user.email?.toLowerCase().includes(searchLower) ||
       user.id.toLowerCase().includes(searchLower) ||
-      ((user as any).full_name?.toLowerCase().includes(searchLower) ?? false)
+      user.full_name?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -266,7 +278,7 @@ export default function UserManagement() {
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            {filteredUsers.length} kasutajat
+            {filteredUsers.length} / {users.length} kasutajat
           </span>
         </div>
       }
@@ -279,7 +291,7 @@ export default function UserManagement() {
           <Input
             id="user-search"
             name="user-search"
-            placeholder="Otsi e-maili või ID järgi..."
+            placeholder="Otsi nime, e-posti või ID järgi..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -292,6 +304,21 @@ export default function UserManagement() {
 
       {/* Users List */}
       <div className="space-y-4">
+        {filteredUsers.length === 0 && (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Users className="h-8 w-8 mx-auto text-muted-foreground" />
+              <p className="mt-3 font-medium">
+                {users.length === 0 ? "Registreeritud kasutajaid ei leitud" : "Otsingule vastavaid kasutajaid ei leitud"}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {users.length === 0
+                  ? "Värskenda nimekirja või kontrolli Supabase Authi ühendust."
+                  : "Proovi teist nime, e-posti aadressi või kasutaja ID-d."}
+              </p>
+            </CardContent>
+          </Card>
+        )}
         {filteredUsers.map((user) => {
           const userEntitlements = getUserEntitlements(user.id);
           const access = getUserAccess(user.id);
@@ -307,9 +334,21 @@ export default function UserManagement() {
                       {user.role === "admin" && (
                         <Badge variant="secondary">Admin</Badge>
                       )}
+                      {!user.email_confirmed_at && (
+                        <Badge variant="outline">E-post kinnitamata</Badge>
+                      )}
+                      {!user.profile_exists && (
+                        <Badge variant="destructive">Profiil puudub</Badge>
+                      )}
                     </div>
+                    {user.full_name && (
+                      <p className="text-sm font-medium text-foreground">{user.full_name}</p>
+                    )}
                     <CardDescription>
                       Registreeritud: {new Date(user.created_at).toLocaleDateString("et-EE")}
+                      {user.last_sign_in_at && (
+                        <> · Viimati sees: {new Date(user.last_sign_in_at).toLocaleDateString("et-EE")}</>
+                      )}
                     </CardDescription>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -324,100 +363,14 @@ export default function UserManagement() {
                         Analüütika
                       </Button>
                     )}
-                    <Dialog open={grantModalOpen} onOpenChange={setGrantModalOpen}>
-                      <DialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          onClick={() => setSelectedUser(user)}
-                          className="w-full sm:w-auto"
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Lisa ligipääs
-                        </Button>
-                      </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Lisa ligipääs</DialogTitle>
-                        <DialogDescription>
-                          {selectedUser?.email || 'Tundmatu kasutaja'} kasutajale ligipääsu andmine
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="product">Toode</Label>
-                          <Select value={grantForm.product} onValueChange={(value) => 
-                            setGrantForm(prev => ({ ...prev, product: value }))
-                          }>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="static">Static Program</SelectItem>
-                              <SelectItem value="pt">Personal Training</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="status">Staatus</Label>
-                          <Select value={grantForm.status} onValueChange={(value) => 
-                            setGrantForm(prev => ({ ...prev, status: value }))
-                          }>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="trialing">Trialing</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="days">Kestus (päeva)</Label>
-                          <Input
-                            type="number"
-                            value={grantForm.days}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0;
-                              if (value >= 1) {
-                                setGrantForm(prev => ({ ...prev, days: Math.min(value, 365) }));
-                              }
-                            }}
-                            min="1"
-                            max="365"
-                            placeholder="1-365"
-                          />
-                          {grantForm.days < 1 && (
-                            <p className="text-xs text-destructive mt-1">Kestus peab olema vähemalt 1 päev</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <Label htmlFor="note">Märkus (valikuline)</Label>
-                          <Input
-                            value={grantForm.note}
-                            onChange={(e) => setGrantForm(prev => ({ ...prev, note: e.target.value }))}
-                            placeholder="Näiteks: Sularahas tasutud"
-                          />
-                        </div>
-                      </div>
-
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => {
-                          setGrantModalOpen(false);
-                          setSelectedUser(null);
-                          setGrantForm({ product: "static", status: "active", days: 30, note: "" });
-                        }}>
-                          Tühista
-                        </Button>
-                        <Button onClick={handleGrantAccess} disabled={grantForm.days < 1 || !selectedUser}>
-                          Anna ligipääs
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                    <Button
+                      size="sm"
+                      onClick={() => openGrantModal(user)}
+                      className="w-full sm:w-auto"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Lisa ligipääs
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -507,6 +460,92 @@ export default function UserManagement() {
           );
         })}
       </div>
+
+      <Dialog open={grantModalOpen} onOpenChange={handleGrantModalChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lisa ligipääs</DialogTitle>
+            <DialogDescription>
+              {selectedUser?.email || 'Tundmatu kasutaja'} kasutajale ligipääsu andmine
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="grant-product">Toode</Label>
+              <Select
+                value={grantForm.product}
+                onValueChange={(value) => setGrantForm(prev => ({ ...prev, product: value }))}
+              >
+                <SelectTrigger id="grant-product">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="static">Staatilised programmid</SelectItem>
+                  <SelectItem value="pt">Personaaltreening</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="grant-status">Staatus</Label>
+              <Select
+                value={grantForm.status}
+                onValueChange={(value) => setGrantForm(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger id="grant-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Aktiivne</SelectItem>
+                  <SelectItem value="trialing">Prooviperiood</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="grant-days">Kestus (päeva)</Label>
+              <Input
+                id="grant-days"
+                type="number"
+                value={grantForm.days}
+                onChange={(event) => {
+                  const value = Number.parseInt(event.target.value, 10);
+                  setGrantForm(prev => ({
+                    ...prev,
+                    days: Number.isNaN(value) ? 0 : Math.min(Math.max(value, 0), 365),
+                  }));
+                }}
+                min="1"
+                max="365"
+                placeholder="1-365"
+              />
+              {grantForm.days < 1 && (
+                <p className="text-xs text-destructive mt-1">Kestus peab olema vähemalt 1 päev</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="grant-note">Märkus (valikuline)</Label>
+              <Input
+                id="grant-note"
+                value={grantForm.note}
+                onChange={(event) => setGrantForm(prev => ({ ...prev, note: event.target.value }))}
+                placeholder="Näiteks: Sularahas tasutud"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleGrantModalChange(false)}>
+              Tühista
+            </Button>
+            <Button onClick={handleGrantAccess} disabled={grantForm.days < 1 || !selectedUser}>
+              Anna ligipääs
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmation Dialog */}
       <ConfirmationDialog

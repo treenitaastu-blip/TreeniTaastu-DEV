@@ -1,14 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { Play, Check, Clock, Weight, Repeat, MessageSquare, Star, TrendingUp, Zap, Activity, Info, Target, Timer, Pause, AlertCircle } from "lucide-react";
+import { Play, Check, Clock, Weight, Repeat, MessageSquare, TrendingUp, Zap, Activity, Target, Pause, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoModal } from "./VideoModal";
 import ExerciseFeedback from "./ExerciseFeedback";
 import { cn } from "@/lib/utils";
-import { determineExerciseType, ExerciseType } from "./ExerciseFeedback";
+import { determineExerciseType } from "./ExerciseFeedback";
 import { isTimeBasedExercise } from "@/utils/exerciseUtils";
 
 // Helper to parse reps string to number (e.g., "12x" -> 12, "8-10" -> 8)
@@ -51,6 +50,7 @@ interface SmartExerciseCardProps {
   onRPEChange?: (rpe: number) => void;
   rir?: number;
   onRIRChange?: (rir: number) => void;
+  currentRIR?: number;
   previousRIR?: number; // Previous session's RIR for reference
   progressionSuggestion?: {
     type: 'weight' | 'reps';
@@ -92,19 +92,20 @@ export default function SmartExerciseCard({
   onSetInputChange,
   notes = "",
   onNotesChange,
-  rpe,
-  onRPEChange,
-  rir,
-  onRIRChange,
+  rpe: _rpe,
+  onRPEChange: _onRPEChange,
+  rir: _rir,
+  onRIRChange: _onRIRChange,
+  currentRIR,
   previousRIR,
   progressionSuggestion,
   onSwitchToAlternative,
   showAlternatives = false,
-  onToggleAlternatives,
+  onToggleAlternatives: _onToggleAlternatives,
   onExerciseFeedback,
-  showExerciseFeedback = false,
-  onUpdateSingleSetWeight,
-  onUpdateAllSetsWeight,
+  showExerciseFeedback: _showExerciseFeedback = false,
+  onUpdateSingleSetWeight: _onUpdateSingleSetWeight,
+  onUpdateAllSetsWeight: _onUpdateAllSetsWeight,
   progressionRecommendation,
   onRecommendationClick
 }: SmartExerciseCardProps) {
@@ -133,6 +134,15 @@ export default function SmartExerciseCard({
       return () => clearTimeout(timer);
     }
   }, [allSetsCompleted, isCollapsed, showFeedback, manuallyExpanded]);
+
+  useEffect(() => {
+    const timers = timerIntervalRef.current;
+    return () => {
+      Object.values(timers).forEach((interval) => {
+        if (interval) clearInterval(interval);
+      });
+    };
+  }, [exercise.id]);
 
   // Helpers for step logic
   const roundToQuarter = (n: number) => Math.round(n * 4) / 4;
@@ -187,7 +197,7 @@ export default function SmartExerciseCard({
         onStartRest();
       }, 500);
     }
-  }, [onSetComplete, onStartRest, exercise.sets, showExerciseFeedback, onExerciseFeedback]);
+  }, [onSetComplete, onStartRest, exercise.sets]);
 
   // Handle exercise feedback completion
   const handleExerciseFeedback = useCallback((feedback: {
@@ -218,7 +228,7 @@ export default function SmartExerciseCard({
     return setInputs[key] || {};
   };
 
-  const renderCurrentSet = () => {
+  const _renderCurrentSet = () => {
     if (currentSet > exercise.sets) {
       return (
         <div className="text-center py-6">
@@ -418,7 +428,7 @@ export default function SmartExerciseCard({
   // Show collapsed state when all sets are completed
   if (allSetsCompleted && isCollapsed) {
     return (
-      <div className="rounded-2xl border border-gray-200/60 bg-green-50 shadow-soft overflow-hidden animate-in slide-in-from-top-2 duration-300">
+      <div className="tt-workout-exercise tt-workout-exercise--complete">
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300">
@@ -459,9 +469,9 @@ export default function SmartExerciseCard({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200/60 bg-card shadow-sm overflow-hidden">
+    <article className="tt-workout-exercise">
       {/* Exercise Title - First and prominent */}
-      <div className="p-3 border-b bg-muted/30">
+      <header className="tt-workout-exercise__head">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h3 className="text-base font-semibold text-foreground">
@@ -478,21 +488,6 @@ export default function SmartExerciseCard({
             )}
             
             {/* Exercise done button - only show if not all sets completed */}
-            {!allSetsCompleted && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Mark all remaining sets as completed
-                  for (let i = completedSets + 1; i <= exercise.sets; i++) {
-                    handleSetComplete(i);
-                  }
-                }}
-                className="text-[10px] px-2 py-0.5 h-5"
-              >
-                Tehtud
-              </Button>
-            )}
           </div>
           
           <div className="flex items-center gap-1">
@@ -501,7 +496,8 @@ export default function SmartExerciseCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowVideo(true)}
-                className="h-7 w-7 p-0"
+                className="tt-workout-exercise__icon-button"
+                aria-label={`Vaata harjutuse ${exercise.exercise_name} videot`}
               >
                 <Play className="h-3 w-3" />
               </Button>
@@ -511,11 +507,12 @@ export default function SmartExerciseCard({
               size="sm"
               onClick={() => setShowNotes(!showNotes)}
               className={cn(
-                "h-7 w-7 p-0",
+                "tt-workout-exercise__icon-button",
                 showNotes && "bg-primary/10 text-primary",
                 notes && !showNotes && "text-primary"
               )}
               title={notes ? `Kommentaar: ${notes.substring(0, 50)}${notes.length > 50 ? '...' : ''}` : "Lisa kommentaar"}
+              aria-label={notes ? "Muuda harjutuse kommentaari" : "Lisa harjutusele kommentaar"}
             >
               <MessageSquare className="h-3 w-3" />
             </Button>
@@ -588,59 +585,57 @@ export default function SmartExerciseCard({
             </div>
           </div>
         )}
-      </div>
+      </header>
 
       {/* Clean exercise details - sets, weight, reps, rest */}
-      <div className="p-3 bg-muted/10">
-        <div className="grid grid-cols-4 gap-3 text-center">
-          <div className="min-h-[3rem] flex flex-col justify-center">
-            <div className="text-sm font-medium text-muted-foreground mb-1">Seeriad</div>
-            <div className="text-lg font-semibold text-foreground">
+      <div className="tt-workout-exercise__summary">
+        <dl className="tt-workout-exercise__stats">
+          <div>
+            <dt>Seeriad</dt>
+            <dd>
               {allSetsCompleted ? exercise.sets : completedSets}/{exercise.sets}
-            </div>
+            </dd>
           </div>
-          <div className="min-h-[3rem] flex flex-col justify-center">
-            <div className="text-sm font-medium text-muted-foreground mb-1">Kaal</div>
-            <div className="text-lg font-semibold text-foreground">
+          <div>
+            <dt>Kaal</dt>
+            <dd>
               {exercise.weight_kg || 0}kg
-            </div>
+            </dd>
           </div>
-          <div className="min-h-[3rem] flex flex-col justify-center">
-            <div className="text-sm font-medium text-muted-foreground mb-1">Kordused</div>
-            <div className="text-lg font-semibold text-foreground">
+          <div>
+            <dt>Kordused</dt>
+            <dd>
               {exercise.reps}
-            </div>
+            </dd>
           </div>
-          <div className="min-h-[3rem] flex flex-col justify-center">
-            <div className="text-sm font-medium text-muted-foreground mb-1">Puhkus</div>
-            <div className="text-lg font-semibold text-foreground">
+          <div>
+            <dt>Puhkus</dt>
+            <dd>
               {exercise.rest_seconds || 60}s
-            </div>
+            </dd>
           </div>
-        </div>
+        </dl>
         
-        {/* Previous RIR display - show only if available */}
-        {previousRIR !== undefined && previousRIR !== null && (
-          <div className="mt-3 pt-3 border-t border-muted/30">
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Target className="h-3.5 w-3.5" />
-              <span>Eelmine RIR: <span className="font-semibold text-foreground">{previousRIR}</span></span>
-            </div>
+        {(currentRIR !== undefined || previousRIR !== undefined) ? (
+          <div className="tt-workout-exercise__rir">
+            <Target size={15} aria-hidden="true" />
+            {currentRIR !== undefined ? <span>Tänane RIR: <strong>{currentRIR === 5 ? "5+" : currentRIR}</strong></span> : null}
+            {previousRIR !== undefined ? <span>Eelmine: <strong>{previousRIR === 5 ? "5+" : previousRIR}</strong></span> : null}
           </div>
-        )}
+        ) : null}
         
         {/* Minimal progress bar */}
-        <div className="mt-3 w-full bg-muted rounded-full h-1.5 overflow-hidden">
+        <div className="tt-workout-exercise__progress" role="progressbar" aria-label={`${exercise.exercise_name} edenemine`} aria-valuemin={0} aria-valuemax={exercise.sets} aria-valuenow={completedSets}>
           <div 
-            className="bg-primary h-full transition-all duration-300"
+            className="tt-workout-exercise__progress-bar"
             style={{ width: `${(completedSets / exercise.sets) * 100}%` }}
           />
         </div>
       </div>
 
       {/* Sets Grid - Touch-friendly spacing */}
-      <div className="p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="tt-workout-exercise__sets">
+        <div className="tt-workout-set-grid">
           {Array.from({ length: exercise.sets }, (_, i) => i + 1).map((setNumber) => {
             const isCompleted = setNumber <= completedSets;
             const isCurrent = setNumber === currentSet;
@@ -649,20 +644,19 @@ export default function SmartExerciseCard({
             const suggestedWeight = getSuggestedValue("weight");
             
             return (
-              <Card 
+              <Card
                 key={setNumber}
                 className={cn(
-                  "transition-all duration-300 relative",
-                  isCompleted && "bg-green-50 border-green-200",
-                  isCurrent && !isCompleted && "ring-2 ring-primary shadow-lg scale-105 bg-blue-50 border-blue-200",
-                  !isCurrent && !isCompleted && "bg-muted/20"
+                  "tt-workout-set",
+                  isCompleted && "is-complete",
+                  isCurrent && !isCompleted && "is-current"
                 )}
               >
-                <CardContent className="p-3">
+                <CardContent className="tt-workout-set__content">
                   {/* Current set gets special treatment */}
                   
                   {/* Set Header */}
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="tt-workout-set__head">
                     <div className="flex items-center gap-2">
                       <Badge variant={isCompleted ? "default" : "outline"} className="text-xs">
                         {setNumber}
@@ -715,7 +709,7 @@ export default function SmartExerciseCard({
                                 });
                               }, 1000);
                             }}
-                            className="h-8 px-3 text-sm font-medium bg-primary hover:bg-primary/90"
+                            className="tt-workout-set__complete"
                           >
                             <Play className="h-3 w-3 mr-1" />
                             Alusta
@@ -725,7 +719,7 @@ export default function SmartExerciseCard({
                         <Button
                           size="sm"
                           onClick={() => handleSetComplete(setNumber)}
-                          className="h-8 px-3 text-sm font-medium bg-primary hover:bg-primary/90"
+                          className="tt-workout-set__complete"
                           disabled={!inputs.reps && !parseRepsToNumber(exercise.reps)}
                         >
                           <Check className="h-3 w-3 mr-1" />
@@ -738,18 +732,18 @@ export default function SmartExerciseCard({
                   {/* Streamlined Input Fields */}
                   <div className="space-y-3">
                     {/* Only show essential inputs in a clean layout */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                    <div className="tt-workout-set__fields">
+                      <div className="tt-workout-set__field">
+                        <label>
                           Kordused
                         </label>
-                        <div className="relative flex items-center gap-2">
-                          <Button variant="outline" size="sm" className="h-12 w-10 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleRepStep(setNumber, -1)} disabled={isCompleted}>-</Button>
-                          <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
+                        <div className="tt-workout-stepper">
+                          <Button variant="outline" size="sm" className="tt-workout-stepper__button" onClick={() => handleRepStep(setNumber, -1)} disabled={isCompleted} aria-label={`Vähenda ${setNumber}. seeria kordusi`}>−</Button>
+                          <div className={cn("tt-workout-stepper__value",
                             suggestedReps && !inputs.reps && "border-accent/50 bg-accent/5")}> 
                             {inputs.reps !== undefined ? inputs.reps : suggestedReps || parseRepsToNumber(exercise.reps) || 0}
                           </div>
-                          <Button variant="outline" size="sm" className="h-12 w-10 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleRepStep(setNumber, 1)} disabled={isCompleted}>+</Button>
+                          <Button variant="outline" size="sm" className="tt-workout-stepper__button" onClick={() => handleRepStep(setNumber, 1)} disabled={isCompleted} aria-label={`Suurenda ${setNumber}. seeria kordusi`}>+</Button>
                           {suggestedReps && !inputs.reps && (
                             <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
                           )}
@@ -757,17 +751,17 @@ export default function SmartExerciseCard({
                       </div>
                       
                       {(exercise.weight_kg && exercise.weight_kg > 0) ? (
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                        <div className="tt-workout-set__field">
+                          <label>
                             Kaal (kg)
                           </label>
-                          <div className="relative flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="h-12 w-10 bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleWeightStep(setNumber, -0.25)} disabled={isCompleted}>-</Button>
-                            <div className={cn("flex-1 text-center text-lg h-12 rounded-md border flex items-center justify-center",
+                          <div className="tt-workout-stepper">
+                            <Button variant="outline" size="sm" className="tt-workout-stepper__button" onClick={() => handleWeightStep(setNumber, -0.25)} disabled={isCompleted} aria-label={`Vähenda ${setNumber}. seeria raskust`}>−</Button>
+                            <div className={cn("tt-workout-stepper__value",
                               suggestedWeight && !inputs.kg && "border-accent/50 bg-accent/5")}> 
                               {(inputs.kg !== undefined ? inputs.kg : suggestedWeight || exercise.weight_kg || 0).toFixed(2)}
                             </div>
-                            <Button variant="outline" size="sm" className="h-12 w-10 bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleWeightStep(setNumber, 0.25)} disabled={isCompleted}>+</Button>
+                            <Button variant="outline" size="sm" className="tt-workout-stepper__button" onClick={() => handleWeightStep(setNumber, 0.25)} disabled={isCompleted} aria-label={`Suurenda ${setNumber}. seeria raskust`}>+</Button>
                             {suggestedWeight && !inputs.kg && (
                               <Zap className="h-4 w-4 text-accent absolute right-3 top-1/2 -translate-y-1/2" />
                             )}
@@ -868,15 +862,6 @@ export default function SmartExerciseCard({
       )}
 
       
-    </div>
+    </article>
   );
-  
-  // Cleanup timers on unmount or when exercise changes
-  useEffect(() => {
-    return () => {
-      Object.values(timerIntervalRef.current).forEach(interval => {
-        if (interval) clearInterval(interval);
-      });
-    };
-  }, [exercise.id]);
 }

@@ -1,18 +1,23 @@
-// src/pages/ProgramsList.tsx
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { RefreshCw, ArrowRight, BarChart3, BookOpen, Target, Edit, Check, X } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  CalendarDays,
+  Check,
+  Dumbbell,
+  Edit3,
+  Loader2,
+  RefreshCw,
+  Target,
+  X,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import useAccess from "@/hooks/useAccess";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
-type UUID = string;
-
-// Narrow to the columns we read from client_programs
 type ProgramRow = Pick<
   Database["public"]["Tables"]["client_programs"]["Row"],
   "id" | "assigned_to" | "start_date" | "is_active" | "title_override" | "inserted_at" | "template_id"
@@ -21,7 +26,7 @@ type ProgramRow = Pick<
 };
 
 type ShapedProgram = {
-  id: UUID;
+  id: string;
   title: string;
   start: string;
   status: "Aktiivne" | "Mitteaktiivne";
@@ -29,399 +34,343 @@ type ShapedProgram = {
   created: string;
 };
 
-function fmtDate(d: string | null): string {
-  if (!d) return "—";
-  const dt = new Date(d);
-  return Number.isNaN(dt.getTime()) ? "—" : dt.toLocaleDateString("et-EE");
+function fmtDate(date: string | null): string {
+  if (!date) return "—";
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString("et-EE");
 }
 
 export default function ProgramsList() {
   const { user } = useAuth();
-  const { canStatic, canPT, loading: accessLoading } = useAccess();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<ProgramRow[]>([]);
-  const firstLoadRef = useRef(true);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [savingTitleId, setSavingTitleId] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
   const load = useCallback(async () => {
-    if (!user) return;
-    setError(null);
+    if (!user) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
 
-    setReloading(!firstLoadRef.current);
-    setLoading(true);
+    const isInitialLoad = !hasLoadedRef.current;
+    setError(null);
+    if (isInitialLoad) setLoading(true);
+    else setReloading(true);
 
     try {
-      const { data, error: err } = await supabase
+      const { data, error: queryError } = await supabase
         .from("client_programs")
-        .select("id, assigned_to, start_date, is_active, title_override, inserted_at, template_id, templates:template_id(title)")
+        .select(
+          "id, assigned_to, start_date, is_active, title_override, inserted_at, template_id, templates:template_id(title)",
+        )
         .eq("assigned_to", user.id)
-        .not("assigned_to", "is", null) // Ensure assigned_to is not null
         .order("inserted_at", { ascending: false })
         .limit(100)
         .returns<ProgramRow[]>();
 
-      if (err) throw err;
-      
-      // Filter out inactive programs client-side (is_active = false)
-      // Keep programs where is_active is true or null (null is treated as active)
-      const activePrograms = (data ?? []).filter(p => p.is_active !== false);
-      setRows(activePrograms);
-    } catch (e) {
-      const msg =
-        e && typeof e === "object" && "message" in e
-          ? String((e as { message?: unknown }).message)
-          : "Viga programmide laadimisel.";
-      setError(msg);
+      if (queryError) throw queryError;
+
+      setRows((data ?? []).filter((program) => program.is_active !== false));
+    } catch (loadError) {
+      console.error("Programmide laadimine ebaõnnestus:", loadError);
+      setError("Programme ei õnnestunud laadida. Palun proovi uuesti.");
     } finally {
       setLoading(false);
       setReloading(false);
-      firstLoadRef.current = false;
+      hasLoadedRef.current = true;
     }
   }, [user]);
 
   useEffect(() => {
-    if (user) void load();
-  }, [user, load]);
+    void load();
+  }, [load]);
 
-  const handleSaveTitle = async (programId: string, newTitle: string, originalTitle: string) => {
+  const shapedPrograms = useMemo<ShapedProgram[]>(
+    () =>
+      rows.map((row) => {
+        const isActive = row.is_active !== false;
+        return {
+          id: row.id,
+          title: row.title_override || row.templates?.title || "Isiklik programm",
+          start: fmtDate(row.start_date),
+          status: isActive ? "Aktiivne" : "Mitteaktiivne",
+          isActive,
+          created: fmtDate(row.inserted_at),
+        };
+      }),
+    [rows],
+  );
+
+  const startEditingTitle = (program: ShapedProgram) => {
+    setEditingTitleId(program.id);
+    setEditingTitle(program.title);
+  };
+
+  const cancelEditingTitle = () => {
+    if (savingTitleId) return;
+    setEditingTitleId(null);
+    setEditingTitle("");
+  };
+
+  const saveTitle = async (programId: string) => {
+    if (!user || savingTitleId) return;
+
+    const titleOverride = editingTitle.trim() || null;
+    setSavingTitleId(programId);
+
     try {
-      const { error } = await supabase
-        .from('client_programs')
-        .update({ title_override: newTitle.trim() || null })
-        .eq('id', programId)
-        .eq('assigned_to', user!.id);
+      const { error: updateError } = await supabase
+        .from("client_programs")
+        .update({ title_override: titleOverride })
+        .eq("id", programId)
+        .eq("assigned_to", user.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      // Update local state
-      setRows(prev => prev.map(r => 
-        r.id === programId 
-          ? { ...r, title_override: newTitle.trim() || null }
-          : r
-      ));
-
-      toast({
-        title: "Nimetus muudetud",
-        description: "Programmi nimetus on edukalt muudetud",
-      });
-
+      setRows((currentRows) =>
+        currentRows.map((row) => (row.id === programId ? { ...row, title_override: titleOverride } : row)),
+      );
       setEditingTitleId(null);
       setEditingTitle("");
-    } catch (error) {
-      console.error("Error updating title:", error);
       toast({
-        title: "Viga",
-        description: "Nimetuse muutmine ebaõnnestus",
+        title: "Nimetus muudetud",
+        description: "Programmi uus nimetus on salvestatud.",
+      });
+    } catch (updateError) {
+      console.error("Programmi nimetuse muutmine ebaõnnestus:", updateError);
+      toast({
+        title: "Nimetust ei saanud muuta",
+        description: "Palun proovi hetke pärast uuesti.",
         variant: "destructive",
       });
+    } finally {
+      setSavingTitleId(null);
     }
   };
 
-  const shaped: ShapedProgram[] = useMemo(() => {
-    return rows.map((r) => {
-      const isActive = r.is_active !== false; // treat null as active
-      return {
-        id: r.id as UUID,
-        title: r.title_override || r.templates?.title || "Isiklik programm",
-        start: fmtDate(r.start_date),
-        status: isActive ? "Aktiivne" : "Mitteaktiivne",
-        isActive,
-        created: fmtDate(r.inserted_at),
-      };
-    });
-  }, [rows]);
-
-  // Determine user status and access logic
-  const isTrialUser = !canStatic && !canPT; // No paid access
-  const isPaidUser = canStatic || canPT; // Has paid access
-  const hasAssignedPrograms = rows.length > 0;
-  const shouldShowUpgradePrompt = isTrialUser && !hasAssignedPrograms;
-
-  if (!user) {
-    return (
-      <div className="mx-auto max-w-4xl p-4 md:p-6">
-        <div className="rounded-2xl border bg-card shadow-soft p-6 md:p-8 text-center">
-          <div className="text-lg font-medium mb-2">Logi sisse</div>
-          <p className="text-muted-foreground">Logi sisse, et näha oma programme.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading || accessLoading) {
-    return (
-      <div className="mx-auto max-w-6xl p-4 md:p-6">
-        <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="h-8 w-48 animate-pulse rounded-lg bg-muted" />
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-32 animate-pulse rounded-lg bg-muted" />
-            <div className="h-9 w-24 animate-pulse rounded-lg bg-muted" />
-          </div>
-        </div>
-        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border bg-card shadow-soft p-6 space-y-4">
-              <div className="h-6 w-3/4 animate-pulse rounded-md bg-muted" />
-              <div className="space-y-2">
-                <div className="h-3 w-full animate-pulse rounded bg-muted" />
-                <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
-              </div>
-              <div className="h-9 w-20 animate-pulse rounded-lg bg-muted ml-auto" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="mx-auto max-w-4xl p-4 md:p-6">
-        <div className="rounded-2xl border-destructive/20 bg-destructive/5 shadow-soft p-6 md:p-8 text-center">
-          <div className="text-lg font-medium text-destructive mb-3">Viga laadimisel</div>
-          <p className="text-destructive/80 mb-6">{error}</p>
-          <button
-            onClick={load}
-            className="inline-flex items-center gap-2 rounded-lg bg-destructive text-destructive-foreground px-4 py-2 text-sm font-medium hover:bg-destructive/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive transition-colors"
-            aria-busy={reloading}
-            disabled={reloading}
-          >
-            <RefreshCw className={`h-4 w-4 ${reloading ? "animate-spin" : ""}`} />
-            Proovi uuesti
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Show upgrade prompt for trial users without assigned programs
-  if (shouldShowUpgradePrompt) {
-    return (
-      <div className="mx-auto max-w-6xl p-4 md:p-6">
-        <header className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Minu programmid</h1>
-            <p className="text-sm text-muted-foreground mt-1">Vaata ja jätka oma isiklikke programme</p>
-          </div>
-        </header>
-
-        <div className="rounded-2xl border bg-card shadow-soft p-6 md:p-8 text-center">
-          <div className="text-xl font-semibold mb-3">Pole programme</div>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            Hetkel pole sulle ühtegi isiklikku programmi määratud. Tasuta tellijana saad vaadata staatilisi programme või tellida isiklikku programmi teenuste kaudu.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-            <Link
-              to="/programm"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-            >
-              <Target className="h-4 w-4" />
-              Vaata staatilisi programme
-            </Link>
-            <Link
-              to="/teenused"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-6 py-3 text-sm font-medium hover:bg-secondary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors"
-            >
-              <BookOpen className="h-4 w-4" />
-              Vaata teenuseid
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleTitleSubmit = (event: FormEvent<HTMLFormElement>, programId: string) => {
+    event.preventDefault();
+    void saveTitle(programId);
+  };
 
   return (
-    <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <header className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Minu programmid</h1>
-          <p className="text-sm text-muted-foreground mt-1">Vaata ja jätka oma isiklikke programme</p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <Link
-            to="/programs/journal"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-4 py-2.5 text-sm font-medium hover:bg-secondary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors"
-          >
-            <BookOpen className="h-4 w-4" />
-            Märkmik
-          </Link>
-          <Link
-            to="/programs/stats"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Minu statistika
-          </Link>
-          <button
-            onClick={load}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-            aria-busy={reloading}
-            title="Värskenda programme"
-            disabled={reloading}
-          >
-            <RefreshCw className={`h-4 w-4 ${reloading ? "animate-spin" : ""}`} />
-            Värskenda
-          </button>
-        </div>
-      </header>
-
-      {shaped.length === 0 ? (
-        <div className="rounded-2xl border bg-card shadow-soft p-6 md:p-8 text-center">
-          <div className="text-xl font-semibold mb-3">Pole programme</div>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            {isTrialUser 
-              ? "Hetkel pole sulle ühtegi isiklikku programmi määratud. Tasuta tellijana saad vaadata staatilisi programme või tellida isiklikku programmi teenuste kaudu."
-              : "Hetkel pole sulle ühtegi isiklikku programmi määratud. Võta ühendust oma treeneriga või vaata meie teenuseid, et tellida endale isiklik treeningprogramm."
-            }
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-            {isTrialUser ? (
-              <>
-                <Link
-                  to="/programm"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-                >
-                  <Target className="h-4 w-4" />
-                  Vaata staatilisi programme
-                </Link>
-                <Link
-                  to="/teenused"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-6 py-3 text-sm font-medium hover:bg-secondary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary transition-colors"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Vaata teenuseid
-                </Link>
-              </>
-            ) : (
-              <Link
-                to="/teenused"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-              >
-                <Target className="h-4 w-4" />
-                Vaata teenuseid
-              </Link>
-            )}
+    <div className="tt-app-home tt-programs-page">
+      <main className="tt-app-shell">
+        <section className="tt-app-hero" aria-labelledby="programs-title">
+          <div>
+            <p className="tt-app-kicker">Sinu treeninguruum</p>
+            <h1 id="programs-title" className="tt-app-hero__title">
+              Minu programmid.
+            </h1>
           </div>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3" role="list">
-          {shaped.map((p) => (
-            <article
-              key={p.id}
-              className="group rounded-2xl border bg-card shadow-soft hover:shadow-md p-6 transition-all duration-200 hover:border-primary/20 focus-within:ring-2 focus-within:ring-primary/20"
-              role="listitem"
+          <p className="tt-app-hero__note">
+            Kõik treeneri koostatud kavad ühes kohas. Ava programm ja jätka täpselt sealt, kus pooleli jäid.
+          </p>
+        </section>
+
+        <section aria-labelledby="program-tools-title">
+          <header className="tt-app-section-head">
+            <h2 id="program-tools-title" className="tt-app-section-head__title">
+              Tööriistad
+            </h2>
+            <span className="tt-app-section-head__label">Treeningu tugi</span>
+          </header>
+          <div className="tt-app-quick-grid tt-programs-tools">
+            <Link to="/programs/journal" className="tt-app-quick-link">
+              <BookOpen size={21} aria-hidden="true" />
+              <span className="tt-app-quick-link__label">
+                Märkmik
+                <ArrowRight size={17} aria-hidden="true" />
+              </span>
+            </Link>
+            <Link to="/programs/stats" className="tt-app-quick-link">
+              <BarChart3 size={21} aria-hidden="true" />
+              <span className="tt-app-quick-link__label">
+                Minu statistika
+                <ArrowRight size={17} aria-hidden="true" />
+              </span>
+            </Link>
+            <button
+              type="button"
+              className="tt-app-quick-link tt-programs-tool-button"
+              onClick={() => void load()}
+              disabled={loading || reloading}
+              aria-busy={reloading}
             >
-              <div className="flex flex-col h-full">
-                <div className="flex-1 space-y-3">
-                  {editingTitleId === p.id ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={editingTitle}
-                        onChange={(e) => setEditingTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const row = rows.find(r => r.id === p.id);
-                            handleSaveTitle(p.id, editingTitle, row?.title_override || row?.templates?.title || "");
-                          } else if (e.key === 'Escape') {
-                            setEditingTitleId(null);
-                            setEditingTitle("");
-                          }
-                        }}
-                        autoFocus
-                        className="h-9"
-                      />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          const row = rows.find(r => r.id === p.id);
-                          handleSaveTitle(p.id, editingTitle, row?.title_override || row?.templates?.title || "");
-                        }}
-                        className="h-9 w-9 p-0"
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditingTitleId(null);
-                          setEditingTitle("");
-                        }}
-                        className="h-9 w-9 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 group/title">
-                      <h3 
-                        className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer"
-                        onClick={() => {
-                          const row = rows.find(r => r.id === p.id);
-                          setEditingTitleId(p.id);
-                          setEditingTitle(row?.title_override || "");
-                        }}
-                      >
-                        {p.title}
-                      </h3>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          const row = rows.find(r => r.id === p.id);
-                          setEditingTitleId(p.id);
-                          setEditingTitle(row?.title_override || "");
-                        }}
-                        className="h-6 w-6 p-0 opacity-0 group-hover/title:opacity-100 transition-opacity"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                  <div className="space-y-1.5 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Algus:</span>
-                      <span>{p.start}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Staatus:</span>
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          p.isActive
-                            ? "bg-success/10 text-success border border-success/20"
-                            : "bg-muted text-muted-foreground border border-border"
-                        }`}
-                      >
-                        {p.status}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Lisatud:</span>
-                      <span>{p.created}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="pt-4 border-t border-border/50 mt-4">
-                  <Link
-                    to={`/programs/${p.id}`}
-                    className="inline-flex items-center justify-center w-full gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-                    aria-label={`Ava programm: ${p.title}`}
-                  >
-                    Ava programm
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
+              <RefreshCw className={reloading ? "animate-spin" : ""} size={21} aria-hidden="true" />
+              <span className="tt-app-quick-link__label">
+                {reloading ? "Värskendan…" : "Värskenda"}
+                <ArrowRight size={17} aria-hidden="true" />
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <section className="tt-programs-section" aria-labelledby="assigned-programs-title">
+          <header className="tt-app-section-head tt-programs-section__head">
+            <h2 id="assigned-programs-title" className="tt-app-section-head__title">
+              Sulle määratud
+            </h2>
+            {!loading && !error ? (
+              <span className="tt-programs-count">
+                {shapedPrograms.length} {shapedPrograms.length === 1 ? "programm" : "programmi"}
+              </span>
+            ) : null}
+          </header>
+
+          {loading ? (
+            <div className="tt-programs-skeleton" role="status" aria-label="Programmide laadimine">
+              <div className="tt-programs-skeleton__line tt-programs-skeleton__line--short" />
+              <div className="tt-programs-skeleton__line tt-programs-skeleton__line--title" />
+              <div className="tt-programs-skeleton__line" />
+              <span className="sr-only">Laen programme…</span>
+            </div>
+          ) : error ? (
+            <div className="tt-programs-empty" role="alert">
+              <span className="tt-programs-empty__icon" aria-hidden="true">
+                <RefreshCw size={22} />
+              </span>
+              <div>
+                <h3 className="tt-app-empty__title">Programme ei saanud laadida</h3>
+                <p className="tt-app-empty__copy">{error}</p>
+                <button
+                  type="button"
+                  className="tt-app-button tt-programs-empty__button"
+                  onClick={() => void load()}
+                  disabled={reloading}
+                >
+                  <RefreshCw className={reloading ? "animate-spin" : ""} size={17} aria-hidden="true" />
+                  Proovi uuesti
+                </button>
               </div>
-            </article>
-          ))}
-        </div>
-      )}
+            </div>
+          ) : shapedPrograms.length === 0 ? (
+            <div className="tt-programs-empty">
+              <span className="tt-programs-empty__icon" aria-hidden="true">
+                <Target size={23} />
+              </span>
+              <div>
+                <h3 className="tt-app-empty__title">Praegu pole sulle programmi määratud</h3>
+                <p className="tt-app-empty__copy">
+                  Kui treener kava määrab, ilmub see siia automaatselt. Seni saad vaadata teisi teenuseid.
+                </p>
+                <Link to="/teenused" className="tt-app-button tt-programs-empty__button">
+                  Vaata teenuseid
+                  <ArrowRight size={17} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="tt-programs-list" role="list">
+              {shapedPrograms.map((program) => (
+                <article key={program.id} className="tt-program-card" role="listitem">
+                  <header className="tt-program-card__head">
+                    <div className="tt-program-card__title-block">
+                      <p className="tt-app-eyebrow">Personaaltreening</p>
+                      {editingTitleId === program.id ? (
+                        <form
+                          className="tt-program-card__edit"
+                          onSubmit={(event) => handleTitleSubmit(event, program.id)}
+                        >
+                          <label className="sr-only" htmlFor={`program-title-${program.id}`}>
+                            Programmi nimetus
+                          </label>
+                          <input
+                            id={`program-title-${program.id}`}
+                            value={editingTitle}
+                            onChange={(event) => setEditingTitle(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Escape") cancelEditingTitle();
+                            }}
+                            className="tt-program-card__input"
+                            maxLength={120}
+                            autoFocus
+                            disabled={savingTitleId === program.id}
+                          />
+                          <button
+                            type="submit"
+                            className="tt-program-card__icon-button"
+                            aria-label="Salvesta nimetus"
+                            disabled={savingTitleId === program.id}
+                          >
+                            {savingTitleId === program.id ? (
+                              <Loader2 className="animate-spin" size={17} aria-hidden="true" />
+                            ) : (
+                              <Check size={17} aria-hidden="true" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className="tt-program-card__icon-button"
+                            onClick={cancelEditingTitle}
+                            aria-label="Tühista nimetuse muutmine"
+                            disabled={savingTitleId === program.id}
+                          >
+                            <X size={17} aria-hidden="true" />
+                          </button>
+                        </form>
+                      ) : (
+                        <button
+                          type="button"
+                          className="tt-program-card__title-button"
+                          onClick={() => startEditingTitle(program)}
+                          aria-label={`Muuda programmi „${program.title}” nimetust`}
+                        >
+                          <span>{program.title}</span>
+                          <Edit3 size={17} aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                    <span className={`tt-app-status${program.isActive ? " is-active" : ""}`}>
+                      <span className="tt-program-card__status-dot" aria-hidden="true" />
+                      {program.status}
+                    </span>
+                  </header>
+
+                  <dl className="tt-program-card__meta">
+                    <div>
+                      <dt>
+                        <CalendarDays size={16} aria-hidden="true" />
+                        Programmi algus
+                      </dt>
+                      <dd>{program.start}</dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <Dumbbell size={16} aria-hidden="true" />
+                        Lisatud
+                      </dt>
+                      <dd>{program.created}</dd>
+                    </div>
+                  </dl>
+
+                  <footer className="tt-program-card__footer">
+                    <div>
+                      <p className="tt-app-eyebrow">Järgmine samm</p>
+                      <p className="tt-program-card__footer-copy">Ava kava ja jätka oma treeningut.</p>
+                    </div>
+                    <Link
+                      to={`/programs/${program.id}`}
+                      className="tt-app-button tt-app-button--paper tt-app-button--wide"
+                      aria-label={`Ava programm: ${program.title}`}
+                    >
+                      Ava programm
+                      <ArrowRight size={17} aria-hidden="true" />
+                    </Link>
+                  </footer>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }

@@ -8,6 +8,8 @@ interface TrialPopupState {
   nextShowTime: number | null;
   dismissalReason: string | null;
   lastActivity: number;
+  isOnTrial: boolean;
+  isInGracePeriod: boolean;
 }
 
 interface TrialPopupManager {
@@ -32,6 +34,8 @@ export function useTrialPopupManager(): TrialPopupManager {
     nextShowTime: null,
     dismissalReason: null,
     lastActivity: Date.now(),
+    isOnTrial: trialStatus.isOnTrial,
+    isInGracePeriod: trialStatus.isInGracePeriod,
   });
 
   // Load state from localStorage on mount
@@ -165,6 +169,8 @@ export function useTrialPopupManager(): TrialPopupManager {
         userDismissed: false,
         dismissalReason: null,
         nextShowTime: null,
+        isOnTrial: trialStatus.isOnTrial,
+        isInGracePeriod: trialStatus.isInGracePeriod,
       }));
     }
   }, [trialStatus.isOnTrial, trialStatus.isInGracePeriod]);
@@ -181,4 +187,3 @@ export function useTrialPopupManager(): TrialPopupManager {
     timeUntilNextShow,
   };
 }
-

@@ -4,18 +4,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
-import { useSmartProgression, type ExerciseProgression } from "@/hooks/useSmartProgression";
 import { useProgressionRecommendations } from "@/hooks/useProgressionRecommendations";
 import ProgressionRecommendationDialog from "@/components/workout/ProgressionRecommendationDialog";
 import RIRDialog from "@/components/workout/RIRDialog";
 import { isTimeBasedExercise } from "@/utils/exerciseUtils";
 import { toast } from "sonner";
-import { getErrorMessage, getSeverityStyles, getActionButtonText } from '@/utils/errorMessages';
+import { getErrorMessage, getActionButtonText } from '@/utils/errorMessages';
 import { useLoadingState, LOADING_KEYS, getLoadingMessage } from '@/hooks/useLoadingState';
-import { LoadingIndicator, LoadingOverlay } from '@/components/ui/LoadingIndicator';
-import { logWorkoutError, logProgressionError, logDatabaseError, ErrorCategory } from '@/utils/errorLogger';
-import { trackSessionEndFailure, trackProgressionFailure, trackDataSaveFailure, WorkoutFailureType } from '@/utils/workoutFailureTracker';
-import { trackFeatureUsage, trackTaskCompletion, trackMobileInteraction, trackAPIResponseTime } from '@/utils/uxMetricsTracker';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { logWorkoutError, logDatabaseError } from '@/utils/errorLogger';
+import { trackSessionEndFailure } from '@/utils/workoutFailureTracker';
+import { trackTaskCompletion, trackMobileInteraction } from '@/utils/uxMetricsTracker';
 
 import ModernWorkoutHeader from "@/components/workout/ModernWorkoutHeader";
 import SmartExerciseCard from "@/components/workout/SmartExerciseCard";
@@ -23,17 +22,8 @@ import { WorkoutRestTimer } from "@/components/workout/WorkoutRestTimer";
 import PersonalTrainingCompletionDialog from "@/components/workout/PersonalTrainingCompletionDialog";
 import PTAccessValidator from "@/components/PTAccessValidator";
 import ErrorRecovery from "@/components/ErrorRecovery";
-import WorkoutFeedback from "@/components/workout/WorkoutFeedback";
+import WorkoutFeedback, { type WorkoutFeedbackValue } from "@/components/workout/WorkoutFeedback";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
-import { useLocation } from "react-router-dom";
-// Removed unused import: calculateExerciseProgression from progressionLogic
-
-// Helper function to parse reps string to number
-const parseRepsToNumber = (reps: string): number | null => {
-  if (!reps) return null;
-  const match = reps.match(/(\d+)/);
-  return match ? parseInt(match[1], 10) : null;
-};
 
 type ClientProgram = {
   id: string;
@@ -50,6 +40,16 @@ type ClientDay = {
 type ClientItem = {
   id: string;
   exercise_name: string;
+  base_exercise_name?: string | null;
+  exercise_alternatives?: Array<{
+    id: string;
+    alternative_name: string;
+    alternative_description?: string | null;
+    alternative_video_url?: string | null;
+    difficulty_level: 'easier' | 'same' | 'harder';
+    equipment_required?: string[] | null;
+    muscle_groups?: string[] | null;
+  }>;
   sets: number;
   reps: string;
   seconds?: number | null;
@@ -76,9 +76,8 @@ type SetLog = {
 
 export default function ModernWorkoutSession() {
   const { user } = useAuth();
-  const { trackFeatureUsage, trackPageView } = useTrackEvent();
+  const { trackFeatureUsage } = useTrackEvent();
   const navigate = useNavigate();
-  const location = useLocation();
   const { programId, dayId } = useParams<{ programId: string; dayId: string }>();
 
   // Core data
@@ -92,6 +91,7 @@ export default function ModernWorkoutSession() {
   const [setInputs, setSetInputs] = useState<Record<string, { reps?: number; seconds?: number; kg?: number }>>({});
   const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>({});
   const [exerciseRPE, setExerciseRPE] = useState<Record<string, number>>({});
+  const [currentRIR, setCurrentRIR] = useState<Record<string, number>>({});
   const [previousRIR, setPreviousRIR] = useState<Record<string, number>>({}); // Last session's RIR per exercise
   
   // Track completed exercises for RPE/RIR collection
@@ -99,7 +99,6 @@ export default function ModernWorkoutSession() {
   
   // Alternative exercises management
   const [openAlternativesFor, setOpenAlternativesFor] = useState<Record<string, boolean>>({});
-  const [selectedAlternative, setSelectedAlternative] = useState<Record<string, string>>({});
   // Store original names to support toggle back from alternative
   const [originalExerciseNames, setOriginalExerciseNames] = useState<Record<string, string>>({});
   
@@ -107,7 +106,7 @@ export default function ModernWorkoutSession() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { loadingStates, setLoading: setLoadingState, setError: setLoadingError, getLoadingState } = useLoadingState();
+  const { setLoading: setLoadingState, setError: setLoadingError, getLoadingState } = useLoadingState();
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
@@ -124,18 +123,14 @@ export default function ModernWorkoutSession() {
   });
 
   // New feedback system state
-  const [exerciseFeedbackEnabled, setExerciseFeedbackEnabled] = useState(false); // Disabled - clients control weight manually
+  const [exerciseFeedbackEnabled] = useState(false); // Disabled - clients control weight manually
   const [showWorkoutFeedback, setShowWorkoutFeedback] = useState(false);
-  const [exerciseProgression, setExerciseProgression] = useState<Record<string, {
-    newWeight: number;
-    change: number;
-    reason: string;
-  }>>({});
   
   // Ref for notes debounce timeout cleanup (Bug #4 fix)
   const notesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check if there are unsaved changes
+  // Keep the user from closing an active workout accidentally. Completed sets
+  // are already persisted, while the current set inputs can still be local.
   const hasUnsavedChanges = useMemo(() => {
     // Check if there are completed sets (workout has been started)
     if (Object.keys(setLogs).length > 0) {
@@ -158,12 +153,12 @@ export default function ModernWorkoutSession() {
   // Handle back navigation with confirmation
   const handleBackNavigation = useCallback(() => {
     if (hasUnsavedChanges && !session?.ended_at) {
-      setPendingNavigation(() => () => navigate("/programs"));
+      setPendingNavigation(() => () => navigate(`/programs/${programId}`));
       setShowLeaveConfirmation(true);
     } else {
-      navigate("/programs");
+      navigate(`/programs/${programId}`);
     }
-  }, [hasUnsavedChanges, session?.ended_at, navigate]);
+  }, [hasUnsavedChanges, session?.ended_at, navigate, programId]);
 
   // Browser navigation protection (refresh/close)
   useEffect(() => {
@@ -171,7 +166,7 @@ export default function ModernWorkoutSession() {
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = 'Kas oled kindel, et soovid lahkuda? Salvestamata muudatused võivad kaduda.';
+      e.returnValue = 'Treening on pooleli. Saad seda hiljem jätkata.';
       return e.returnValue;
     };
 
@@ -311,7 +306,7 @@ export default function ModernWorkoutSession() {
           throw new Error("Selles treeningu päevas pole harjutusi määratud. Palun võta ühendust toega.");
         }
 
-        setExercises(exerciseData);
+        setExercises(exerciseData as unknown as ClientItem[]);
         // Capture originals for toggle behavior
         const originals: Record<string, string> = {};
         for (const ex of exerciseData) {
@@ -336,7 +331,8 @@ export default function ModernWorkoutSession() {
          * - Survives across multiple workout sessions
          */
         const exerciseIds = exerciseData.map(ex => ex.id);
-        let preferredWeights: Record<string, number> = {}; // Map: "exerciseId:setNumber" -> weight_kg
+        const preferredWeights: Record<string, number> = {}; // Map: "exerciseId:setNumber" -> weight_kg
+        const previousSetValues: Record<string, { reps?: number; seconds?: number; kg?: number }> = {};
         
         try {
           // Priority 1: Load user's preferred weights from client_item_set_weights
@@ -357,39 +353,40 @@ export default function ModernWorkoutSession() {
             console.log(`[loadWorkout] Loaded ${preferences.length} weight preferences`);
           }
 
-          // Priority 2: Fallback to last completed session's set_logs if no preferences
-          if (Object.keys(preferredWeights).length === 0) {
-            const { data: lastSession, error: lastSessionError } = await supabase
-              .from('workout_sessions')
-              .select('id')
-              .eq('user_id', user.id)
-              .eq('client_day_id', dayId)
-              .not('ended_at', 'is', null)
-              .order('ended_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
+          // Always load the most recent completed workout. Reps and time do not
+          // have a separate preference table, so their last actual values are
+          // the source of truth for the next session. Weight preferences still
+          // take priority on a per-set basis.
+          const { data: lastSession, error: lastSessionError } = await supabase
+            .from("workout_sessions")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("client_day_id", dayId)
+            .not("ended_at", "is", null)
+            .order("ended_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-            if (lastSessionError) {
-              console.warn('[loadWorkout] Failed to load last session for fallback:', lastSessionError);
-            } else if (lastSession) {
-              const { data: lastWeights, error: lastWeightsError } = await supabase
-                .from('set_logs')
-                .select('client_item_id, set_number, weight_kg_done')
-                .eq('session_id', lastSession.id)
-                .in('client_item_id', exerciseIds)
-                .not('weight_kg_done', 'is', null);
+          if (lastSessionError) {
+            console.warn("[loadWorkout] Failed to load last completed session:", lastSessionError);
+          } else if (lastSession) {
+            const { data: lastSetLogs, error: lastSetLogsError } = await supabase
+              .from("set_logs")
+              .select("client_item_id, set_number, reps_done, seconds_done, weight_kg_done")
+              .eq("session_id", lastSession.id)
+              .in("client_item_id", exerciseIds);
 
-              if (lastWeightsError) {
-                console.warn('[loadWorkout] Failed to load last session weights:', lastWeightsError);
-              } else if (lastWeights && lastWeights.length > 0) {
-                lastWeights.forEach(log => {
-                  const key = `${log.client_item_id}:${log.set_number}`;
-                  if (log.weight_kg_done) {
-                    preferredWeights[key] = Number(log.weight_kg_done);
-                  }
-                });
-                console.log(`[loadWorkout] Loaded ${lastWeights.length} weights from last completed session`);
-              }
+            if (lastSetLogsError) {
+              console.warn("[loadWorkout] Failed to load previous set values:", lastSetLogsError);
+            } else {
+              lastSetLogs?.forEach((log) => {
+                const key = `${log.client_item_id}:${log.set_number}`;
+                previousSetValues[key] = {
+                  reps: log.reps_done ?? undefined,
+                  seconds: log.seconds_done ?? undefined,
+                  kg: log.weight_kg_done ?? undefined,
+                };
+              });
             }
           }
         } catch (prefLoadError) {
@@ -450,28 +447,23 @@ export default function ModernWorkoutSession() {
           });
         }
 
-        // Merge preferred weights with current session's set logs
-        // Priority: current session logs > preferences > last session > default
+        // Priority: current session > per-set weight preference > previous
+        // completed session > coach defaults.
         exerciseData.forEach(exercise => {
           for (let setNum = 1; setNum <= exercise.sets; setNum++) {
             const key = `${exercise.id}:${setNum}`;
-            
-            // Skip if already set from current session logs (they take priority)
-            if (inputsMap[key]?.kg !== undefined) {
-              continue;
-            }
+            if (logsMap[key]) continue;
 
-            // Use preferred weight if available, otherwise use default
+            const previousValues = previousSetValues[key] || {};
             const preferredWeight = preferredWeights[key];
             const defaultWeight = exercise.weight_kg;
-            const initialWeight = preferredWeight ?? defaultWeight;
+            const initialWeight = preferredWeight ?? previousValues.kg ?? defaultWeight ?? undefined;
 
-            if (initialWeight !== null && initialWeight !== undefined) {
-              inputsMap[key] = {
-                ...inputsMap[key],
-                kg: Number(initialWeight)
-              };
-            }
+            inputsMap[key] = {
+              ...(previousValues.reps !== undefined ? { reps: previousValues.reps } : {}),
+              ...(previousValues.seconds !== undefined ? { seconds: previousValues.seconds } : {}),
+              ...(initialWeight !== undefined ? { kg: Number(initialWeight) } : {}),
+            };
           }
         });
 
@@ -490,6 +482,7 @@ export default function ModernWorkoutSession() {
           if (notesData) {
             const notesMap: Record<string, string> = {};
             const rpeMap: Record<string, number> = {};
+            const currentRIRMap: Record<string, number> = {};
             const rirMap: Record<string, number> = {};
             
             // Group by client_item_id and take the latest note for each exercise
@@ -531,9 +524,20 @@ export default function ModernWorkoutSession() {
                 rirMap[note.client_item_id] = note.rir_done;
               }
             });
+
+            notesData.forEach((note: ExerciseNote) => {
+              if (
+                note.session_id === currentSessionId
+                && note.rir_done !== null
+                && note.rir_done !== undefined
+              ) {
+                currentRIRMap[note.client_item_id] = note.rir_done;
+              }
+            });
             
             setExerciseNotes(notesMap);
             setExerciseRPE(rpeMap);
+            setCurrentRIR(currentRIRMap);
             setPreviousRIR(rirMap);
           }
         }
@@ -705,8 +709,7 @@ export default function ModernWorkoutSession() {
             } else {
               console.log(`[handleSetComplete] Saved weight preference: ${exerciseId}:${setNumber} = ${actualWeight}kg`);
             }
-          })
-          .catch(error => {
+          }, error => {
             console.warn('[handleSetComplete] Unexpected error saving weight preference:', error);
             // Don't throw - continue normally
           });
@@ -838,7 +841,7 @@ export default function ModernWorkoutSession() {
       setSaving(false);
       setLoadingState(LOADING_KEYS.SET_COMPLETE, false);
     }
-  }, [session, user, dayId, programId, setInputs, exercises, getCompletedSetsForExercise, completedExerciseIds, trackFeatureUsage, setLogs]);
+  }, [session, user, dayId, programId, setInputs, exercises, getCompletedSetsForExercise, completedExerciseIds, trackFeatureUsage, setLogs, setLoadingError, setLoadingState]);
 
   const handleStartRest = useCallback((exercise: ClientItem) => {
     setRestTimer({
@@ -857,7 +860,7 @@ export default function ModernWorkoutSession() {
   }, []);
 
   // Weight update functions
-  const handleUpdateSingleSetWeight = useCallback(async (exerciseId: string, setNumber: number, newWeight: number) => {
+  const _handleUpdateSingleSetWeight = useCallback(async (exerciseId: string, setNumber: number, newWeight: number) => {
     if (!user) {
       console.error('No user context for weight update');
       return;
@@ -910,8 +913,7 @@ export default function ModernWorkoutSession() {
           } else {
             console.log(`[handleUpdateSingleSetWeight] Saved preference: ${exerciseId}:${setNumber} = ${newWeight}kg`);
           }
-        })
-        .catch(error => {
+        }, error => {
           console.error('[handleUpdateSingleSetWeight] Unexpected error saving preference:', error);
           // Don't throw - continue workout normally
         });
@@ -922,7 +924,7 @@ export default function ModernWorkoutSession() {
     }
   }, [user, exercises]);
 
-  const handleUpdateAllSetsWeight = useCallback(async (exerciseId: string, newWeight: number) => {
+  const _handleUpdateAllSetsWeight = useCallback(async (exerciseId: string, newWeight: number) => {
     if (!user) {
       console.error('No user context for weight update');
       return;
@@ -1082,7 +1084,7 @@ export default function ModernWorkoutSession() {
       } catch (error) {
         // Bug #5 fix: Proper error handling instead of silent failure
         console.error('Failed to save exercise notes:', error);
-        logDatabaseError(error as Error, ErrorCategory.EXERCISE_NOTES_SAVE, {
+        logDatabaseError(error as Error, {
           exerciseId,
           sessionId: session.id,
           dayId: dayId,
@@ -1122,7 +1124,7 @@ export default function ModernWorkoutSession() {
     } catch (error) {
       // Bug #5 fix: Proper error handling instead of silent failure
       console.error('Failed to save RPE:', error);
-      logDatabaseError(error as Error, ErrorCategory.EXERCISE_RPE_SAVE, {
+      logDatabaseError(error as Error, {
         exerciseId,
         sessionId: session.id,
         dayId: dayId,
@@ -1137,30 +1139,38 @@ export default function ModernWorkoutSession() {
   }, [session, user, dayId, programId]);
 
   const handleRIRSave = useCallback(async (exerciseId: string, rir: number) => {
-    if (!session || !user) return;
-    
-    // Save RIR to database
+    if (!session || !user || !dayId || !programId) {
+      throw new Error("Treeningu sessioon puudub");
+    }
+
     try {
-      const { error } = await supabase.from("exercise_notes").upsert({
-        session_id: session.id,
-        client_day_id: dayId!,
-        client_item_id: exerciseId,
-        program_id: programId!,
-        user_id: user.id,
-        rir_done: rir
-      }, {
-        onConflict: "session_id,client_item_id"
-      });
-      
-      if (error) throw error;
-      
-      // Close dialog
-      setRirDialogState({ isOpen: false, exerciseId: null, exerciseName: "" });
-      
-      toast.success("RIR salvestatud!");
+      const { data: savedRIR, error } = await supabase
+        .from("exercise_notes")
+        .upsert({
+          session_id: session.id,
+          client_day_id: dayId,
+          client_item_id: exerciseId,
+          program_id: programId,
+          user_id: user.id,
+          rir_done: rir,
+        }, {
+          onConflict: "session_id,client_item_id",
+        })
+        .select("id, rir_done")
+        .single();
+
+      if (error || savedRIR?.rir_done === null || savedRIR?.rir_done === undefined) {
+        throw error || new Error("RIR salvestamist ei kinnitatud");
+      }
+
+      setCurrentRIR((current) => ({ ...current, [exerciseId]: savedRIR.rir_done! }));
+      toast.success("RIR salvestatud");
     } catch (error) {
-      console.error('Failed to save RIR:', error);
-      toast.error("RIR salvestamine ebaõnnestus");
+      console.error("RIR salvestamine ebaõnnestus", error);
+      toast.error("RIR ei salvestunud", {
+        description: "Kontrolli ühendust ja proovi uuesti.",
+      });
+      throw error;
     }
   }, [session, user, dayId, programId]);
 
@@ -1225,10 +1235,10 @@ export default function ModernWorkoutSession() {
       // Fetch last two feedbacks for this exercise/user to gate recommendation
       const { data: lastTwo, error: lastErr } = await supabase
         .from('exercise_notes')
-        .select('id, created_at, exercise_feedback')
+        .select('id, inserted_at, exercise_feedback')
         .eq('user_id', user.id)
         .eq('client_item_id', exerciseId)
-        .order('created_at', { ascending: false })
+        .order('inserted_at', { ascending: false })
         .limit(2);
       if (!lastErr && Array.isArray(lastTwo) && lastTwo.length === 2) {
         const a = String(lastTwo[0]?.exercise_feedback || '');
@@ -1316,65 +1326,99 @@ export default function ModernWorkoutSession() {
   } | null>(null);
   const [isApplyingProgression, setIsApplyingProgression] = useState(false);
 
-  // Handle workout-level feedback
-  const handleWorkoutFeedback = useCallback(async (feedback: {
-    joint_pain: boolean;
-    joint_pain_location?: string;
-    fatigue_level: number;
-    energy_level: 'low' | 'normal' | 'high';
-    notes?: string;
-  }) => {
-    if (!session || !user) return;
+  // Save one feedback record per workout session. A retry updates the existing
+  // row instead of producing duplicate feedback for the same workout.
+  const handleWorkoutFeedback = useCallback(async (feedback: WorkoutFeedbackValue) => {
+    if (!session || !user || !programId) {
+      throw new Error("Treeningu sessioon puudub");
+    }
 
     try {
-      // Save workout feedback to database
-      await supabase.from("workout_feedback").insert({
+      const payload = {
         session_id: session.id,
         user_id: user.id,
-        program_id: programId!,
+        program_id: programId,
         joint_pain: feedback.joint_pain,
-        joint_pain_location: feedback.joint_pain_location ?? null,
+        joint_pain_location: feedback.joint_pain_location?.trim() || null,
         fatigue_level: feedback.fatigue_level,
         energy_level: feedback.energy_level,
-        notes: feedback.notes?.trim() || null // Ensure notes are trimmed and null instead of empty string
-      });
+        notes: feedback.notes?.trim() || null,
+      };
 
-      // Check last two feedback entries for gating condition
-      const { data: lastTwo, error: fetchErr } = await supabase
-        .from('workout_feedback')
-        .select('id, created_at, joint_pain, fatigue_level, energy_level')
-        .eq('user_id', user.id)
-        .eq('program_id', programId!)
-        .order('created_at', { ascending: false })
-        .limit(2);
-      if (fetchErr) {
-        console.warn('Failed to fetch last feedbacks', fetchErr);
-      } else if (Array.isArray(lastTwo) && lastTwo.length === 2) {
-        const a = lastTwo[0];
-        const b = lastTwo[1];
-        const samePain = Boolean(a.joint_pain) && Boolean(b.joint_pain);
-        const highFatigueTwice = Number(a.fatigue_level) >= 8 && Number(b.fatigue_level) >= 8;
-        const lowEnergyTwice = String(a.energy_level) === 'low' && String(b.energy_level) === 'low';
-        if (samePain || highFatigueTwice || lowEnergyTwice) {
-          setPendingProgressionFeedback({
-            fatigue_level: feedback.fatigue_level,
-            energy_level: feedback.energy_level,
-            joint_pain: feedback.joint_pain
-          });
-          setShowProgressionConfirm(true);
+      const { data: existingFeedback, error: existingFeedbackError } = await supabase
+        .from("workout_feedback")
+        .select("id")
+        .eq("session_id", session.id)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingFeedbackError) throw existingFeedbackError;
+
+      if (existingFeedback) {
+        const { data: updatedFeedback, error: updateFeedbackError } = await supabase
+          .from("workout_feedback")
+          .update(payload)
+          .eq("id", existingFeedback.id)
+          .eq("user_id", user.id)
+          .select("id")
+          .single();
+
+        if (updateFeedbackError || !updatedFeedback) {
+          throw updateFeedbackError || new Error("Tagasiside uuendamine ebaõnnestus");
+        }
+      } else {
+        const { data: insertedFeedback, error: insertFeedbackError } = await supabase
+          .from("workout_feedback")
+          .insert(payload)
+          .select("id")
+          .single();
+
+        if (insertFeedbackError || !insertedFeedback) {
+          throw insertFeedbackError || new Error("Tagasiside lisamine ebaõnnestus");
         }
       }
 
-      toast.success("Treeningu tagasiside salvestatud!");
+      const { data: lastTwo, error: fetchError } = await supabase
+        .from("workout_feedback")
+        .select("id, created_at, joint_pain, fatigue_level, energy_level")
+        .eq("user_id", user.id)
+        .eq("program_id", programId)
+        .order("created_at", { ascending: false })
+        .limit(2);
+
+      if (fetchError) {
+        console.warn("Viimase tagasiside laadimine ebaõnnestus", fetchError);
+      }
+
+      const shouldReviewProgression = Array.isArray(lastTwo) && lastTwo.length === 2 && (() => {
+        const [latest, previous] = lastTwo;
+        const jointPainTwice = Boolean(latest.joint_pain) && Boolean(previous.joint_pain);
+        const highFatigueTwice = Number(latest.fatigue_level) >= 8 && Number(previous.fatigue_level) >= 8;
+        const lowEnergyTwice = latest.energy_level === "low" && previous.energy_level === "low";
+        return jointPainTwice || highFatigueTwice || lowEnergyTwice;
+      })();
 
       setShowWorkoutFeedback(false);
-      
-      // Show completion dialog after feedback is submitted
-      setShowCompletionDialog(true);
+      toast.success("Tagasiside salvestatud");
 
+      if (shouldReviewProgression) {
+        setPendingProgressionFeedback({
+          fatigue_level: feedback.fatigue_level,
+          energy_level: feedback.energy_level,
+          joint_pain: feedback.joint_pain,
+        });
+        setShowProgressionConfirm(true);
+      } else {
+        setShowCompletionDialog(true);
+      }
     } catch (error) {
-      console.error('Error saving workout feedback:', error);
-      toast.error("Treeningu tagasiside salvestamine ebaõnnestus");
+      console.error("Treeningu tagasiside salvestamine ebaõnnestus", error);
+      toast.error("Tagasiside ei salvestunud", {
+        description: "Kontrolli ühendust ja proovi uuesti.",
+      });
+      throw error;
     }
   }, [session, user, programId]);
 
@@ -1393,7 +1437,7 @@ export default function ModernWorkoutSession() {
         p_joint_pain: pendingProgressionFeedback.joint_pain
       });
       if (progressionError) {
-        console.error('Volume progression error:', progressionError);
+        throw progressionError;
       } else if (progressionResults && progressionResults.length > 0) {
         type ProgressionResult = {
           exercise_name: string;
@@ -1412,275 +1456,156 @@ export default function ModernWorkoutSession() {
           joint_pain: pendingProgressionFeedback.joint_pain
         });
       }
+    } catch (error) {
+      console.error("Treeningmahu kohandamine ebaõnnestus", error);
+      toast.error("Kava kohandamine ei õnnestunud", {
+        description: "Tagasiside on salvestatud ja treening lõpetatud. Kava jäi muutmata.",
+      });
     } finally {
       setIsApplyingProgression(false);
       setShowProgressionConfirm(false);
       setPendingProgressionFeedback(null);
+      setShowCompletionDialog(true);
     }
-  }, [user, programId, pendingProgressionFeedback]);
-
-
-  // REMOVED: Old RPE/RIR progression system - replaced with new feedback system
-
-
-  // Get the smart progression hook at component level
-  const { autoProgressProgram } = useSmartProgression(programId, user?.id);
-
-  // Automatic progression based on RPE/RIR data using optimized algorithm
-  const applyAutomaticProgression = useCallback(async () => {
-    if (!session || !programId || !exercises.length) return;
-
-    try {
-      // Auto-progression disabled for weights - clients control manually via recommendation system
-      // Only volume progression (reps/sets) remains, handled via workout feedback confirmation dialog
-      // Skip database RPC auto-progression functions as they modify weights
-      // Note: autoProgressProgram RPC functions are skipped to prevent automatic weight changes
-    } catch (error) {
-      console.error('Smart progression failed, using fallback:', error);
-      
-      // Enhanced fallback to simple RPE-based progression
-      try {
-        let progressionCount = 0;
-        const progressionResults = [];
-        
-        for (const exercise of exercises) {
-          const rpe = exerciseRPE[exercise.id];
-          
-          // Only progress exercises with RPE data
-          if (!rpe || rpe < 1 || rpe > 10) continue;
-
-          // Get current exercise parameters
-          const currentWeight = exercise.weight_kg;
-          const currentReps = exercise.reps;
-          
-          // Enhanced progression logic with safety checks
-          let newWeight = currentWeight;
-          let newReps = currentReps;
-          let progressionReason = '';
-          
-          // Volume-only progression (reps/sets) - weight progression disabled
-          // Clients now control weight manually via recommendation system
-          if (rpe <= 5) {
-            // Very easy - add reps (no weight change)
-            if (currentReps && currentReps < 15) {
-              newReps = currentReps + 1;
-              progressionReason = 'Reps increased (RPE too low)';
-            }
-          } else if (rpe <= 6) {
-            // Easy - add reps (no weight change)
-            if (currentReps && currentReps < 12) {
-              newReps = currentReps + 1;
-              progressionReason = 'Reps increased (RPE low)';
-            }
-          } else if (rpe >= 9) {
-            // Hard - reduce reps (no weight change)
-            if (currentReps && currentReps > 5) {
-              newReps = currentReps - 1;
-              progressionReason = 'Reps decreased (RPE too high)';
-            }
-          } else if (rpe >= 10) {
-            // Very hard - reduce reps significantly (no weight change)
-            if (currentReps && currentReps > 3) {
-              newReps = Math.max(3, currentReps - 2);
-              progressionReason = 'Reps decreased significantly (RPE very high)';
-            }
-          } else {
-            // RPE 7-8 is perfect range - maintain current parameters
-            continue;
-          }
-
-          // Only update reps (weight progression disabled - clients control manually)
-          const repsChanged = newReps !== currentReps && newReps && currentReps;
-          
-          if (repsChanged) {
-            const updateData: { reps?: string } = {};
-            if (repsChanged) updateData.reps = newReps;
-            
-            const { error: updateError } = await supabase
-              .from("client_items")
-              .update(updateData)
-              .eq("id", exercise.id);
-              
-            if (!updateError) {
-              progressionCount++;
-              progressionResults.push({
-                exercise_name: exercise.exercise_name,
-                reason: progressionReason,
-                old_reps: currentReps,
-                new_reps: newReps
-              });
-            } else {
-              console.error(`Failed to update exercise ${exercise.id}:`, updateError);
-            }
-          }
-        }
-        
-        // Log progression results
-        if (progressionCount > 0) {
-          console.log(`Fallback progression applied to ${progressionCount} exercises:`, progressionResults);
-        }
-        
-      } catch (fallbackError) {
-        console.error('Enhanced fallback progression failed:', {
-          error: fallbackError,
-          programId,
-          exerciseCount: exercises.length,
-          timestamp: new Date().toISOString()
-        });
-        // Don't throw - progression is non-critical
-      }
-    }
-  }, [session, programId, exercises, exerciseRPE, autoProgressProgram]);
+  }, [user, programId, pendingProgressionFeedback, trackFeatureUsage]);
 
   const handleFinishWorkout = useCallback(async () => {
-    console.log('handleFinishWorkout called', { session: !!session, sessionId: session?.id });
-    if (!session) return;
+    if (!session || !user || !programId || !dayId || saving) return;
+
+    if (session.ended_at) {
+      setShowWorkoutFeedback(true);
+      return;
+    }
 
     try {
       setSaving(true);
-      console.log('Starting workout finish process...');
-      
-      // Save any remaining exercise notes and RPE that weren't saved yet
+
+      // Persist every remaining exercise note before ending the session. If one
+      // write fails, the session remains open and the user can safely retry.
       for (const exercise of exercises) {
         const notes = exerciseNotes[exercise.id];
         const rpe = exerciseRPE[exercise.id];
-        
+
         if (notes || rpe) {
-          await supabase.from("exercise_notes").upsert({
-            session_id: session.id,
-            client_day_id: dayId!,
-            client_item_id: exercise.id,
-            program_id: programId!,
-            user_id: user!.id,
-            notes: notes || undefined,
-            rpe: rpe || undefined
-          }, {
-            onConflict: 'session_id,client_item_id'
-          });
+          const { error: noteError } = await supabase
+            .from("exercise_notes")
+            .upsert({
+              session_id: session.id,
+              client_day_id: dayId,
+              client_item_id: exercise.id,
+              program_id: programId,
+              user_id: user.id,
+              notes: notes?.trim() || null,
+              rpe: rpe ?? null,
+            }, {
+              onConflict: "session_id,client_item_id",
+            });
+
+          if (noteError) throw noteError;
         }
       }
-      
-      // End session
-      console.log('Updating workout session...', { sessionId: session.id });
-      const { error } = await supabase
+
+      const endedAt = new Date().toISOString();
+      const durationMinutes = Math.max(
+        0,
+        Math.round((new Date(endedAt).getTime() - new Date(session.started_at).getTime()) / 60000),
+      );
+
+      const { data: endedSession, error: endSessionError } = await supabase
         .from("workout_sessions")
-        .update({ 
-          ended_at: new Date().toISOString(),
-          duration_minutes: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)
+        .update({
+          ended_at: endedAt,
+          duration_minutes: durationMinutes,
         })
-        .eq("id", session.id);
+        .eq("id", session.id)
+        .eq("user_id", user.id)
+        .is("ended_at", null)
+        .select("id, started_at, ended_at")
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error updating workout session:', error);
-        throw error;
+      if (endSessionError) throw endSessionError;
+
+      let savedSession = endedSession;
+
+      // A double click or network retry may arrive after the first request has
+      // already completed. Treat that as success only when the owned session is
+      // verifiably ended.
+      if (!savedSession) {
+        const { data: existingSession, error: existingSessionError } = await supabase
+          .from("workout_sessions")
+          .select("id, started_at, ended_at")
+          .eq("id", session.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (existingSessionError || !existingSession?.ended_at) {
+          throw existingSessionError || new Error("Treeningu lõpetamist ei kinnitatud");
+        }
+
+        savedSession = existingSession;
       }
-      console.log('Workout session updated successfully');
 
-      // Track workout completion first (before progression analysis)
-      trackFeatureUsage('workout', 'completed', {
+      setSession((currentSession) => currentSession
+        ? { ...currentSession, ended_at: savedSession?.ended_at || endedAt }
+        : currentSession);
+
+      trackFeatureUsage("workout", "completed", {
         program_id: programId,
         day_id: dayId,
         exercise_count: exercises.length,
-        duration_minutes: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000),
-        completed_exercises: completedExerciseIds.size
+        duration_minutes: durationMinutes,
+        completed_exercises: completedExerciseIds.size,
       });
 
-      // Track task completion for UX metrics
-      trackTaskCompletion('workout_completion', true, {
-        userId: user?.id,
-        sessionId: session?.id,
-        programId: programId,
-        dayId: dayId,
+      trackTaskCompletion("workout_completion", true, {
+        userId: user.id,
+        sessionId: session.id,
+        programId,
+        dayId,
         additionalData: {
           exerciseCount: exercises.length,
           completedExercises: completedExerciseIds.size,
-          durationMinutes: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)
-        }
+          durationMinutes,
+        },
       });
 
-      // Show success message immediately
-      toast.success("Treening lõpetatud!");
-      
-      // Show workout feedback first, then completion dialog
+      toast.success("Treening salvestatud");
       setShowWorkoutFeedback(true);
-
-      // Apply automatic progression based on RPE/RIR data (truly non-blocking)
-      // Use setTimeout to ensure it doesn't block the UI
-      setTimeout(async () => {
-        try {
-          await applyAutomaticProgression();
-        } catch (progressionError) {
-          // Track progression analysis failure
-          if (user?.id && session?.id) {
-            trackProgressionFailure(user.id, session.id, progressionError, {
-              programId,
-              dayId,
-              exerciseCount: exercises.length,
-              completedExercises: completedExerciseIds.size,
-              sessionDuration: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)
-            });
-          }
-
-          // Log progression analysis failure
-          logProgressionError(progressionError, {
-            userId: user?.id,
-            sessionId: session?.id,
-            programId: programId,
-            dayId: dayId,
-            action: 'progression_analysis',
-            component: 'ModernWorkoutSession',
-            additionalData: {
-              exerciseCount: exercises.length,
-              completedExercises: completedExerciseIds.size
-            }
-          });
-          console.error('Progression analysis failed (non-critical):', progressionError);
-          // Don't show error to user as workout is already completed
-        }
-      }, 100); // Small delay to ensure session is saved first
-
     } catch (err) {
-      // Track session end failure
-      if (user?.id && session?.id) {
-        trackSessionEndFailure(user.id, session.id, err, {
-          programId,
-          dayId,
-          exerciseCount: exercises.length,
-          completedExercises: completedExerciseIds.size,
-          sessionDuration: session ? Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000) : 0
-        });
-      }
+      trackSessionEndFailure(user.id, session.id, err, {
+        programId,
+        dayId,
+        exerciseCount: exercises.length,
+        completedExercises: completedExerciseIds.size,
+        sessionDuration: Math.max(0, Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)),
+      });
 
-      // Log the error with comprehensive context
       logWorkoutError(err, {
-        userId: user?.id,
-        sessionId: session?.id,
-        programId: programId,
-        dayId: dayId,
-        action: 'workout_completion',
-        component: 'ModernWorkoutSession',
+        userId: user.id,
+        sessionId: session.id,
+        programId,
+        dayId,
+        action: "workout_completion",
+        component: "ModernWorkoutSession",
         additionalData: {
           exerciseCount: exercises.length,
           completedExercises: completedExerciseIds.size,
-          sessionDuration: session ? Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000) : 0
-        }
+          sessionDuration: Math.max(0, Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)),
+        },
       });
 
-      const errorInfo = getErrorMessage(err, 'workout_complete');
+      const errorInfo = getErrorMessage(err, "workout_complete");
       toast.error(errorInfo.title, {
         description: errorInfo.description,
         action: errorInfo.action ? {
           label: getActionButtonText(errorInfo.action),
-          onClick: () => {
-            // Retry the operation
-            handleFinishWorkout();
-          }
-        } : undefined
+          onClick: handleFinishWorkout,
+        } : undefined,
       });
     } finally {
       setSaving(false);
     }
-  }, [session, exercises, exerciseNotes, exerciseRPE, dayId, programId, user, applyAutomaticProgression, trackFeatureUsage, completedExerciseIds.size]);
+  }, [session, user, programId, dayId, saving, exercises, exerciseNotes, exerciseRPE, trackFeatureUsage, completedExerciseIds.size]);
 
   // Function to automatically switch to alternative exercise (optimistic update)
   const switchToAlternative = useCallback(async (exerciseId: string, _alternativeName: string) => {
@@ -1712,7 +1637,8 @@ export default function ModernWorkoutSession() {
       const { error } = await supabase
         .from("client_items")
         .update({ exercise_name: targetName })
-        .eq("id", exerciseId);
+        .eq("id", exerciseId)
+        .eq("client_day_id", dayId!);
 
       if (error) {
         console.warn('[AlternativeSwitch] db error', error);
@@ -1741,15 +1667,15 @@ export default function ModernWorkoutSession() {
       });
       toast.error("Viga harjutuse vahetamisel");
     }
-  }, [supabase, exercises, session?.id, trackMobileInteraction, logWorkoutError, user?.id, programId, dayId, setExercises]);
+  }, [exercises, session?.id, user?.id, programId, dayId, originalExerciseNames]);
 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Laadin treeningut...</p>
+      <div className="tt-app-loading" role="status">
+        <div className="tt-app-loading__inner">
+          <div className="tt-app-loading__mark" aria-hidden="true" />
+          <p className="tt-app-loading__copy">Laen treeningut…</p>
         </div>
       </div>
     );
@@ -1779,7 +1705,7 @@ export default function ModernWorkoutSession() {
 
   return (
     <PTAccessValidator>
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
+      <div className="tt-app-home tt-workout-page">
         {/* Header */}
         <ModernWorkoutHeader
           programTitle={program?.title_override || "Isiklik programm"}
@@ -1788,6 +1714,7 @@ export default function ModernWorkoutSession() {
           onBack={handleBackNavigation}
           startedAt={session?.started_at || new Date().toISOString()}
           isFinished={!!session?.ended_at}
+          isFinishing={saving}
           onFinish={handleFinishWorkout}
           completedSets={completedSets}
           totalSets={totalSets}
@@ -1804,15 +1731,15 @@ export default function ModernWorkoutSession() {
 
         {/* Day Notes */}
         {day?.note && (
-          <div className="px-4 py-3 border-b bg-muted/30">
-            <p className="text-sm text-muted-foreground">
-              <strong>Märkus:</strong> {day.note}
-            </p>
-          </div>
+          <aside className="tt-workout-note">
+            <p className="tt-app-eyebrow">Treeneri märkus</p>
+            <p>{day.note}</p>
+          </aside>
         )}
 
         {/* Exercises */}
-        <div className="px-4 py-6 space-y-6 relative">
+        <main className="tt-workout-shell">
+          <div className="tt-workout-exercises">
           {/* Loading overlay for set completion */}
           {getLoadingState(LOADING_KEYS.SET_COMPLETE).isLoading && (
             <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
@@ -1851,6 +1778,7 @@ export default function ModernWorkoutSession() {
               onNotesChange={(notes) => handleNotesChange(exercise.id, notes)}
               rpe={exerciseRPE[exercise.id]}
               onRPEChange={(rpe) => handleRPEChange(exercise.id, rpe)}
+              currentRIR={currentRIR[exercise.id]}
               previousRIR={previousRIR[exercise.id]}
               onSwitchToAlternative={switchToAlternative}
               showAlternatives={openAlternativesFor[exercise.id] || false}
@@ -1863,12 +1791,15 @@ export default function ModernWorkoutSession() {
               onRecommendationClick={() => setRecommendationDialogState({ isOpen: true, exerciseId: exercise.id })}
             />
           ))}
-        </div>
+          </div>
+        </main>
 
 
         {/* Completion Dialog */}
         <PersonalTrainingCompletionDialog
           isOpen={showCompletionDialog}
+          programId={programId}
+          workoutSummary={getWorkoutSummary()}
           onClose={() => {
             setShowCompletionDialog(false);
             // Don't auto-navigate on close - let user choose via buttons
@@ -1906,6 +1837,7 @@ export default function ModernWorkoutSession() {
                 });
               }
               setPendingProgressionFeedback(null);
+              setShowCompletionDialog(true);
             }}
             onConfirm={confirmApplyProgression}
             title="Rakenda treeningu muudatused?"
@@ -1959,6 +1891,7 @@ export default function ModernWorkoutSession() {
             onClose={() => setRirDialogState({ isOpen: false, exerciseId: null, exerciseName: "" })}
             onSave={(rir) => handleRIRSave(rirDialogState.exerciseId!, rir)}
             exerciseName={rirDialogState.exerciseName}
+            initialValue={currentRIR[rirDialogState.exerciseId]}
           />
         )}
 
@@ -1976,19 +1909,19 @@ export default function ModernWorkoutSession() {
               setPendingNavigation(null);
             }
           }}
-          title="Kas oled kindel, et soovid lahkuda?"
-          description="Sul on salvestamata muudatusi. Kui lahkud nüüd, võivad need kaduda."
-          confirmText="Jah, lahku"
+          title="Kas soovid treeningust väljuda?"
+          description="Treening jääb pooleli ja saad seda hiljem samast kohast jätkata. Praeguse seeria veel kinnitamata väärtused võivad kaduda."
+          confirmText="Välju treeningust"
           cancelText="Tühista"
           variant="warning"
         />
 
         {/* Loading Overlay */}
         {saving && (
-          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-background rounded-lg p-6 shadow-lg">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-sm text-muted-foreground">Salvestame...</p>
+          <div className="tt-workout-saving" role="status">
+            <div className="tt-workout-saving__card">
+              <div className="tt-app-loading__mark" aria-hidden="true" />
+              <p>Salvestan…</p>
             </div>
           </div>
         )}

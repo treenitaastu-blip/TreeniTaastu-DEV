@@ -1,0 +1,68 @@
+:root {
+  --color-paper: oklch(98% 0.006 227);
+  --color-paper-2: oklch(95.5% 0.009 227);
+  --color-paper-3: oklch(92% 0.012 227);
+  --color-rule: oklch(84% 0.012 227);
+  --color-rule-2: oklch(72% 0.016 227);
+  --color-muted: oklch(51% 0.014 227);
+  --color-neutral: oklch(40% 0.016 227);
+  --color-ink-2: oklch(31% 0.014 227);
+  --color-ink: oklch(22% 0.014 227);
+  --color-accent: oklch(64.29% 0.124 226.92);
+  --color-accent-2: oklch(72.2% 0.1366 224.87);
+  --color-accent-ink: oklch(22% 0.014 227);
+  --color-focus: oklch(57% 0.19 227);
+  --color-error: oklch(53% 0.19 25);
+  --color-error-paper: oklch(96% 0.022 25);
+  --color-success: oklch(46% 0.12 152);
+  --color-success-paper: oklch(96% 0.02 152);
+  --color-warning: oklch(53% 0.13 70);
+  --color-warning-paper: oklch(96% 0.025 70);
+
+  --font-display: "Bricolage Grotesque", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-outlier: "IBM Plex Mono", ui-monospace, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.5625rem;
+  --text-xl: 1.953rem;
+  --text-2xl: 2.441rem;
+  --text-display-s: clamp(2.25rem, 4vw + 0.75rem, 3.75rem);
+  --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4.5rem;
+  --space-3xl: 7rem;
+  --space-4xl: 10rem;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --rule-hair: 1px;
+  --rule-fine: 2px;
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+  --radius-input: 0.75rem;
+  --shadow-card: 0 1px 2px oklch(22% 0.014 227 / 0.05);
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}

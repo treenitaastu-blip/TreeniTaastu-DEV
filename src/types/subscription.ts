@@ -21,16 +21,17 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   trial_self_guided: {
     id: 'trial_self_guided',
     name: 'Tasuta proov',
-    description: 'Alusta tasuta ja kogeda kõiki funktsioone 7 päeva jooksul',
+    description: 'Proovi staatilisi ja PT treeningkavasid tasuta 7 päeva',
     price: 0,
     currency: 'EUR',
     interval: 'month',
     trialDays: 7,
     features: [
-      'Kõik treeningprogrammid ja harjutused',
+      'Staatilised treeningkavad',
+      'PT treeningkavad',
       'Videojuhised kõigile harjutustele',
       'Progressi jälgimine',
-      '7 päeva täielik ligipääs'
+      '7 päeva ligipääsu mõlemale kavatüübile'
     ],
     tier: 'trial'
   },
