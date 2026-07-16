@@ -4,18 +4,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
-import { useSmartProgression, type ExerciseProgression } from "@/hooks/useSmartProgression";
 import { useProgressionRecommendations } from "@/hooks/useProgressionRecommendations";
 import ProgressionRecommendationDialog from "@/components/workout/ProgressionRecommendationDialog";
 import RIRDialog from "@/components/workout/RIRDialog";
 import { isTimeBasedExercise } from "@/utils/exerciseUtils";
 import { toast } from "sonner";
-import { getErrorMessage, getSeverityStyles, getActionButtonText } from '@/utils/errorMessages';
+import { getErrorMessage, getActionButtonText } from '@/utils/errorMessages';
 import { useLoadingState, LOADING_KEYS, getLoadingMessage } from '@/hooks/useLoadingState';
-import { LoadingIndicator, LoadingOverlay } from '@/components/ui/LoadingIndicator';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { logWorkoutError, logProgressionError, logDatabaseError } from '@/utils/errorLogger';
-import { trackSessionEndFailure, trackProgressionFailure, trackDataSaveFailure, WorkoutFailureType } from '@/utils/workoutFailureTracker';
-import { trackFeatureUsage, trackTaskCompletion, trackMobileInteraction, trackAPIResponseTime } from '@/utils/uxMetricsTracker';
+import { trackSessionEndFailure, trackProgressionFailure } from '@/utils/workoutFailureTracker';
+import { trackTaskCompletion, trackMobileInteraction } from '@/utils/uxMetricsTracker';
 
 import ModernWorkoutHeader from "@/components/workout/ModernWorkoutHeader";
 import SmartExerciseCard from "@/components/workout/SmartExerciseCard";
@@ -25,7 +24,6 @@ import PTAccessValidator from "@/components/PTAccessValidator";
 import ErrorRecovery from "@/components/ErrorRecovery";
 import WorkoutFeedback from "@/components/workout/WorkoutFeedback";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
-import { useLocation } from "react-router-dom";
 // Removed unused import: calculateExerciseProgression from progressionLogic
 
 // Helper function to parse reps string to number
@@ -86,9 +84,8 @@ type SetLog = {
 
 export default function ModernWorkoutSession() {
   const { user } = useAuth();
-  const { trackFeatureUsage, trackPageView } = useTrackEvent();
+  const { trackFeatureUsage } = useTrackEvent();
   const navigate = useNavigate();
-  const location = useLocation();
   const { programId, dayId } = useParams<{ programId: string; dayId: string }>();
 
   // Core data
@@ -109,7 +106,6 @@ export default function ModernWorkoutSession() {
   
   // Alternative exercises management
   const [openAlternativesFor, setOpenAlternativesFor] = useState<Record<string, boolean>>({});
-  const [selectedAlternative, setSelectedAlternative] = useState<Record<string, string>>({});
   // Store original names to support toggle back from alternative
   const [originalExerciseNames, setOriginalExerciseNames] = useState<Record<string, string>>({});
   
@@ -117,7 +113,7 @@ export default function ModernWorkoutSession() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { loadingStates, setLoading: setLoadingState, setError: setLoadingError, getLoadingState } = useLoadingState();
+  const { setLoading: setLoadingState, setError: setLoadingError, getLoadingState } = useLoadingState();
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
@@ -134,18 +130,14 @@ export default function ModernWorkoutSession() {
   });
 
   // New feedback system state
-  const [exerciseFeedbackEnabled, setExerciseFeedbackEnabled] = useState(false); // Disabled - clients control weight manually
+  const [exerciseFeedbackEnabled] = useState(false); // Disabled - clients control weight manually
   const [showWorkoutFeedback, setShowWorkoutFeedback] = useState(false);
-  const [exerciseProgression, setExerciseProgression] = useState<Record<string, {
-    newWeight: number;
-    change: number;
-    reason: string;
-  }>>({});
   
   // Ref for notes debounce timeout cleanup (Bug #4 fix)
   const notesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check if there are unsaved changes
+  // Keep the user from closing an active workout accidentally. Completed sets
+  // are already persisted, while the current set inputs can still be local.
   const hasUnsavedChanges = useMemo(() => {
     // Check if there are completed sets (workout has been started)
     if (Object.keys(setLogs).length > 0) {
@@ -168,12 +160,12 @@ export default function ModernWorkoutSession() {
   // Handle back navigation with confirmation
   const handleBackNavigation = useCallback(() => {
     if (hasUnsavedChanges && !session?.ended_at) {
-      setPendingNavigation(() => () => navigate("/programs"));
+      setPendingNavigation(() => () => navigate(`/programs/${programId}`));
       setShowLeaveConfirmation(true);
     } else {
-      navigate("/programs");
+      navigate(`/programs/${programId}`);
     }
-  }, [hasUnsavedChanges, session?.ended_at, navigate]);
+  }, [hasUnsavedChanges, session?.ended_at, navigate, programId]);
 
   // Browser navigation protection (refresh/close)
   useEffect(() => {
@@ -181,7 +173,7 @@ export default function ModernWorkoutSession() {
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = 'Kas oled kindel, et soovid lahkuda? Salvestamata muudatused võivad kaduda.';
+      e.returnValue = 'Treening on pooleli. Saad seda hiljem jätkata.';
       return e.returnValue;
     };
 
@@ -346,7 +338,7 @@ export default function ModernWorkoutSession() {
          * - Survives across multiple workout sessions
          */
         const exerciseIds = exerciseData.map(ex => ex.id);
-        let preferredWeights: Record<string, number> = {}; // Map: "exerciseId:setNumber" -> weight_kg
+        const preferredWeights: Record<string, number> = {}; // Map: "exerciseId:setNumber" -> weight_kg
         
         try {
           // Priority 1: Load user's preferred weights from client_item_set_weights
@@ -847,7 +839,7 @@ export default function ModernWorkoutSession() {
       setSaving(false);
       setLoadingState(LOADING_KEYS.SET_COMPLETE, false);
     }
-  }, [session, user, dayId, programId, setInputs, exercises, getCompletedSetsForExercise, completedExerciseIds, trackFeatureUsage, setLogs]);
+  }, [session, user, dayId, programId, setInputs, exercises, getCompletedSetsForExercise, completedExerciseIds, trackFeatureUsage, setLogs, setLoadingError, setLoadingState]);
 
   const handleStartRest = useCallback((exercise: ClientItem) => {
     setRestTimer({
@@ -866,7 +858,7 @@ export default function ModernWorkoutSession() {
   }, []);
 
   // Weight update functions
-  const handleUpdateSingleSetWeight = useCallback(async (exerciseId: string, setNumber: number, newWeight: number) => {
+  const _handleUpdateSingleSetWeight = useCallback(async (exerciseId: string, setNumber: number, newWeight: number) => {
     if (!user) {
       console.error('No user context for weight update');
       return;
@@ -930,7 +922,7 @@ export default function ModernWorkoutSession() {
     }
   }, [user, exercises]);
 
-  const handleUpdateAllSetsWeight = useCallback(async (exerciseId: string, newWeight: number) => {
+  const _handleUpdateAllSetsWeight = useCallback(async (exerciseId: string, newWeight: number) => {
     if (!user) {
       console.error('No user context for weight update');
       return;
@@ -1425,14 +1417,11 @@ export default function ModernWorkoutSession() {
       setShowProgressionConfirm(false);
       setPendingProgressionFeedback(null);
     }
-  }, [user, programId, pendingProgressionFeedback]);
+  }, [user, programId, pendingProgressionFeedback, trackFeatureUsage]);
 
 
   // REMOVED: Old RPE/RIR progression system - replaced with new feedback system
 
-
-  // Get the smart progression hook at component level
-  const { autoProgressProgram } = useSmartProgression(programId, user?.id);
 
   // Automatic progression based on RPE/RIR data using optimized algorithm
   const applyAutomaticProgression = useCallback(async () => {
@@ -1458,12 +1447,10 @@ export default function ModernWorkoutSession() {
           if (!rpe || rpe < 1 || rpe > 10) continue;
 
           // Get current exercise parameters
-          const currentWeight = exercise.weight_kg;
           const currentReps = parseRepsToNumber(exercise.reps);
           if (currentReps === null) continue;
           
           // Enhanced progression logic with safety checks
-          let newWeight = currentWeight;
           let newReps = currentReps;
           let progressionReason = '';
           
@@ -1539,7 +1526,7 @@ export default function ModernWorkoutSession() {
         // Don't throw - progression is non-critical
       }
     }
-  }, [session, programId, exercises, exerciseRPE, autoProgressProgram]);
+  }, [session, programId, exercises, exerciseRPE]);
 
   const handleFinishWorkout = useCallback(async () => {
     console.log('handleFinishWorkout called', { session: !!session, sessionId: session?.id });
@@ -1577,7 +1564,8 @@ export default function ModernWorkoutSession() {
           ended_at: new Date().toISOString(),
           duration_minutes: Math.round((Date.now() - new Date(session.started_at).getTime()) / 60000)
         })
-        .eq("id", session.id);
+        .eq("id", session.id)
+        .eq("user_id", user.id);
 
       if (error) {
         console.error('Error updating workout session:', error);
@@ -1721,7 +1709,8 @@ export default function ModernWorkoutSession() {
       const { error } = await supabase
         .from("client_items")
         .update({ exercise_name: targetName })
-        .eq("id", exerciseId);
+        .eq("id", exerciseId)
+        .eq("client_day_id", dayId!);
 
       if (error) {
         console.warn('[AlternativeSwitch] db error', error);
@@ -1750,15 +1739,15 @@ export default function ModernWorkoutSession() {
       });
       toast.error("Viga harjutuse vahetamisel");
     }
-  }, [supabase, exercises, session?.id, trackMobileInteraction, logWorkoutError, user?.id, programId, dayId, setExercises]);
+  }, [exercises, session?.id, user?.id, programId, dayId, originalExerciseNames]);
 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Laadin treeningut...</p>
+      <div className="tt-app-loading" role="status">
+        <div className="tt-app-loading__inner">
+          <div className="tt-app-loading__mark" aria-hidden="true" />
+          <p className="tt-app-loading__copy">Laen treeningut…</p>
         </div>
       </div>
     );
@@ -1788,7 +1777,7 @@ export default function ModernWorkoutSession() {
 
   return (
     <PTAccessValidator>
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/10">
+      <div className="tt-app-home tt-workout-page">
         {/* Header */}
         <ModernWorkoutHeader
           programTitle={program?.title_override || "Isiklik programm"}
@@ -1813,15 +1802,15 @@ export default function ModernWorkoutSession() {
 
         {/* Day Notes */}
         {day?.note && (
-          <div className="px-4 py-3 border-b bg-muted/30">
-            <p className="text-sm text-muted-foreground">
-              <strong>Märkus:</strong> {day.note}
-            </p>
-          </div>
+          <aside className="tt-workout-note">
+            <p className="tt-app-eyebrow">Treeneri märkus</p>
+            <p>{day.note}</p>
+          </aside>
         )}
 
         {/* Exercises */}
-        <div className="px-4 py-6 space-y-6 relative">
+        <main className="tt-workout-shell">
+          <div className="tt-workout-exercises">
           {/* Loading overlay for set completion */}
           {getLoadingState(LOADING_KEYS.SET_COMPLETE).isLoading && (
             <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
@@ -1872,7 +1861,8 @@ export default function ModernWorkoutSession() {
               onRecommendationClick={() => setRecommendationDialogState({ isOpen: true, exerciseId: exercise.id })}
             />
           ))}
-        </div>
+          </div>
+        </main>
 
 
         {/* Completion Dialog */}
@@ -1985,19 +1975,19 @@ export default function ModernWorkoutSession() {
               setPendingNavigation(null);
             }
           }}
-          title="Kas oled kindel, et soovid lahkuda?"
-          description="Sul on salvestamata muudatusi. Kui lahkud nüüd, võivad need kaduda."
-          confirmText="Jah, lahku"
+          title="Kas soovid treeningust väljuda?"
+          description="Treening jääb pooleli ja saad seda hiljem samast kohast jätkata. Praeguse seeria veel kinnitamata väärtused võivad kaduda."
+          confirmText="Välju treeningust"
           cancelText="Tühista"
           variant="warning"
         />
 
         {/* Loading Overlay */}
         {saving && (
-          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-background rounded-lg p-6 shadow-lg">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-sm text-muted-foreground">Salvestame...</p>
+          <div className="tt-workout-saving" role="status">
+            <div className="tt-workout-saving__card">
+              <div className="tt-app-loading__mark" aria-hidden="true" />
+              <p>Salvestan…</p>
             </div>
           </div>
         )}

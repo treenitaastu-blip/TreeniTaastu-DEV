@@ -1,13 +1,24 @@
 // src/pages/ProgramDetail.tsx
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { FormEvent, useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import PTAccessValidator from "@/components/PTAccessValidator";
-import { CheckCircle2, Edit, Check, X, RefreshCw, AlertCircle, ChevronRight, Home } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Dumbbell,
+  Edit3,
+  Home,
+  Loader2,
+  RefreshCw,
+  X,
+} from "lucide-react";
 
 /** ---------- Types ---------- */
 type ClientProgram = {
@@ -71,6 +82,7 @@ export default function ProgramDetail() {
   const [error, setError] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [editTitleValue, setEditTitleValue] = useState("");
+  const [savingTitle, setSavingTitle] = useState(false);
 
   // "Continue" helpers
   const [openSessionDayId, setOpenSessionDayId] = useState<string | null>(null);
@@ -104,24 +116,6 @@ export default function ProgramDetail() {
     
     return weeks;
   }, [program?.days, completedDays]);
-
-  // Auto-progression function when a week is completed
-  const handleWeekCompletion = useCallback(async (weekNumber: number) => {
-    if (!program) return;
-
-    try {
-      // Increase difficulty by 5-10% for next week
-      const { error } = await supabase.rpc('auto_progress_program', {
-        p_program_id: program.id
-      });
-
-      if (error) {
-        console.error('Auto progression error:', error);
-      }
-    } catch (err) {
-      console.error('Failed to auto progress:', err);
-    }
-  }, [program]);
 
   const loadProgram = useCallback(async () => {
     if (!user || !programId) return;
@@ -334,42 +328,13 @@ export default function ProgramDetail() {
         const next = (days ?? []).find((d) => !completedSet.has(d.id));
         setNextUncompletedDayId(next ? next.id : null);
 
-        // Check for completed weeks and trigger auto-progression
-        // Note: handleWeekCompletion is NOT in deps to avoid infinite loop
-        // (it depends on program, which is set here)
-        const weeks = [];
-        for (let i = 0; i < days.length; i += 7) {
-          const weekDays = days.slice(i, i + 7);
-          const weekNumber = Math.floor(i / 7) + 1;
-          const isCompleted = weekDays.every(day => completedSet.has(day.id));
-          
-          if (isCompleted) {
-            // Call auto-progression RPC directly to avoid circular dependency
-            try {
-              const { error } = await supabase.rpc('auto_progress_program', {
-                p_program_id: programData.id
-              });
-              if (error) {
-                console.error('Auto progression error:', error);
-              }
-            } catch (err) {
-              console.error('Failed to auto progress:', err);
-            }
-          }
-        }
-        
       } catch (err) {
-        const msg =
-          err && typeof err === "object" && "message" in err
-            ? String((err as { message?: string }).message)
-            : "Failed to load program";
-        // eslint-disable-next-line no-console
         console.error("Failed to load program:", err);
-        setError(msg);
+        setError("Programmi ei õnnestunud laadida. Palun proovi uuesti.");
       } finally {
         setLoading(false);
       }
-    }, [user, programId]); // Removed handleWeekCompletion to break circular dependency
+    }, [user, programId]);
 
   useEffect(() => {
     loadProgram();
@@ -378,295 +343,336 @@ export default function ProgramDetail() {
   const openSessionDay = openSessionDayId ? daysById[openSessionDayId] : null;
   const nextDay = nextUncompletedDayId ? daysById[nextUncompletedDayId] : null;
 
+  const cancelTitleEditing = () => {
+    if (savingTitle) return;
+    setEditingTitle(false);
+    setEditTitleValue(program?.title_override || "");
+  };
+
+  const handleSaveTitle = async () => {
+    if (!programId || !user || savingTitle) return;
+
+    setSavingTitle(true);
+    try {
+      const titleOverride = editTitleValue.trim() || null;
+      const { error: updateError } = await supabase
+        .from("client_programs")
+        .update({ title_override: titleOverride })
+        .eq("id", programId)
+        .eq("assigned_to", user.id);
+
+      if (updateError) throw updateError;
+
+      setProgram((currentProgram) =>
+        currentProgram ? { ...currentProgram, title_override: titleOverride } : currentProgram,
+      );
+      setEditingTitle(false);
+      toast({
+        title: "Nimetus muudetud",
+        description: "Programmi uus nimetus on salvestatud.",
+      });
+    } catch (updateError) {
+      console.error("Error updating title:", updateError);
+      toast({
+        title: "Nimetust ei saanud muuta",
+        description: "Palun proovi hetke pärast uuesti.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+
+  const handleTitleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void handleSaveTitle();
+  };
+
   if (loading) {
     return (
-      <div className="min-h-[40vh] grid place-items-center p-6">
-        <div className="text-sm text-muted-foreground">Laadin programmi…</div>
+      <div className="tt-app-loading" role="status">
+        <div className="tt-app-loading__inner">
+          <div className="tt-app-loading__mark" aria-hidden="true" />
+          <p className="tt-app-loading__copy">Laen treeningkava…</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-[40vh] grid place-items-center p-6">
-        <div className="text-center space-y-4 max-w-md">
-          <div className="flex items-center justify-center gap-2 text-destructive mb-2">
-            <AlertCircle className="h-5 w-5" />
-            <h2 className="text-lg font-semibold">Viga programmi laadimisel</h2>
+      <div className="tt-app-home tt-program-detail">
+        <main className="tt-app-shell">
+          <div className="tt-program-state" role="alert">
+            <span className="tt-program-state__icon" aria-hidden="true">
+              <RefreshCw size={22} />
+            </span>
+            <div>
+              <h1 className="tt-app-panel__title">Kava ei saanud laadida</h1>
+              <p className="tt-app-empty__copy">{error}</p>
+              <div className="tt-program-state__actions">
+                <button type="button" onClick={() => void loadProgram()} className="tt-app-button">
+                  <RefreshCw size={17} aria-hidden="true" />
+                  Proovi uuesti
+                </button>
+                <Link to="/programs" className="tt-app-button tt-app-button--secondary">
+                  <ArrowLeft size={17} aria-hidden="true" />
+                  Minu programmid
+                </Link>
+              </div>
+            </div>
           </div>
-          <div className="text-sm text-muted-foreground mb-6">{error}</div>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button 
-              onClick={loadProgram} 
-              disabled={loading}
-              variant="default"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Proovi uuesti
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/programs">Tagasi programmidele</Link>
-            </Button>
-          </div>
-        </div>
+        </main>
       </div>
     );
   }
 
   if (!program) {
     return (
-      <div className="min-h-[40vh] grid place-items-center p-6">
-        <div className="text-center space-y-4">
-          <div className="text-sm text-muted-foreground">Programmi ei leitud</div>
-          <Button asChild variant="outline">
-            <Link to="/programs">Tagasi programmidele</Link>
-          </Button>
-        </div>
+      <div className="tt-app-home tt-program-detail">
+        <main className="tt-app-shell">
+          <div className="tt-program-state">
+            <span className="tt-program-state__icon" aria-hidden="true">
+              <Dumbbell size={22} />
+            </span>
+            <div>
+              <h1 className="tt-app-panel__title">Programmi ei leitud</h1>
+              <p className="tt-app-empty__copy">See kava ei ole enam saadaval.</p>
+              <Link to="/programs" className="tt-app-button tt-program-state__button">
+                <ArrowLeft size={17} aria-hidden="true" />
+                Minu programmid
+              </Link>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
-  const handleSaveTitle = async () => {
-    if (!programId || !user) return;
-    
-    try {
-      const { error } = await supabase
-        .from('client_programs')
-        .update({ title_override: editTitleValue.trim() || null })
-        .eq('id', programId)
-        .eq('assigned_to', user.id);
-
-      if (error) throw error;
-
-      setProgram(prev => prev ? { ...prev, title_override: editTitleValue.trim() || null } : prev);
-
-      toast({
-        title: "Nimetus muudetud",
-        description: "Programmi nimetus on edukalt muudetud",
-      });
-
-      setEditingTitle(false);
-    } catch (error) {
-      console.error("Error updating title:", error);
-      toast({
-        title: "Viga",
-        description: "Nimetuse muutmine ebaõnnestus",
-        variant: "destructive",
-      });
-    }
-  };
+  const programTitle = program.title_override || "Treeningkava";
+  const completedDayCount = program.days.filter((day) => completedDays.has(day.id)).length;
+  const progressPercentage = program.days.length
+    ? Math.round((completedDayCount / program.days.length) * 100)
+    : 0;
+  const startDate = program.start_date
+    ? new Date(program.start_date).toLocaleDateString("et-EE")
+    : "Täna";
 
   return (
     <PTAccessValidator>
-      <div className="min-h-screen bg-gradient-to-br from-brand-light via-background to-secondary">
-        <div className="mx-auto max-w-4xl px-4 py-8">
-          {/* Breadcrumb Navigation */}
-          <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6" aria-label="Breadcrumb">
-            <Link to="/programs" className="hover:text-foreground transition-colors flex items-center gap-1">
-              <Home className="h-4 w-4" />
-              Programmid
+      <div className="tt-app-home tt-program-detail">
+        <main className="tt-app-shell">
+          <nav className="tt-program-breadcrumb" aria-label="Breadcrumb">
+            <Link to="/programs">
+              <Home size={15} aria-hidden="true" />
+              Minu programmid
             </Link>
-            <ChevronRight className="h-4 w-4" />
-            <span className="text-foreground font-medium">
-              {program?.title_override || "Treeningprogramm"}
-            </span>
+            <ChevronRight size={15} aria-hidden="true" />
+            <span aria-current="page">{programTitle}</span>
           </nav>
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex-1">
+
+          <section className="tt-app-hero tt-program-detail__hero" aria-labelledby="program-title">
+            <div>
+              <p className="tt-app-kicker">Sinu treeningkava</p>
               {editingTitle ? (
-                <div className="flex items-center gap-2">
-                  <Input
+                <form className="tt-program-title-edit" onSubmit={handleTitleSubmit}>
+                  <label className="sr-only" htmlFor="program-detail-title">
+                    Programmi nimetus
+                  </label>
+                  <input
+                    id="program-detail-title"
                     value={editTitleValue}
-                    onChange={(e) => setEditTitleValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSaveTitle();
-                      } else if (e.key === 'Escape') {
-                        setEditingTitle(false);
-                        setEditTitleValue(program.title_override || "");
-                      }
+                    onChange={(event) => setEditTitleValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") cancelTitleEditing();
                     }}
-                    autoFocus
-                    className="text-3xl font-bold h-12"
+                    className="tt-program-title-edit__input"
                     placeholder="Treeningkava"
+                    maxLength={120}
+                    autoFocus
+                    disabled={savingTitle}
                   />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleSaveTitle}
-                    className="h-9 w-9 p-0"
+                  <button
+                    type="submit"
+                    className="tt-program-title-edit__button"
+                    aria-label="Salvesta programmi nimetus"
+                    disabled={savingTitle}
                   >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setEditingTitle(false);
-                      setEditTitleValue(program.title_override || "");
-                    }}
-                    className="h-9 w-9 p-0"
+                    {savingTitle ? (
+                      <Loader2 className="animate-spin" size={18} aria-hidden="true" />
+                    ) : (
+                      <Check size={18} aria-hidden="true" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="tt-program-title-edit__button"
+                    onClick={cancelTitleEditing}
+                    aria-label="Tühista nimetuse muutmine"
+                    disabled={savingTitle}
                   >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+                    <X size={18} aria-hidden="true" />
+                  </button>
+                </form>
               ) : (
-                <div className="flex items-center gap-2 group">
-                  <h1 
-                    className="text-3xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors"
-                    onClick={() => {
-                      setEditingTitle(true);
-                      setEditTitleValue(program.title_override || "");
-                    }}
-                  >
-                    {program.title_override || "Treeningkava"}
-                  </h1>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setEditingTitle(true);
-                      setEditTitleValue(program.title_override || "");
-                    }}
-                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              <div className="text-sm text-muted-foreground">
-                {program.days.length} päeva • Alustatud:{" "}
-                {program.start_date
-                  ? new Date(program.start_date).toLocaleDateString("et-EE")
-                  : "Täna"}
-              </div>
-            </div>
-            <Button asChild variant="outline">
-              <Link to="/programs">Tagasi</Link>
-            </Button>
-          </div>
-
-          {/* Continue banner */}
-          {openSessionDay ? (
-            <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
-              <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="text-sm">
-                  Jätkamisel on pooleli treening:{" "}
-                  <span className="font-medium">
-                    Päev {openSessionDay.day_order}: {openSessionDay.title}
-                  </span>
-                </div>
-                <Button asChild size="sm">
-                  <Link to={`/workout/${program.id}/${openSessionDay.id}`}>Jätka treeningut</Link>
-                </Button>
-              </div>
-            </div>
-          ) : nextDay ? (
-            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-900">
-              <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="text-sm">
-                  Soovitatav järgmine päev:{" "}
-                  <span className="font-medium">
-                    Päev {nextDay.day_order}: {nextDay.title}
-                  </span>
-                </div>
-                <Button asChild size="sm" variant="hero">
-                  <Link to={`/workout/${program.id}/${nextDay.id}`}>Alusta päevaga</Link>
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          {/* Weekly Training Days */}
-          <div className="space-y-8">
-            {program.days.length === 0 ? (
-              <div className="py-12 text-center">
-                <div className="mx-auto max-w-md space-y-4">
-                  <div className="text-lg font-medium text-foreground">
-                    Programmi päevi ei leitud
-                  </div>
-                  <p className="text-muted-foreground">
-                    Palun võta ühendust toega, et programm sulle määrata.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              weeklyDays.map((week) => (
-                <div
-                  key={week.weekNumber}
-                  className="rounded-2xl border-0 bg-card/80 p-6 shadow-soft backdrop-blur"
+                <button
+                  type="button"
+                  className="tt-program-detail__title-button"
+                  onClick={() => {
+                    setEditingTitle(true);
+                    setEditTitleValue(programTitle);
+                  }}
+                  aria-label={`Muuda programmi „${programTitle}” nimetust`}
                 >
-                  <div className="mb-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-2xl font-semibold text-foreground">
-                        Nädal {week.weekNumber}
-                      </h2>
-                      {week.isCompleted && (
-                        <div className="flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
-                          <CheckCircle2 className="h-4 w-4" />
-                          Lõpetatud
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <h1 id="program-title" className="tt-app-hero__title">
+                    {programTitle}
+                  </h1>
+                  <Edit3 size={19} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            <div className="tt-program-detail__hero-aside">
+              <p className="tt-app-hero__note">
+                Vali järgmine treeningpäev, märgi seeriad tehtuks ja hoia oma areng ühes kohas.
+              </p>
+              <Link to="/programs" className="tt-program-back-link">
+                <ArrowLeft size={16} aria-hidden="true" />
+                Kõik programmid
+              </Link>
+            </div>
+          </section>
 
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <dl className="tt-program-metrics" aria-label="Programmi ülevaade">
+            <div className="tt-program-metric">
+              <dt>Treeningpäevi</dt>
+              <dd>{program.days.length}</dd>
+            </div>
+            <div className="tt-program-metric">
+              <dt>Tehtud</dt>
+              <dd>{completedDayCount}</dd>
+            </div>
+            <div className="tt-program-metric tt-program-metric--accent">
+              <dt>Edusammud</dt>
+              <dd>{progressPercentage}%</dd>
+            </div>
+            <div className="tt-program-metric">
+              <dt>Alustatud</dt>
+              <dd className="tt-program-metric__date">{startDate}</dd>
+            </div>
+          </dl>
+
+          {openSessionDay ? (
+            <section className="tt-program-next tt-program-next--active" aria-labelledby="next-workout-title">
+              <div>
+                <p className="tt-app-eyebrow">Pooleli olev treening</p>
+                <h2 id="next-workout-title" className="tt-program-next__title">
+                  Päev {openSessionDay.day_order} · {openSessionDay.title}
+                </h2>
+                <p className="tt-program-next__copy">Jätka sealt, kus viimati pooleli jäid.</p>
+              </div>
+              <Link to={`/workout/${program.id}/${openSessionDay.id}`} className="tt-app-button tt-app-button--paper">
+                Jätka treeningut
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </section>
+          ) : nextDay ? (
+            <section className="tt-program-next" aria-labelledby="next-workout-title">
+              <div>
+                <p className="tt-app-eyebrow">Järgmine treening</p>
+                <h2 id="next-workout-title" className="tt-program-next__title">
+                  Päev {nextDay.day_order} · {nextDay.title}
+                </h2>
+                <p className="tt-program-next__copy">Sinu järgmine kavas olev treeningpäev.</p>
+              </div>
+              <Link to={`/workout/${program.id}/${nextDay.id}`} className="tt-app-button tt-app-button--paper">
+                Alusta treeningut
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </section>
+          ) : (
+            <section className="tt-program-next tt-program-next--complete" aria-label="Programm lõpetatud">
+              <div>
+                <p className="tt-app-eyebrow">Programm lõpetatud</p>
+                <h2 className="tt-program-next__title">Kõik treeningpäevad on tehtud.</h2>
+                <p className="tt-program-next__copy">Tubli töö — saad soovi korral päevi uuesti teha.</p>
+              </div>
+              <CheckCircle2 size={32} aria-hidden="true" />
+            </section>
+          )}
+
+          <section className="tt-program-schedule" aria-labelledby="schedule-title">
+            <header className="tt-app-section-head">
+              <h2 id="schedule-title" className="tt-app-section-head__title">Treeningplaan</h2>
+              <span className="tt-app-section-head__label">Nädalate kaupa</span>
+            </header>
+
+            <div className="tt-program-weeks">
+              {weeklyDays.map((week) => (
+                <section key={week.weekNumber} className="tt-program-week" aria-labelledby={`week-${week.weekNumber}`}>
+                  <header className="tt-program-week__head">
+                    <div>
+                      <p className="tt-app-eyebrow">Treeningtsükkel</p>
+                      <h3 id={`week-${week.weekNumber}`} className="tt-program-week__title">
+                        Nädal {week.weekNumber}
+                      </h3>
+                    </div>
+                    {week.isCompleted ? (
+                      <span className="tt-app-status is-active">
+                        <CheckCircle2 size={14} aria-hidden="true" />
+                        Lõpetatud
+                      </span>
+                    ) : null}
+                  </header>
+
+                  <div className="tt-program-days" role="list">
                     {week.days.map((day) => {
                       const isCompleted = completedDays.has(day.id);
                       const isOpen = openSessionDayId === day.id;
-                      
+                      const actionLabel = isOpen ? "Jätka" : isCompleted ? "Tee uuesti" : "Alusta";
+
                       return (
-                        <div
+                        <article
                           key={day.id}
-                          className={`rounded-xl border p-4 transition-all ${
-                            isCompleted
-                              ? "border-green-200 bg-green-50"
-                              : isOpen
-                              ? "border-amber-300 bg-amber-50"
-                              : "border-border bg-background hover:border-primary/20"
-                          }`}
+                          className={`tt-program-day${isOpen ? " is-current" : ""}${isCompleted ? " is-complete" : ""}`}
+                          role="listitem"
                         >
-                          <div className="mb-3 flex items-start justify-between">
-                            <div>
-                              <h3 className="font-medium text-foreground">
-                                Päev {day.day_order}
-                              </h3>
-                              <p className="text-sm text-muted-foreground">
-                                {day.title}
-                              </p>
-                            </div>
-                            {isCompleted && (
-                              <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            )}
+                          <div className="tt-program-day__topline">
+                            <span className="tt-program-day__number">{String(day.day_order).padStart(2, "0")}</span>
+                            {isCompleted ? <CheckCircle2 size={19} aria-label="Lõpetatud" /> : null}
                           </div>
-
-                          <div className="mb-4 text-xs text-muted-foreground">
-                            {day.items.length} harjutust
-                            {day.items.some(item => item.alternatives && item.alternatives.length > 0) && (
-                              <span className="ml-2 text-blue-600">• Alternatiivid saadaval</span>
-                            )}
+                          <div className="tt-program-day__body">
+                            <h4 className="tt-program-day__title">Päev {day.day_order}</h4>
+                            <p className="tt-program-day__copy">{day.title}</p>
                           </div>
-
-                          <Button 
-                            asChild 
-                            variant={isOpen ? "default" : isCompleted ? "outline" : "hero"}
-                            size="sm" 
-                            className="w-full"
+                          <div className="tt-program-day__meta">
+                            <span>
+                              <Dumbbell size={15} aria-hidden="true" />
+                              {day.items.length} {day.items.length === 1 ? "harjutus" : "harjutust"}
+                            </span>
+                            {day.note ? (
+                              <span>
+                                <CalendarDays size={15} aria-hidden="true" />
+                                Treeneri märkus
+                              </span>
+                            ) : null}
+                          </div>
+                          <Link
+                            to={`/workout/${program.id}/${day.id}`}
+                            className={`tt-app-button tt-app-button--wide${isCompleted ? " tt-app-button--secondary" : ""}`}
+                            aria-label={`${actionLabel}: päev ${day.day_order}, ${day.title}`}
                           >
-                            <Link to={`/workout/${program.id}/${day.id}`}>
-                              {isOpen ? "Jätka" : isCompleted ? "Korda" : "Alusta"}
-                            </Link>
-                          </Button>
-                        </div>
+                            {actionLabel}
+                            <ArrowRight size={17} aria-hidden="true" />
+                          </Link>
+                        </article>
                       );
                     })}
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+                </section>
+              ))}
+            </div>
+          </section>
+        </main>
       </div>
     </PTAccessValidator>
   );

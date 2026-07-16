@@ -1,5 +1,5 @@
 // src/components/workout/ModernWorkoutHeader.tsx
-import { ArrowLeft, CheckCircle, Timer, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock3, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   AlertDialog, 
@@ -38,41 +38,51 @@ export default function ModernWorkoutHeader({
 }: WorkoutHeaderProps) {
   const elapsedMinutes = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
   const progressPercentage = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
+  const dayLabel = dayOrder && !dayTitle.toLocaleLowerCase("et-EE").startsWith("päev")
+    ? `Päev ${dayOrder} · ${dayTitle}`
+    : dayTitle;
 
   return (
-    <div className="border-b bg-background">
-      <div className="px-4 py-2">
-        {/* Ultra-minimal header - just title and progress */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={onBack} className="h-8 px-2">
-            <ArrowLeft className="h-4 w-4" />
+    <header className="tt-workout-header">
+      <div className="tt-workout-header__inner">
+        <div className="tt-workout-header__topline">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="tt-workout-header__back"
+            aria-label="Tagasi treeningkavasse"
+          >
+            <ArrowLeft size={19} aria-hidden="true" />
           </Button>
-          
-          <div className="flex-1 text-center">
-            <h1 className="text-sm font-medium text-foreground truncate">
-              {dayTitle}
-            </h1>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {completedSets}/{totalSets} seeriat
-            </div>
+
+          <div className="tt-workout-header__identity">
+            <p className="tt-workout-header__eyebrow">{programTitle}</p>
+            <h1>{dayLabel}</h1>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-muted-foreground">
-              {elapsedMinutes}m
-            </div>
+
+          <div className="tt-workout-header__actions">
+            <span className="tt-workout-header__time">
+              <Clock3 size={15} aria-hidden="true" />
+              {elapsedMinutes} min
+            </span>
             {!isFinished && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
-                    <XCircle className="h-4 w-4" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="tt-workout-header__finish-icon"
+                    aria-label="Lõpeta treening"
+                  >
+                    <XCircle size={19} aria-hidden="true" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Kas oled kindel?</AlertDialogTitle>
                     <AlertDialogDescription className="space-y-2">
-                      <p>Soovid treeningu lõpetada?</p>
+                      <p>Kas soovid treeningu lõpetada?</p>
                       {completedSets < totalSets && (
                         <p className="text-black font-bold">
                           Oled teinud {completedSets}/{totalSets} seeriat. 
@@ -95,29 +105,32 @@ export default function ModernWorkoutHeader({
             )}
           </div>
         </div>
-        
-        {/* Minimal progress bar */}
-        <div className="mt-2 w-full bg-muted rounded-full h-1 overflow-hidden">
-          <div 
-            className="h-full bg-primary transition-all duration-300 ease-out"
+
+        <div className="tt-workout-header__progress-row">
+          <span>{completedSets}/{totalSets} seeriat tehtud</span>
+          <strong>{Math.round(Math.min(progressPercentage, 100))}%</strong>
+        </div>
+        <div
+          className="tt-workout-header__progress"
+          role="progressbar"
+          aria-label="Treeningu edenemine"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(Math.min(progressPercentage, 100))}
+        >
+          <div
+            className="tt-workout-header__progress-bar"
             style={{ width: `${Math.min(progressPercentage, 100)}%` }}
           />
         </div>
-        
-        {/* Completion button - only show when 100% */}
+
         {progressPercentage >= 100 && !isFinished && (
-          <div className="flex justify-center mt-2">
-            <Button 
-              onClick={onFinish}
-              size="sm"
-              className="h-7 px-3 text-xs bg-green-600 text-white hover:bg-green-700"
-            >
-              <CheckCircle className="h-3 w-3 mr-1" />
-              Lõpeta
-            </Button>
-          </div>
+          <Button onClick={onFinish} size="sm" className="tt-workout-header__complete">
+            <CheckCircle size={16} aria-hidden="true" />
+            Lõpeta treening
+          </Button>
         )}
       </div>
-    </div>
+    </header>
   );
 }
