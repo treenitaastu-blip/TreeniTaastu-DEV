@@ -746,6 +746,7 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           email: string | null
+          full_name: string | null
           id: string
           is_paid: boolean
           role: string
@@ -757,6 +758,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           email?: string | null
+          full_name?: string | null
           id: string
           is_paid?: boolean
           role?: string
@@ -768,6 +770,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           email?: string | null
+          full_name?: string | null
           id?: string
           is_paid?: boolean
           role?: string
@@ -2655,6 +2658,64 @@ export type Database = {
           p_training_days: Json
         }
         Returns: string
+      }
+      admin_clear_entitlement_service: {
+        Args: { p_product: string; p_user: string }
+        Returns: undefined
+      }
+      admin_pause_entitlement_service: {
+        Args: { p_pause: boolean; p_product: string; p_user: string }
+        Returns: undefined
+      }
+      admin_set_entitlement_service: {
+        Args: {
+          p_days: number
+          p_note?: string
+          p_product: string
+          p_status: string
+          p_user: string
+        }
+        Returns: undefined
+      }
+      get_admin_access_matrix: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          can_pt: boolean
+          can_static: boolean
+          is_admin: boolean
+          reason: string
+          user_id: string
+        }[]
+      }
+      get_admin_entitlements: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          expires_at: string | null
+          note: string | null
+          paused: boolean
+          product: string
+          source: string | null
+          status: string
+          trial_ends_at: string | null
+          user_id: string
+        }[]
+      }
+      get_admin_users_v2: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          current_period_end: string | null
+          email: string | null
+          email_confirmed_at: string | null
+          full_name: string | null
+          id: string
+          is_paid: boolean
+          last_sign_in_at: string | null
+          profile_exists: boolean
+          role: string
+          trial_ends_at: string | null
+        }[]
       }
       is_admin_unified: {
         Args: Record<PropertyKey, never>
