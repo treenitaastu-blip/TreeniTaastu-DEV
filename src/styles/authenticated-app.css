@@ -1224,15 +1224,16 @@
   margin-top: var(--space-md);
 }
 
-/* Treeningu läbiviimine */
+/* Treeningu läbiviimine — app header is hidden on /workout, so this bar is top chrome */
 .tt-workout-page {
-  min-height: calc(100vh - 4.5rem);
+  min-height: 100vh;
 }
 
 .tt-workout-header {
   position: sticky;
-  top: 4.5rem;
-  z-index: calc(var(--z-sticky) - 1);
+  top: 0;
+  z-index: var(--z-sticky);
+  padding-top: env(safe-area-inset-top, 0px);
   border-bottom: var(--rule-hair) solid var(--color-rule);
   background: color-mix(in oklch, var(--color-paper) 96%, transparent);
   backdrop-filter: blur(18px);
@@ -2770,10 +2771,6 @@
   .tt-app-header-spacer {
     height: calc(env(safe-area-inset-top, 0px) + 4rem);
   }
-
-  .tt-workout-header {
-    top: 4rem;
-  }
 }
 
 @media (max-width: 767px) {
@@ -2812,9 +2809,12 @@
     min-height: calc(100vh - 4rem);
   }
 
-  .tt-program-detail,
-  .tt-workout-page {
+  .tt-program-detail {
     min-height: calc(100vh - 4rem);
+  }
+
+  .tt-workout-page {
+    min-height: 100vh;
   }
 
   .tt-program-detail__hero {
