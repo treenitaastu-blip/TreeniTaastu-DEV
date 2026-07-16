@@ -4,16 +4,11 @@ import path from "node:path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 
-// Preview deployments must always load the latest build. A service worker on
-// the stable staging domain can otherwise keep serving an older admin bundle
-// after Vercel has already deployed a newer commit.
-const isVercelPreview = process.env.VERCEL_ENV === 'preview';
-
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    !isVercelPreview && VitePWA({
+    VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer',
       includeAssets: ['favicon.ico', 'icon-*.png'],
