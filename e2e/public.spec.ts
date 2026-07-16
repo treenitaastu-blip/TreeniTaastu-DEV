@@ -10,7 +10,9 @@ test.describe("Avalikud põhivood", () => {
 
     await expect(page).toHaveTitle(/Treenitaastu/i);
     await expect(
-      page.getByRole("heading", { name: /muuda oma elu.*20 päevaga/i }),
+      page.getByRole("heading", {
+        name: "Treeni targemalt. Taastu teadlikult.",
+      }),
     ).toBeVisible();
     await expect(page.locator('a[href="/login"]:visible').first()).toBeVisible();
     await expect(
