@@ -62,9 +62,9 @@ BEGIN
   RETURN QUERY
   SELECT
     auth_user.id,
-    COALESCE(auth_user.email, profile.email),
-    profile.full_name,
-    CASE
+    COALESCE(auth_user.email, profile.email)::text,
+    profile.full_name::text,
+    (CASE
       WHEN EXISTS (
         SELECT 1
         FROM public.user_roles AS user_role
@@ -72,7 +72,7 @@ BEGIN
           AND user_role.role = 'admin'::public.app_role
       ) OR profile.role = 'admin' THEN 'admin'
       ELSE 'user'
-    END,
+    END)::text,
     auth_user.created_at,
     auth_user.email_confirmed_at,
     auth_user.last_sign_in_at,
