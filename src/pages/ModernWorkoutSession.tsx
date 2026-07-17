@@ -1199,6 +1199,22 @@ export default function ModernWorkoutSession() {
     exerciseId: string | null;
     exerciseName: string;
   }>({ isOpen: false, exerciseId: null, exerciseName: "" });
+  const [exerciseScrollTokens, setExerciseScrollTokens] = useState<Record<string, number>>({});
+
+  const focusCompletedExercise = useCallback((exerciseId: string) => {
+    setExerciseScrollTokens((current) => ({
+      ...current,
+      [exerciseId]: (current[exerciseId] ?? 0) + 1,
+    }));
+  }, []);
+
+  const closeRIRDialog = useCallback(() => {
+    const exerciseId = rirDialogState.exerciseId;
+    setRirDialogState({ isOpen: false, exerciseId: null, exerciseName: "" });
+    if (exerciseId) {
+      focusCompletedExercise(exerciseId);
+    }
+  }, [rirDialogState.exerciseId, focusCompletedExercise]);
 
   const computeSuggestedWeight = (current: number, sense: 'too_easy' | 'just_right' | 'too_hard') => {
     if (!Number.isFinite(current) || current < 0) current = 0;
@@ -1792,6 +1808,7 @@ export default function ModernWorkoutSession() {
               // Progression recommendation system
               progressionRecommendation={recommendations[exercise.id]}
               onRecommendationClick={() => setRecommendationDialogState({ isOpen: true, exerciseId: exercise.id })}
+              focusScrollToken={exerciseScrollTokens[exercise.id]}
             />
           ))}
           </div>
@@ -1891,7 +1908,7 @@ export default function ModernWorkoutSession() {
         {rirDialogState.isOpen && rirDialogState.exerciseId && (
           <RIRDialog
             isOpen={true}
-            onClose={() => setRirDialogState({ isOpen: false, exerciseId: null, exerciseName: "" })}
+            onClose={closeRIRDialog}
             onSave={(rir) => handleRIRSave(rirDialogState.exerciseId!, rir)}
             exerciseName={rirDialogState.exerciseName}
             initialValue={currentRIR[rirDialogState.exerciseId]}

@@ -81,6 +81,8 @@ interface SmartExerciseCardProps {
     message: string;
   } | null;
   onRecommendationClick?: () => void;
+  /** Increment to scroll the finished exercise card under the workout header. */
+  focusScrollToken?: number;
 }
 
 export default function SmartExerciseCard({
@@ -107,7 +109,8 @@ export default function SmartExerciseCard({
   onUpdateSingleSetWeight: _onUpdateSingleSetWeight,
   onUpdateAllSetsWeight: _onUpdateAllSetsWeight,
   progressionRecommendation,
-  onRecommendationClick
+  onRecommendationClick,
+  focusScrollToken = 0,
 }: SmartExerciseCardProps) {
   const [showVideo, setShowVideo] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
@@ -120,6 +123,8 @@ export default function SmartExerciseCard({
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [manuallyExpanded, setManuallyExpanded] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const lastFocusScrollTokenRef = useRef(0);
   
 
   // Auto-collapse when all sets are completed
@@ -134,6 +139,39 @@ export default function SmartExerciseCard({
       return () => clearTimeout(timer);
     }
   }, [allSetsCompleted, isCollapsed, showFeedback, manuallyExpanded]);
+
+  // After RIR (or skip), pin the finished card under the sticky workout header.
+  useEffect(() => {
+    if (!focusScrollToken || focusScrollToken === lastFocusScrollTokenRef.current) {
+      return;
+    }
+    lastFocusScrollTokenRef.current = focusScrollToken;
+    if (!allSetsCompleted) return;
+
+    setIsCollapsed(true);
+    setManuallyExpanded(false);
+
+    requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        const element = cardRef.current;
+        if (!element) return;
+
+        const header = document.querySelector<HTMLElement>(".tt-workout-header");
+        const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+        const gap = 12;
+        const top =
+          element.getBoundingClientRect().top +
+          window.scrollY -
+          headerBottom -
+          gap;
+
+        window.scrollTo({
+          top: Math.max(0, top),
+          behavior: "smooth",
+        });
+      }, 120);
+    });
+  }, [focusScrollToken, allSetsCompleted]);
 
   useEffect(() => {
     const timers = timerIntervalRef.current;
@@ -428,7 +466,11 @@ export default function SmartExerciseCard({
   // Show collapsed state when all sets are completed
   if (allSetsCompleted && isCollapsed) {
     return (
-      <div className="tt-workout-exercise tt-workout-exercise--complete">
+      <div
+        ref={cardRef}
+        id={`workout-exercise-${exercise.id}`}
+        className="tt-workout-exercise tt-workout-exercise--complete"
+      >
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300">
@@ -469,7 +511,11 @@ export default function SmartExerciseCard({
   }
 
   return (
-    <article className="tt-workout-exercise">
+    <article
+      ref={cardRef}
+      id={`workout-exercise-${exercise.id}`}
+      className="tt-workout-exercise"
+    >
       {/* Exercise Title - First and prominent */}
       <header className="tt-workout-exercise__head">
         <div className="flex items-center justify-between">
