@@ -164,23 +164,21 @@ export async function getUsersOptimized(): Promise<OptimizedUser[]> {
   if (cached) return cached;
 
   try {
-    // Use admin client to bypass RLS restrictions
-    const { data, error } = await getAdminClient()
-      .from("profiles")
-      .select(`
-        id,
-        email
-      `)
-      .order("email");
+    const adminClient = getAdminClient();
+    const { data: usersData, error: usersError } = await adminClient.rpc('get_admin_users_v2');
 
-    if (error) {
-      console.error('Error fetching users:', error);
-      throw error;
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      throw usersError;
     }
 
-    const users = (data ?? []).filter(
-      (user): user is OptimizedUser => Boolean(user.email),
-    );
+    const users = (usersData ?? [])
+      .filter((user) => Boolean(user?.id && user?.email))
+      .map((user) => ({
+        id: user.id,
+        email: user.email as string,
+      }));
+
     setCachedData(cacheKey, users, CACHE_TTL.LONG);
     return users;
   } catch (error) {
