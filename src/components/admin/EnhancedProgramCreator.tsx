@@ -479,9 +479,9 @@ export default function EnhancedProgramCreator({
           reps: exercise.kind === "time" ? "" : exercise.reps.trim(),
           seconds: exercise.kind === "time" ? exercise.seconds : null,
           weight_kg:
-            exercise.kind === "bodyweight" || exercise.kind === "time"
+            exercise.kind === "time"
               ? null
-              : exercise.weight_kg,
+              : exercise.weight_kg ?? 0,
           rest_seconds: exercise.rest_seconds,
           coach_notes: exercise.coach_notes.trim() || null,
           video_url: exercise.video_url.trim() || null,
@@ -769,10 +769,7 @@ export default function EnhancedProgramCreator({
                 updateExercise(dayIndex, exerciseIndex, {
                   kind,
                   seconds: kind === "time" ? exercise.seconds ?? 60 : null,
-                  weight_kg:
-                    kind === "bodyweight" || kind === "time"
-                      ? null
-                      : exercise.weight_kg,
+                  weight_kg: kind === "time" ? null : exercise.weight_kg ?? 0,
                   is_unilateral: kind === "time" ? false : exercise.is_unilateral,
                 });
               }}
