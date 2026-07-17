@@ -30,10 +30,9 @@ export function useAdminData() {
 
       const adminClient = getAdminClient();
 
-      // Use the new admin function that bypasses RLS
       const { data: usersData, error: usersError } = await adminClient
         .rpc('get_admin_users_v2');
-      
+
       if (usersError) {
         console.error('Error loading admin users:', usersError);
         throw usersError;
