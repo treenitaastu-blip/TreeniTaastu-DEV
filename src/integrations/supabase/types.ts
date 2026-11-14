@@ -2793,6 +2793,10 @@ export type Database = {
         Args: { p_template_id: string }
         Returns: Json
       }
+      admin_duplicate_workout_template: {
+        Args: { p_template_id: string }
+        Returns: string
+      }
       admin_pause_entitlement: {
         Args: { p_pause?: boolean; p_product: string; p_user: string }
         Returns: undefined
