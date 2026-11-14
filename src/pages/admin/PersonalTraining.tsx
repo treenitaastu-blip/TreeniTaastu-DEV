@@ -16,6 +16,7 @@ import {
   TrendingUp, 
   Activity,
   MoreHorizontal,
+  Copy,
   Edit,
   Trash2,
   UserCheck,
@@ -118,6 +119,7 @@ export default function PersonalTraining() {
   // Inline title editing
   const [editingTitleId, setEditingTitleId] = useState<UUID | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [duplicatingTemplateId, setDuplicatingTemplateId] = useState<UUID | null>(null);
 
   // Track page view
   useEffect(() => {
@@ -330,6 +332,57 @@ export default function PersonalTraining() {
       onConfirm: () => performDeleteTemplate(templateId, templateTitle),
       additionalWarning: 'See kustutab ka kõik sellel mallil põhinevad programmid.'
     });
+  };
+
+  const handleDuplicateTemplate = async (template: Template) => {
+    if (duplicatingTemplateId) return;
+
+    setDuplicatingTemplateId(template.id);
+    trackFeatureUsage('template_duplication', 'attempted', {
+      template_id: template.id,
+      template_title: template.title,
+    });
+
+    try {
+      const { data: duplicatedTemplateId, error } = await supabase.rpc(
+        "admin_duplicate_workout_template",
+        { p_template_id: template.id },
+      );
+
+      if (error) throw error;
+      if (!duplicatedTemplateId) {
+        throw new Error("Uue malli ID-d ei tagastatud");
+      }
+
+      clearPTCache();
+      trackFeatureUsage('template_duplication', 'completed', {
+        template_id: template.id,
+        duplicated_template_id: duplicatedTemplateId,
+      });
+
+      toast({
+        title: "Mall duplikeeritud",
+        description: `Loodi malli „${template.title}” muudetav koopia.`,
+      });
+
+      navigate(`/admin/templates/${duplicatedTemplateId}`);
+    } catch (error: unknown) {
+      console.error("Template duplication failed:", error);
+      trackFeatureUsage('template_duplication', 'failed', {
+        template_id: template.id,
+        error_message: (error as Error).message,
+      });
+
+      toast({
+        title: "Duplikeerimine ebaõnnestus",
+        description: isPermissionError(error)
+          ? "Sul puudub malli duplikeerimiseks administraatoriõigus."
+          : (error as Error).message || "Malli koopiat ei õnnestunud luua.",
+        variant: "destructive",
+      });
+    } finally {
+      setDuplicatingTemplateId(null);
+    }
   };
 
   const performDeleteTemplate = async (templateId: string, templateTitle: string) => {
@@ -610,6 +663,13 @@ export default function PersonalTraining() {
                           <DropdownMenuItem onClick={() => navigate(`/admin/templates/${template.id}`)}>
                             <Edit className="h-3 w-3 mr-2" />
                             Muuda malli
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDuplicateTemplate(template)}
+                            disabled={duplicatingTemplateId !== null}
+                          >
+                            <Copy className="h-3 w-3 mr-2" />
+                            {duplicatingTemplateId === template.id ? "Duplikeerin…" : "Duplikeeri mall"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDeleteTemplate(template.id, template.title)}
