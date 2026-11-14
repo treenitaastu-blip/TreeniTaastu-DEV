@@ -2637,6 +2637,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      admin_move_template_exercise: {
+        Args: {
+          p_direction: number
+          p_item_id: string
+          p_template_id: string
+        }
+        Returns: boolean
+      }
       batch_update_exercises: {
         Args: { updates: Json }
         Returns: boolean

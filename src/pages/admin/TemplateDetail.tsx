@@ -51,19 +51,30 @@ const intOrUndef = (v: string | number | null | undefined) => {
   return result === null ? undefined : result;
 };
 
-const floatOrUndef = (v: string | number | null | undefined) => {
-  const result = floatOrNull(v);
-  return result === null ? undefined : result;
-};
-
 const strOrUndef = (v: unknown) => {
   const result = strOrNull(v);
   return result === null ? undefined : result;
 };
 
+// The database requires exactly one of seconds/weight_kg to be non-null.
+// A zero weight is how rep-based bodyweight exercises are represented.
+const normalizeExerciseLoad = (
+  seconds: string | number | null | undefined,
+  weightKg: string | number | null | undefined,
+) => {
+  const normalizedSeconds = intOrNull(seconds);
+  const normalizedWeight = floatOrNull(weightKg);
+
+  if (normalizedSeconds !== null && normalizedSeconds > 0) {
+    return { seconds: normalizedSeconds, weight_kg: null };
+  }
+
+  return { seconds: null, weight_kg: normalizedWeight ?? 0 };
+};
+
 // Helper function to process unilateral exercise input
 const processExerciseInput = (exercise: Partial<ItemRow>) => {
-  const { reps, is_unilateral, weight_kg } = exercise;
+  const { reps, is_unilateral } = exercise;
 
   let reps_per_side: number | null = null;
   let total_reps: number | null = null;
@@ -97,7 +108,7 @@ export default function TemplateDetail() {
   const [tpl, setTpl] = useState<Pick<TplRow, "id"|"title"|"goal"|"is_active"|"inserted_at"> | null>(null);
   const [days, setDays] = useState<Array<Pick<DayRow,"id"|"template_id"|"day_order"|"title"|"note"|"inserted_at">>>([]);
   const [itemsByDay, setItemsByDay] = useState<Record<string, Array<Pick<ItemRow,
-    "id"|"template_day_id"|"exercise_name"|"sets"|"reps"|"rest_seconds"|"seconds"|"weight_kg"|"coach_notes"|"order_in_day"|"video_url"|"inserted_at"|"is_unilateral"|"reps_per_side"|"total_reps"
+    "id"|"template_day_id"|"exercise_name"|"exercise_type"|"sets"|"reps"|"rest_seconds"|"seconds"|"weight_kg"|"coach_notes"|"order_in_day"|"video_url"|"inserted_at"|"is_unilateral"|"reps_per_side"|"total_reps"
   >>>>({});
   const [alternativesByItem, setAlternativesByItem] = useState<Record<string, AlternativeRow[]>>({});
   const [loading, setLoading] = useState(true);
@@ -464,6 +475,7 @@ export default function TemplateDetail() {
       ? processExerciseInput(base) 
       : base;
 
+    const load = normalizeExerciseLoad(processedBase.seconds, processedBase.weight_kg);
     const ins: ItemIns = {
       template_day_id: dayId,
       exercise_name: strOrNull(processedBase.exercise_name) ?? "Uus harjutus",
@@ -471,8 +483,8 @@ export default function TemplateDetail() {
       sets: intOrUndef(processedBase.sets as any) ?? 1,
       reps: strOrNull(processedBase.reps) ?? "8-12",
       rest_seconds: intOrUndef(processedBase.rest_seconds as any),
-      seconds: intOrUndef(processedBase.seconds as any),
-      weight_kg: floatOrUndef(processedBase.weight_kg as any),
+      seconds: load.seconds,
+      weight_kg: load.weight_kg,
       coach_notes: strOrUndef(processedBase.coach_notes),
       video_url: strOrUndef(processedBase.video_url),
       is_unilateral: processedBase.is_unilateral || false,
@@ -520,13 +532,17 @@ export default function TemplateDetail() {
         ? processExerciseInput(patch) 
         : patch;
 
+      const hasLoadPatch = processedPatch.seconds !== undefined || processedPatch.weight_kg !== undefined;
+      const load = hasLoadPatch
+        ? normalizeExerciseLoad(processedPatch.seconds, processedPatch.weight_kg)
+        : null;
       const upd: ItemUpd = {
         exercise_name: processedPatch.exercise_name !== undefined ? strOrUndef(processedPatch.exercise_name) : undefined,
         sets:          processedPatch.sets          !== undefined ? intOrUndef(processedPatch.sets as any) : undefined,
         reps:          processedPatch.reps          !== undefined ? strOrUndef(processedPatch.reps) : undefined,
         rest_seconds:  processedPatch.rest_seconds  !== undefined ? intOrUndef(processedPatch.rest_seconds as any) : undefined,
-        seconds:       processedPatch.seconds       !== undefined ? intOrUndef(processedPatch.seconds as any) : undefined,
-        weight_kg:     processedPatch.weight_kg     !== undefined ? floatOrUndef(processedPatch.weight_kg as any) : undefined,
+        seconds:       load ? load.seconds : undefined,
+        weight_kg:     load ? load.weight_kg : undefined,
         coach_notes:   processedPatch.coach_notes   !== undefined ? strOrUndef(processedPatch.coach_notes) : undefined,
         video_url:     processedPatch.video_url     !== undefined ? strOrUndef(processedPatch.video_url) : undefined,
         order_in_day:  processedPatch.order_in_day  as number | undefined, // rarely changed here
@@ -594,24 +610,16 @@ export default function TemplateDetail() {
     const targetIdx = dir === "up" ? idx - 1 : idx + 1;
     if (idx < 0 || targetIdx < 0 || targetIdx >= list.length) return;
 
-    const a = list[idx];
-    const b = list[targetIdx];
-
     setSaving(true);
     setError(null);
     setNotice(null);
     try {
-      const { error: e1 } = await supabase
-        .from("template_items")
-        .update({ order_in_day: b.order_in_day } satisfies ItemUpd)
-        .eq("id", a.id);
-      if (e1) throw e1;
-
-      const { error: e2 } = await supabase
-        .from("template_items")
-        .update({ order_in_day: a.order_in_day } satisfies ItemUpd)
-        .eq("id", b.id);
-      if (e2) throw e2;
+      const { error: moveError } = await supabase.rpc("admin_move_template_exercise", {
+        p_template_id: id!,
+        p_item_id: itemId,
+        p_direction: dir === "up" ? -1 : 1,
+      });
+      if (moveError) throw moveError;
 
       await refreshDayItems(dayId);
       setNotice("Harjutuste järjekord uuendatud.");
@@ -1135,7 +1143,7 @@ export default function TemplateDetail() {
                           
                           {alternativesByItem[it.id] && alternativesByItem[it.id].length > 0 ? (
                             <div className="space-y-2">
-                              {alternativesByItem[it.id].map((alt, altIdx) => (
+                              {alternativesByItem[it.id].map((alt) => (
                                 <div key={alt.id} className="rounded-lg border bg-gray-50 p-3">
                                   <div className="grid gap-2 sm:grid-cols-12">
                                     <div className="sm:col-span-3">
